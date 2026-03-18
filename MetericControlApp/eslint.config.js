@@ -4,7 +4,6 @@ const expoConfig = require("eslint-config-expo/flat");
 const eslintPluginPrettierRecommended = require('eslint-plugin-prettier/recommended');
 const js = require('@eslint/js');
 const reactRefresh = require('eslint-plugin-react-refresh').default;
-const importPlugin = require('eslint-plugin-import');
 const globals = require('globals');
 
 module.exports = defineConfig([
@@ -39,7 +38,7 @@ module.exports = defineConfig([
                 sourceType: 'module',
             },
         },
-        plugins: { 'react-refresh': reactRefresh, import: importPlugin },
+        plugins: { 'react-refresh': reactRefresh },
         settings: {
             'import/resolver': {
                 alias: {
@@ -64,6 +63,8 @@ module.exports = defineConfig([
                     ignoreImports: true,
                 },
             ],
+            'import/no-unresolved': 'error',
+            'import/no-duplicates': 'error',
             'no-console': ['error', { allow: ['warn', 'error'] }],
             'no-debugger': 'error',
             'no-inline-comments': 'error',
