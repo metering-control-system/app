@@ -4,3 +4,9 @@ pre-commit:
     lint-staged:
       root: "MetericControlApp"
       run: npx lint-staged
+
+commit-msg:
+  commands:
+    lint-staged:
+      root: "MetericControlApp"
+      run: npx commitlint --edit {1}

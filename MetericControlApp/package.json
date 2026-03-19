@@ -29,6 +29,8 @@
   },
   "private": true,
   "devDependencies": {
+    "@commitlint/cli": "^20.5.0",
+    "@commitlint/config-conventional": "^20.5.0",
     "eslint": "^9.39.4",
     "eslint-config-expo": "^55.0.0",
     "eslint-config-prettier": "^10.1.8",
