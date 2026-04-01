@@ -1,13 +1,14 @@
 {
   "expo": {
+    "scheme": "meteric-control-app",
     "name": "MetericControlApp",
     "slug": "MetericControlApp",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "",
     "userInterfaceStyle": "light",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,13 +18,23 @@
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
-        "foregroundImage": "./assets/android-icon-foreground.png",
-        "backgroundImage": "./assets/android-icon-background.png",
-        "monochromeImage": "./assets/android-icon-monochrome.png"
-      }
+        "foregroundImage": "",
+        "backgroundImage": "",
+        "monochromeImage": ""
+      },
+      "package": "com.pr1de.MetericControlApp"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
-    }
+      "favicon": ""
+    },
+    "extra": {
+      "eas": {
+        "projectId": "11ea2ffa-57a3-466f-b9a8-71bbeff51214"
+      }
+    },
+    "owner": "pr1de",
+    "plugins": [
+      "expo-router"
+    ]
   }
 }

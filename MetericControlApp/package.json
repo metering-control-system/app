@@ -1,7 +1,7 @@
 {
   "name": "metericcontrolapp",
   "version": "1.0.0",
-  "main": "index.js",
+  "main": "expo-router/entry",
   "scripts": {
     "start": "expo start",
     "android": "expo start --android",
@@ -22,10 +22,22 @@
     ]
   },
   "dependencies": {
-    "expo": "~55.0.7",
-    "expo-status-bar": "~55.0.4",
+    "@expo/metro-runtime": "~55.0.9",
+    "@tanstack/react-query": "^5.96.2",
+    "axios": "^1.14.0",
+    "expo": "~55.0.11",
+    "expo-constants": "~55.0.9",
+    "expo-dev-client": "~55.0.22",
+    "expo-device": "^55.0.12",
+    "expo-linking": "~55.0.11",
+    "expo-router": "~55.0.10",
+    "expo-status-bar": "~55.0.5",
     "react": "19.2.0",
-    "react-native": "0.83.2"
+    "react-dom": "19.2.0",
+    "react-native": "0.83.4",
+    "react-native-safe-area-context": "~5.6.2",
+    "react-native-screens": "~4.23.0",
+    "react-native-web": "^0.21.0"
   },
   "private": true,
   "devDependencies": {
@@ -44,6 +56,8 @@
     "lefthook": "^2.1.4",
     "lint-staged": "^16.4.0",
     "prettier": "^3.8.1",
+    "react-query-external-sync": "^2.2.3",
+    "socket.io-client": "^4.8.3",
     "typescript": "^5.9.3"
   }
 }
