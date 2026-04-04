@@ -13,7 +13,7 @@ const TaskDescription = () => {
 
     useEffect(() => {
         if (!id || idRef.current) return;
-        idRef.current = +id;
+        idRef.current = id;
         setFormData(tasks.find((task) => task.id === idRef.current));
     }, [id]);
 
@@ -27,7 +27,6 @@ const TaskDescription = () => {
                             ФИО
                         </Text>
                         <TextInput
-                            defaultValue={formData?.customerName}
                             placeholder='Введите имя'
                             value={formData?.customerName}
                             style={styles.input}
@@ -35,7 +34,7 @@ const TaskDescription = () => {
                             onChangeText={(value) =>
                                 setFormData((fd) => ({
                                     ...fd,
-                                    consumerName: value,
+                                    customerName: value,
                                 }))
                             }
                         />
@@ -45,7 +44,6 @@ const TaskDescription = () => {
                             Лицевой счет
                         </Text>
                         <TextInput
-                            defaultValue={formData?.personalAccount}
                             placeholder='Введите номер ЛС'
                             value={formData?.personalAccount}
                             style={styles.input}
@@ -63,7 +61,6 @@ const TaskDescription = () => {
                             Тип старого ПУ
                         </Text>
                         <TextInput
-                            defaultValue={formData?.meter?.type}
                             placeholder='Введите тип старого ПУ'
                             value={formData?.meter?.type}
                             style={styles.input}
@@ -81,7 +78,6 @@ const TaskDescription = () => {
                             Номер старого ПУ
                         </Text>
                         <TextInput
-                            defaultValue={formData?.meter?.number}
                             placeholder='Введите номер старого ПУ'
                             value={formData?.meter?.number}
                             style={styles.input}

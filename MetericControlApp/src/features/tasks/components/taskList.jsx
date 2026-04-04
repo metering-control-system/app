@@ -20,7 +20,7 @@ const TasksList = () => {
             ]}
             renderItem={({ item: task }) => <Task task={task} />}
             keyExtractor={(item) => item.id}
-            desciptionContainerStyle={styles.list}
+            contentContainerStyle={styles.list}
             renderSectionHeader={({ section }) => (
                 <Text
                     style={[

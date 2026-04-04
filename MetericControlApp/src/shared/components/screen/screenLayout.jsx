@@ -5,11 +5,7 @@ export default function ScreenLayout({ safe, children, ...other }) {
     const insets = useSafeAreaInsets();
 
     if (!safe) {
-        return (
-            <View style={[styles.container, other.style ?? '']}>
-                {children}
-            </View>
-        );
+        return <View style={[styles.container, other.style]}>{children}</View>;
     }
 
     return (
@@ -17,7 +13,7 @@ export default function ScreenLayout({ safe, children, ...other }) {
             style={[
                 styles.container,
                 { paddingTop: insets.top, paddingBottom: insets.bottom },
-                other.style ?? '',
+                other.style,
             ]}>
             {children}
         </View>
