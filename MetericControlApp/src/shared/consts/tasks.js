@@ -16,7 +16,7 @@ export const tasks = [
         customerName: 'Иванов Иван Иванович',
         id: date2.toISOString(),
         isUrgent: false,
-        period: date2.toLocaleDateString(),
+        period: date2.toISOString(),
         personalAccount: '9876543210',
         meter: { type: 'HC-131', number: '00563753' },
     },
