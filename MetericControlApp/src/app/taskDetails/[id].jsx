@@ -13,7 +13,7 @@ const TaskDescription = () => {
 
     useEffect(() => {
         if (!id || idRef.current) return;
-        idRef.current = +id;
+        idRef.current = id;
         setFormData(tasks.find((task) => task.id === idRef.current));
     }, [id]);
 

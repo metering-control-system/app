@@ -5,7 +5,7 @@ export const tasks = [
     {
         addr: 'Task 1',
         customerName: 'Иванов Иван Иванович',
-        id: date1.getMonth() + date1.getDay() + date1.getFullYear(),
+        id: date1.toISOString(),
         isUrgent: true,
         period: date1.toLocaleDateString(),
         personalAccount: '1234567890',
@@ -16,7 +16,7 @@ export const tasks = [
         customerName: 'Иванов Иван Иванович',
         id: date2.getMonth() + date2.getDay() + date2.getFullYear(),
         isUrgent: false,
-        period: date2.toLocaleDateString(),
+        period: date2.toISOString(),
         personalAccount: '9876543210',
         meter: { type: 'HC-131', number: '00563753' },
     },

@@ -16,8 +16,8 @@ const App = () => {
     }, [router]);
 
     return (
-        <ScreenLayout styles={styles.container}>
-            <ActivityIndicator size='large' style={{ color: '#ddd' }} />
+        <ScreenLayout style={styles.container}>
+            <ActivityIndicator size='large' color='#ddd' />
         </ScreenLayout>
     );
 };
