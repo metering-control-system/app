@@ -13,7 +13,9 @@ const useSession = () => {
         onSuccess: async (data) => {
             const token = data.access;
             if (!token) {
-                throw new Error('Missing access token. Resubmit the request');
+                await tokenStorage.clearTokens();
+                clearSession();
+                return;
             }
             setToken(token);
             await tokenStorage.setAccessToken(token);

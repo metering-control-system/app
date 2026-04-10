@@ -22,6 +22,7 @@ const LoginForm = ({ setError }) => {
             return;
         }
         try {
+            setError(null);
             await userLogin({ login: data.login, password: data.password });
         } catch (error) {
             setError(error.message);

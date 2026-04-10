@@ -17,7 +17,7 @@ const LoginScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    title: { fontSize: 20, fontWeight: 'semibold', marginBottom: 20 },
+    title: { fontSize: 20, fontWeight: '600', marginBottom: 20 },
 });
 
 export default LoginScreen;

@@ -8,11 +8,15 @@ export const useLogin = () => {
 
     const { mutateAsync, isPending } = useMutation({
         mutationFn: login,
-        onSuccess: (data) => {
+        onSuccess: async (data) => {
             const access = data.access;
             const refresh = data.refresh;
-            tokenStorage.setTokens({ refresh, access });
-            setToken(access);
+            try {
+                await tokenStorage.setTokens({ refresh, access });
+                setToken(access);
+            } catch {
+                /* empty */
+            }
         },
     });
 

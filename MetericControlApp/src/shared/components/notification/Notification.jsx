@@ -30,7 +30,7 @@ const Notification = ({ variant, message }) => {
 };
 
 const styles = StyleSheet.create({
-    notification: { position: 'absolute', translateX: '50%', top: 0 },
+    notification: { position: 'absolute', alignSelf: 'center', top: 0 },
     card: { minWidth: 120, padding: 10, borderRadius: 12, borderWidth: 1 },
     text: { fontSize: 12 },
 });
