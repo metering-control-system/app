@@ -1,5 +1,5 @@
 import { skipToken, useQuery } from '@tanstack/react-query';
-// eslint-disable-next-line import/no-unresolved
+
 import { getTaskById } from '@/features/tasks/api/getTasksApi';
 
 const useTask = (id) => {

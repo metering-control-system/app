@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved
 import { getTasks } from '@/features/tasks/api/getTasksApi';
 import { useQuery } from '@tanstack/react-query';
 

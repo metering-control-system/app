@@ -7,6 +7,10 @@ const DashboardLayout = () => {
                 name='tasks'
                 options={{ title: 'Tasks', headerShown: false }}
             />
+            <Tabs.Screen
+                name='profile'
+                options={{ title: 'Profile', headerShown: false }}
+            />
         </Tabs>
     );
 };

@@ -1,7 +1,7 @@
 import { useSyncQueriesExternal } from 'react-query-external-sync';
 import * as ExpoDevice from 'expo-device';
 import { Platform } from 'react-native';
-// eslint-disable-next-line import/no-unresolved
+
 import { queryClient } from '@/shared/api/queryClient';
 import Constants from 'expo-constants';
 

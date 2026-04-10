@@ -1,9 +1,8 @@
-// eslint-disable-next-line import/no-unresolved
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import { useLocalSearchParams } from 'expo-router';
 import { StyleSheet, Text, TextInput, View } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
-// eslint-disable-next-line import/no-unresolved
+
 import { tasks } from '@/shared/consts/tasks';
 
 const TaskDescription = () => {
