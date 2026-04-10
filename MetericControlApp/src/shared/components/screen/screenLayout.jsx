@@ -34,7 +34,8 @@ export default function ScreenLayout({
                 { paddingTop: insets.top, paddingBottom: insets.bottom },
                 centered && { justifyContent: 'center', alignItems: 'center' },
                 style,
-            ]}>
+            ]}
+            {...other}>
             {children}
         </View>
     );

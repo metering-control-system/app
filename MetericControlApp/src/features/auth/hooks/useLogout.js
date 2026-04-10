@@ -17,6 +17,11 @@ const useLogout = () => {
 
     const logoutUser = async () => {
         const refreshToken = await tokenStorage.getRefreshToken();
+        if (!refreshToken) {
+            await tokenStorage.clearTokens();
+            clearSession();
+            return;
+        }
         mutate(refreshToken);
     };
 
