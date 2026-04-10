@@ -1,8 +1,9 @@
 import { QueryClientProvider } from '@tanstack/react-query';
-// eslint-disable-next-line import/no-unresolved
+
 import { queryClient } from '@/shared/api/queryClient';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'react-native';
+import AuthBootstrap from '@/features/auth/components/layout/authBootstrap';
 
 let TanstackQueryDevTools = ({ children }) => children;
 
@@ -11,32 +12,17 @@ if (__DEV__) {
         require('@/shared/lib/devtools/tanstackQueryDevTools').default;
 }
 
-const MainLayout = () => {
+const RootLayout = () => {
     return (
         <QueryClientProvider client={queryClient}>
             <TanstackQueryDevTools>
-                <StatusBar hidden={true} />
-                <Stack
-                    screenOptions={{
-                        headerTitleAlign: 'center',
-                        headerTintColor: 'grey',
-                    }}>
-                    <Stack.Screen
-                        name='index'
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name='(tabs)'
-                        options={{ headerShown: false }}
-                    />
-                    <Stack.Screen
-                        name='taskDetails'
-                        options={{ headerShown: false }}
-                    />
-                </Stack>
+                <AuthBootstrap>
+                    <StatusBar hidden={true} />
+                    <Stack screenOptions={{ headerShown: false }} />
+                </AuthBootstrap>
             </TanstackQueryDevTools>
         </QueryClientProvider>
     );
 };
 
-export default MainLayout;
+export default RootLayout;
