@@ -1,8 +1,9 @@
 import { SectionList, StyleSheet, Text } from 'react-native';
-// eslint-disable-next-line import/no-unresolved
+
 import Task from '@/features/tasks/components/task';
-// eslint-disable-next-line import/no-unresolved
+
 import { tasks } from '@/shared/consts/tasks';
+import { colors } from '@/shared/consts/baseColors';
 
 const TasksList = () => {
     return (
@@ -50,16 +51,4 @@ const styles = StyleSheet.create({
     },
 });
 
-const colors = StyleSheet.create({
-    warning: {
-        backgroundColor: '#ffd6d6',
-        borderColor: 'rgba(255, 58, 58, 0.3)',
-        color: '#7a1c1c',
-    },
-    primary: {
-        backgroundColor: '#d4f7cf',
-        borderColor: 'rgba(84, 216, 56, 0.3)',
-        color: '#1e4620',
-    },
-});
 export default TasksList;

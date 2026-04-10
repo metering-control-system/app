@@ -1,5 +1,5 @@
-import ScreenLayout from '../../shared/components/screen/screenLayout';
-import TasksList from '../../features/tasks/components/taskList';
+import TasksList from '@/features/tasks/components/taskList';
+import ScreenLayout from '@/shared/components/screen/screenLayout';
 
 const TaskScreen = () => {
     return (
