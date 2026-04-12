@@ -3,7 +3,7 @@ import useSession from '@/features/auth/hooks/useSession';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 
 const AuthBootstrap = ({ children }) => {
-    const { isPending, refreshTokens } = useSession();
+    const { isPending, refreshSession } = useSession();
     const didInit = useRef(false);
 
     useEffect(() => {
@@ -12,8 +12,8 @@ const AuthBootstrap = ({ children }) => {
         }
 
         didInit.current = true;
-        void refreshTokens();
-    }, [refreshTokens]);
+        void refreshSession();
+    }, [refreshSession]);
 
     if (isPending) {
         return <ScreenLoader />;

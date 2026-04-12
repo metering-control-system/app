@@ -1,48 +1,27 @@
-import { useMutation } from '@tanstack/react-query';
-import { refresh } from '@/features/auth/api/refresh';
 import tokenStorage from '@/features/auth/lib/tokenStorage';
 import useAuth from '@/features/auth/store/useAuth';
+import refreshToken from '@/features/auth/lib/refreshToken';
+import { useState } from 'react';
 
 const useSession = () => {
-    const setToken = useAuth((state) => state.setToken);
     const clearSession = useAuth((state) => state.clearSession);
     const setAuthChecked = useAuth((state) => state.setAuthChecked);
+    const [isPending, setIsPending] = useState(false);
 
-    const { mutateAsync, isPending } = useMutation({
-        mutationFn: refresh,
-        onSuccess: async (data) => {
-            const token = data.access;
-            if (!token) {
-                await tokenStorage.clearTokens();
-                clearSession();
-                return;
-            }
-            setToken(token);
-            await tokenStorage.setAccessToken(token);
-        },
-        onError: async () => {
+    const refreshSession = async () => {
+        try {
+            setIsPending(true);
+            await refreshToken();
+        } catch {
             await tokenStorage.clearTokens();
             clearSession();
-        },
-        onSettled: () => {
+        } finally {
             setAuthChecked();
-        },
-    });
-
-    const refreshTokens = async () => {
-        const refreshToken = await tokenStorage.getRefreshToken();
-
-        if (!refreshToken) {
-            await tokenStorage.clearTokens();
-            clearSession();
-            setAuthChecked();
-            return;
+            setIsPending(false);
         }
-
-        await mutateAsync(refreshToken);
     };
 
-    return { isPending, refreshTokens };
+    return { isPending, refreshSession };
 };
 
 export default useSession;
