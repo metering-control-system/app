@@ -1,13 +1,20 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { Controller, useForm } from 'react-hook-form';
-import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
+import {
+    Alert,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
+} from 'react-native';
 
 import {
     taskFormDefaultValues,
     taskFormSchema,
 } from '@/features/tasks/model/taskFormSchema';
 
-const TaskDetailsForm = ({ initialValues, onSubmit }) => {
+const TaskDetailsForm = ({ initialValues }) => {
     const {
         control,
         handleSubmit,
@@ -17,6 +24,13 @@ const TaskDetailsForm = ({ initialValues, onSubmit }) => {
         mode: 'onChange',
         defaultValues: initialValues || taskFormDefaultValues,
     });
+
+    const onSubmit = () => {
+        Alert.alert(
+            'Форма валидна',
+            'Пока отправка работает как заглушка. Позже подключим API.'
+        );
+    };
 
     return (
         <View style={styles.form}>

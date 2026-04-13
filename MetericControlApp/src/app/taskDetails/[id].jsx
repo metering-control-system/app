@@ -1,5 +1,5 @@
 import { useEffect, useRef } from 'react';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
 
 import ScreenLayout from '@/shared/components/screen/screenLayout';
@@ -16,6 +16,7 @@ const TaskDescription = () => {
 
     useEffect(() => {
         if (!id || idRef.current) return;
+
         idRef.current = id;
     }, [id]);
 
@@ -32,21 +33,11 @@ const TaskDescription = () => {
           }
         : taskFormDefaultValues;
 
-    const handleSubmit = () => {
-        Alert.alert(
-            'Форма валидна',
-            'Пока отправка работает как заглушка. Позже подключим API.'
-        );
-    };
-
     return (
         <ScreenLayout safe style={{ justifyContent: 'center' }}>
             <ScreenLayout style={styles.card}>
                 <Text style={styles.cardTitle}>Информация до начала работ</Text>
-                <TaskDetailsForm
-                    initialValues={initialValues}
-                    onSubmit={handleSubmit}
-                />
+                <TaskDetailsForm initialValues={initialValues} />
             </ScreenLayout>
         </ScreenLayout>
     );
