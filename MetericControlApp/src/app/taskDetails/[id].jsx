@@ -1,44 +1,38 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 import { Alert, StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-// eslint-disable-next-line import/no-unresolved
+
 import ScreenLayout from '@/shared/components/screen/screenLayout';
-// eslint-disable-next-line import/no-unresolved
+
 import { tasks } from '@/shared/consts/tasks';
-// eslint-disable-next-line import/no-unresolved
+
 import TaskDetailsForm from '@/features/tasks/components/taskDetailsForm';
-// eslint-disable-next-line import/no-unresolved
+
 import { taskFormDefaultValues } from '@/features/tasks/model/taskFormSchema';
 
 const TaskDescription = () => {
     const { id } = useLocalSearchParams();
     const idRef = useRef();
-    const [formData, setFormData] = useState(taskFormDefaultValues);
 
     useEffect(() => {
         if (!id || idRef.current) return;
-
         idRef.current = id;
-
-        const task = tasks.find((item) => item.id === idRef.current);
-
-        if (!task) {
-            return;
-        }
-
-        setFormData({
-            customerName: task.customerName || '',
-            personalAccount: task.personalAccount || '',
-            meter: {
-                type: task.meter?.type || '',
-                number: task.meter?.number || '',
-            },
-        });
     }, [id]);
 
-    const handleSubmit = (values) => {
-        setFormData(values);
+    const task = tasks.find((item) => item.id === idRef.current);
 
+    const initialValues = task
+        ? {
+              customerName: task.customerName || '',
+              personalAccount: task.personalAccount || '',
+              meter: {
+                  type: task.meter?.type || '',
+                  number: task.meter?.number || '',
+              },
+          }
+        : taskFormDefaultValues;
+
+    const handleSubmit = () => {
         Alert.alert(
             'Форма валидна',
             'Пока отправка работает как заглушка. Позже подключим API.'
@@ -50,7 +44,7 @@ const TaskDescription = () => {
             <ScreenLayout style={styles.card}>
                 <Text style={styles.cardTitle}>Информация до начала работ</Text>
                 <TaskDetailsForm
-                    initialValues={formData}
+                    initialValues={initialValues}
                     onSubmit={handleSubmit}
                 />
             </ScreenLayout>
