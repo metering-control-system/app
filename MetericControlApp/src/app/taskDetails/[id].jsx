@@ -8,7 +8,7 @@ import { tasks } from '@/shared/consts/tasks';
 
 import TaskDetailsForm from '@/features/tasks/components/taskDetailsForm';
 
-import { taskFormDefaultValues } from '@/features/tasks/model/taskFormSchema';
+import { taskFormDefaultValues } from '@/features/tasks/constants/taskFormDefaults';
 
 const TaskDescription = () => {
     const { id } = useLocalSearchParams();

@@ -9,10 +9,8 @@ import {
     View,
 } from 'react-native';
 
-import {
-    taskFormDefaultValues,
-    taskFormSchema,
-} from '@/features/tasks/model/taskFormSchema';
+import { taskFormSchema } from '@/features/tasks/model/taskFormSchema';
+import { taskFormDefaultValues } from '@/features/tasks/constants/taskFormDefaults';
 
 const TaskDetailsForm = ({ initialValues }) => {
     const {

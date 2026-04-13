@@ -28,9 +28,3 @@ export const taskFormSchema = z.object({
             .max(40, 'Номер старого ПУ слишком длинный'),
     }),
 });
-
-export const taskFormDefaultValues = {
-    customerName: '',
-    personalAccount: '',
-    meter: { type: '', number: '' },
-};
