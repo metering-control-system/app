@@ -1,96 +1,43 @@
-// eslint-disable-next-line import/no-unresolved
-import ScreenLayout from '@/shared/components/screen/screenLayout';
+import { useEffect, useRef } from 'react';
+import { StyleSheet, Text } from 'react-native';
 import { useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, TextInput, View } from 'react-native';
-import { useEffect, useRef, useState } from 'react';
-// eslint-disable-next-line import/no-unresolved
+
+import ScreenLayout from '@/shared/components/screen/screenLayout';
+
 import { tasks } from '@/shared/consts/tasks';
+
+import TaskDetailsForm from '@/features/tasks/components/taskDetailsForm';
+
+import { taskFormDefaultValues } from '@/features/tasks/constants/taskFormDefaults';
 
 const TaskDescription = () => {
     const { id } = useLocalSearchParams();
     const idRef = useRef();
-    const [formData, setFormData] = useState({});
 
     useEffect(() => {
         if (!id || idRef.current) return;
+
         idRef.current = id;
-        setFormData(tasks.find((task) => task.id === idRef.current));
     }, [id]);
+
+    const task = tasks.find((item) => item.id === idRef.current);
+
+    const initialValues = task
+        ? {
+              customerName: task.customerName || '',
+              personalAccount: task.personalAccount || '',
+              meter: {
+                  type: task.meter?.type || '',
+                  number: task.meter?.number || '',
+              },
+          }
+        : taskFormDefaultValues;
 
     return (
         <ScreenLayout safe style={{ justifyContent: 'center' }}>
             <ScreenLayout style={styles.card}>
                 <Text style={styles.cardTitle}>Информация до начала работ</Text>
-                <View style={styles.form}>
-                    <View style={styles.control}>
-                        <Text nativeID='name' style={styles.label}>
-                            ФИО
-                        </Text>
-                        <TextInput
-                            placeholder='Введите имя'
-                            value={formData?.customerName}
-                            style={styles.input}
-                            accessibilityLabelledBy='name'
-                            onChangeText={(value) =>
-                                setFormData((fd) => ({
-                                    ...fd,
-                                    customerName: value,
-                                }))
-                            }
-                        />
-                    </View>
-                    <View style={styles.control}>
-                        <Text nativeID='personalAccount' style={styles.label}>
-                            Лицевой счет
-                        </Text>
-                        <TextInput
-                            placeholder='Введите номер ЛС'
-                            value={formData?.personalAccount}
-                            style={styles.input}
-                            accessibilityLabelledBy='personalAccount'
-                            onChangeText={(value) =>
-                                setFormData((fd) => ({
-                                    ...fd,
-                                    personalAccount: value,
-                                }))
-                            }
-                        />
-                    </View>
-                    <View style={styles.control}>
-                        <Text nativeID='meterType' style={styles.label}>
-                            Тип старого ПУ
-                        </Text>
-                        <TextInput
-                            placeholder='Введите тип старого ПУ'
-                            value={formData?.meter?.type}
-                            style={styles.input}
-                            accessibilityLabelledBy='meterType'
-                            onChangeText={(value) =>
-                                setFormData((fd) => ({
-                                    ...fd,
-                                    meter: { ...fd.meter, type: value },
-                                }))
-                            }
-                        />
-                    </View>
-                    <View style={styles.control}>
-                        <Text nativeID='meterNumber' style={styles.label}>
-                            Номер старого ПУ
-                        </Text>
-                        <TextInput
-                            placeholder='Введите номер старого ПУ'
-                            value={formData?.meter?.number}
-                            style={styles.input}
-                            accessibilityLabelledBy='meterNumber'
-                            onChangeText={(value) =>
-                                setFormData((fd) => ({
-                                    ...fd,
-                                    meter: { ...fd.meter, number: value },
-                                }))
-                            }
-                        />
-                    </View>
-                </View>
+                <TaskDetailsForm initialValues={initialValues} />
             </ScreenLayout>
         </ScreenLayout>
     );
@@ -115,21 +62,6 @@ const styles = StyleSheet.create({
         marginBottom: 15,
     },
     cardTitle: { fontSize: 18, fontWeight: 'bold', marginVertical: 15 },
-    cardText: { fontSize: 14, fontWeight: 'normal' },
-    form: {
-        paddingHorizontal: 15,
-        width: '100%',
-        borderTopWidth: 1,
-        borderTopColor: '#ddd',
-    },
-    control: { paddingHorizontal: 5, marginVertical: 10 },
-    label: { fontSize: 12, color: '#ddd', marginBottom: 10 },
-    input: {
-        backgroundColor: '#e1ebfd',
-        color: '#000',
-        width: '100%',
-        borderRadius: 12,
-    },
 });
 
 export default TaskDescription;
