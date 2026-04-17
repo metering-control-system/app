@@ -1,18 +1,20 @@
 import { z } from 'zod';
 
 export const taskFormSchema = z.object({
-    customerName: z
-        .string()
-        .trim()
-        .min(1, 'Введите ФИО')
-        .min(5, 'ФИО слишком короткое')
-        .max(150, 'ФИО слишком длинное'),
+    customer: z.object({
+        customerName: z
+            .string()
+            .trim()
+            .min(1, 'Введите ФИО')
+            .min(5, 'ФИО слишком короткое')
+            .max(150, 'ФИО слишком длинное'),
 
-    personalAccount: z
-        .string()
-        .trim()
-        .min(1, 'Введите лицевой счет')
-        .regex(/^\d{10,12}$/, 'Лицевой счет должен содержать 10-12 цифр'),
+        personalAccount: z
+            .string()
+            .trim()
+            .min(1, 'Введите лицевой счет')
+            .regex(/^\d{10,12}$/, 'Лицевой счет должен содержать 10-12 цифр'),
+    }),
 
     meter: z.object({
         type: z
