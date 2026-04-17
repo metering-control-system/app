@@ -1,6 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useForm } from 'react-hook-form';
-import { FormInput } from '@/features/auth/components/input';
+import { FormInput } from '@/shared/components/input/input';
 import { loginSchema } from '@/features/auth/validation/loginSchema';
 import { useLogin } from '@/features/auth/hooks/useLogin';
 import { zodResolver } from '@hookform/resolvers/zod';
