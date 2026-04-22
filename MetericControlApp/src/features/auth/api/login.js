@@ -1,7 +1,7 @@
-import { baseApi } from '@/shared/api/baseApi';
+import { authApi } from '@/shared/api/authApi';
 
 export const login = ({ login, password }) => {
-    return baseApi
+    return authApi
         .post('auth/login/', { username: login, password })
         .then((response) => response.data);
 };

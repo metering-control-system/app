@@ -30,8 +30,7 @@ const LoginForm = ({ setError }) => {
     };
 
     const onError = (error) => {
-        //eslint-disable-next-line
-        console.log(error);
+        console.error(error);
     };
 
     return (

@@ -1,7 +1,7 @@
-import { baseApi } from '@/shared/api/baseApi';
+import { authApi } from '@/shared/api/authApi';
 
 export const refresh = (refreshToken) => {
-    return baseApi
+    return authApi
         .post('auth/refresh/', { refresh: refreshToken })
         .then((response) => response.data);
 };
