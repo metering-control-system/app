@@ -11,7 +11,7 @@ const Task = ({ task }) => {
         <Card
             clickable
             onPress={() => {
-                router.push(`taskDetails/${task.id}`);
+                router.push(`/(authorized)/taskDetails/${task.id}`);
             }}
             title={task.customer?.address}
             titleAlign={'flex-end'}>
