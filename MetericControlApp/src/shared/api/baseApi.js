@@ -2,6 +2,8 @@ import axios from 'axios';
 import Constants from 'expo-constants';
 import useAuth from '@/features/auth/store/useAuth';
 import refreshToken from '@/features/auth/lib/refreshToken';
+import clearSessionState from '@/features/auth/lib/clearSessionState';
+import { queryClient } from '@/shared/api/queryClient';
 
 const hostIP =
     Constants.expoGoConfig?.debuggerHost?.split(`:`)[0] ||
@@ -56,6 +58,7 @@ baseApi.interceptors.response.use(
 
             return baseApi(request);
         } catch (error) {
+            await clearSessionState(queryClient);
             return Promise.reject(error);
         }
     }
