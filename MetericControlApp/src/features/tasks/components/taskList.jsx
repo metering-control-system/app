@@ -1,32 +1,37 @@
-import { SectionList, StyleSheet, Text } from 'react-native';
+import { SectionList, StyleSheet, Text, View } from 'react-native';
 
 import Task from '@/features/tasks/components/task';
+import useTasks from '@/features/tasks/hooks/useTasks';
+import { processTasks } from '@/features/tasks/components/taskSort';
 
-import { tasks } from '@/shared/consts/tasks';
 import { colors } from '@/shared/consts/baseColors';
 
 const TasksList = () => {
+    const { tasks = [] } = useTasks();
+    const { groupedPriority, groupedNormal } = processTasks(tasks);
+
     return (
         <SectionList
             style={styles.list}
             sections={[
-                {
-                    title: 'Срочные',
-                    data: tasks.filter((task) => task.isUrgent),
-                },
-                {
-                    title: 'Обычные',
-                    data: tasks.filter((task) => !task.isUrgent),
-                },
+                { title: 'Срочные', data: groupedPriority },
+                { title: 'Обычные', data: groupedNormal },
             ]}
-            renderItem={({ item: task }) => <Task task={task} />}
-            keyExtractor={(item) => item.id}
+            renderItem={({ item: group }) => (
+                <View>
+                    {group.map((task) => (
+                        <Task key={task.id} task={task} />
+                    ))}
+                </View>
+            )}
+            keyExtractor={(item) => item[0]?.id?.toString() || 'key'}
             contentContainerStyle={styles.list}
             renderSectionHeader={({ section }) => (
                 <Text
                     style={[
                         styles.listHeader,
-                        section?.data[0]?.isUrgent
+                        section?.data[0]?.[0]?.manual_priority !==
+                        'NOT_SPECIFIED'
                             ? colors.warning
                             : colors.primary,
                     ]}>

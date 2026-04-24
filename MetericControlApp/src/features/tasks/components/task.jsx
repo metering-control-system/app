@@ -14,10 +14,12 @@ const Task = ({ task }) => {
                 pressed ? styles.btnPressed : undefined,
             ]}>
             <View>
-                <Text style={styles.cardTitle}>{task.addr}</Text>
+                <Text style={styles.cardTitle}>{task.address}</Text>
                 <View style={{ paddingVertical: 15, columnGap: 15 }}>
-                    <Text style={styles.cardText}>{task.customerName}</Text>
-                    <Text style={styles.cardText}>Срок: {task.period}</Text>
+                    <Text style={styles.cardText}>{task.consumer_contact}</Text>
+                    <Text style={styles.cardText}>
+                        Создано: {task.created_at}
+                    </Text>
                 </View>
                 <View
                     style={{
