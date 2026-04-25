@@ -1,20 +1,26 @@
 import { Pressable, StyleSheet, View } from 'react-native';
-import CameraButton from '@/shared/components/camera/cameraButton';
-import PictureWrapper from '@/shared/components/wrapper/pictureCameraWrapper';
+import CameraButton from '@/shared/components/media/camera/cameraButton';
+import PictureWrapper from '@/shared/components/media/imageWrapper';
 import { useState } from 'react';
-import PhotoPreviewModal from '@/shared/components/modal/photoPreviewModal';
+import ImagePreview from '@/shared/components/media/imagePreview';
 import { Entypo } from '@expo/vector-icons';
+import ImagePicker from '@/shared/components/media/picker/imagePicker';
 
-export default function CameraBlock({
+export default function MediaBlock({
     uri,
     handleOpenCamera,
     handleDeletePhoto,
+    handleUploadPhoto,
+    handleUpdatePhoto,
 }) {
     const [modalVisible, setModalVisible] = useState(false);
 
     return (
         <View style={styles.container}>
-            <CameraButton handleOpenCamera={handleOpenCamera} />
+            <View style={{ width: '100%', gap: 10 }}>
+                <CameraButton handleOpenCamera={handleOpenCamera} />
+                <ImagePicker handleUploadPhoto={handleUploadPhoto} />
+            </View>
             <PictureWrapper
                 uri={uri}
                 onPress={() => {
@@ -29,8 +35,9 @@ export default function CameraBlock({
                 onPress={handleDeletePhoto}>
                 <Entypo name='circle-with-cross' size={20} color='#999' />
             </Pressable>
-            <PhotoPreviewModal
+            <ImagePreview
                 uri={uri}
+                handleUpdatePhoto={handleUpdatePhoto}
                 setModalVisible={setModalVisible}
                 modalVisible={modalVisible}
             />
