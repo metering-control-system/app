@@ -1,21 +1,25 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
 import Card from '@/shared/components/wrapper/card';
-import { colors } from '@/shared/consts/baseColors';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
+import { taskPriority } from '@/features/tasks/constants/taskPriority';
+import {
+    taskPriorityColors,
+    taskStatusColors,
+} from '@/features/tasks/constants/taskColors';
+import { colors } from '@/shared/consts/baseColors';
 
 const Task = ({ task }) => {
     const router = useRouter();
-
     return (
         <Card
             clickable
             onPress={() => {
                 router.push(`/(authorized)/taskDetails/${task.id}`);
             }}
-            title={task.customer?.address}
-            titleAlign={'flex-end'}>
-            <Text style={styles.cardText}>{task.customer?.customerName}</Text>
+            title={task.address?.display_address}
+            titleAlign={'flex-start'}>
+            <Text style={styles.cardText}>{task.consumer?.full_name}</Text>
 
             <View style={styles.cardPeriod}>
                 <Text
@@ -26,11 +30,9 @@ const Task = ({ task }) => {
                             paddingHorizontal: 5,
                             borderWidth: 1,
                         },
-                        task.status === taskStatus.in_progress
-                            ? { ...colors.secondary }
-                            : { ...colors.ordinary },
+                        taskStatusColors[task?.status] ?? taskStatusColors.NEW,
                     ]}>
-                    {task.status}
+                    {taskStatus[task?.status] ?? 'не назначен'}
                 </Text>
                 <Text
                     style={[
@@ -40,13 +42,25 @@ const Task = ({ task }) => {
                             paddingHorizontal: 5,
                             borderWidth: 1,
                         },
-                        task.isUrgent
-                            ? { ...colors.warning }
-                            : { ...colors.primary },
+                        taskPriorityColors[task?.manual_priority] ??
+                            taskPriorityColors.NOT_SPECIFIED,
                     ]}>
-                    {task.isUrgent ? 'Срочно' : 'Новая'}
+                    {taskPriority[task?.manual_priority] ?? 'не назначена'}
                 </Text>
-                <Text style={styles.cardText}>Срок: {task.period}</Text>
+                {task.task_data?.has_request && (
+                    <Text
+                        style={[
+                            {
+                                borderRadius: 5,
+                                paddingVertical: 2,
+                                paddingHorizontal: 5,
+                                borderWidth: 1,
+                            },
+                            colors.primary,
+                        ]}>
+                        {task.task_data?.has_request ? 'по запросу' : null}
+                    </Text>
+                )}
             </View>
             <View
                 style={{
@@ -62,7 +76,11 @@ const Task = ({ task }) => {
                 <Text
                     style={
                         styles.cardText
-                    }>{`Лицевой счет: ${task.customer?.personalAccount}`}</Text>
+                    }>{`Лицевой счет: ${task.address?.account_number}`}</Text>
+                <Text
+                    style={
+                        styles.cardText
+                    }>{`Фаза ПУ: ${task.meter?.phase}`}</Text>
             </View>
         </Card>
     );

@@ -8,7 +8,6 @@ import { FormInput } from '@/shared/components/input/input';
 import FormButton from '@/shared/components/button/formButton';
 import Checkbox from '@/shared/components/button/checkbox';
 import { useEffect, useState } from 'react';
-import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import useChangeTaskStatus from '@/features/tasks/hooks/useChangeTaskStatus';
 import { colors } from '@/shared/consts/baseColors';
 import CameraBlock from '@/shared/components/camera/cameraBlock';
@@ -33,7 +32,7 @@ const TaskDetailsForm = ({ task, id }) => {
         (state) => state.photos.task?.[id]?.['new_meteric_control'] ?? null
     );
     const clearPhoto = useStorePictures((state) => state.clearPhoto);
-    const { changeStatus } = useChangeTaskStatus();
+    const { changeStatus, isPending } = useChangeTaskStatus();
 
     useEffect(() => {
         if (task) {
@@ -58,7 +57,7 @@ const TaskDetailsForm = ({ task, id }) => {
 
     const onSubmit = async () => {
         if (isValid && !isSubmitting) {
-            void changeStatus({ id: task?.id, status: taskStatus.in_progress });
+            void changeStatus({ id: task?.id, status: 'IN_PROGRESS' });
         }
     };
 
@@ -66,13 +65,23 @@ const TaskDetailsForm = ({ task, id }) => {
         <Card title='Информация до начала работ' style={styles.form}>
             <View style={styles.details}>
                 <View style={styles.control}>
-                    <Text nativeID='customerName' style={styles.label}>
+                    <Text nativeID='consumerName' style={styles.label}>
                         ФИО
                     </Text>
                     <FormInput
-                        name='customer.customerName'
+                        name='consumer.full_name'
                         control={control}
-                        placeholder='Введите имя'
+                        placeholder='Введите имя клиента'
+                    />
+                </View>
+                <View style={styles.control}>
+                    <Text nativeID='consumerPhoneNumber' style={styles.label}>
+                        Номер телефона
+                    </Text>
+                    <FormInput
+                        name='consumer.phone_number'
+                        control={control}
+                        placeholder='Введите номер телефона клиента'
                     />
                 </View>
                 <View style={styles.control}>
@@ -80,7 +89,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         Лицевой счет
                     </Text>
                     <FormInput
-                        name='customer.personalAccount'
+                        name='address.account_number'
                         control={control}
                         placeholder='Введите номер лицевого счета'
                     />
@@ -148,17 +157,41 @@ const TaskDetailsForm = ({ task, id }) => {
                     </>
                 )}
             </View>
+            <View style={styles.details}>
+                <View style={styles.control}>
+                    <Text nativeID='installationLocation' style={styles.label}>
+                        Место установки ПУ
+                    </Text>
+                    <FormInput
+                        name='meter.installation_location'
+                        control={control}
+                        placeholder='Введите место установки ПУ'
+                    />
+                </View>
+                <View style={styles.control}>
+                    <Text nativeID='reason' style={styles.label}>
+                        Причина замены
+                    </Text>
+                    <FormInput
+                        name='task_data.service_reason'
+                        control={control}
+                        placeholder='Введите причину замены'
+                    />
+                </View>
+            </View>
             <FormButton
-                isPending={isSubmitting}
+                isPending={isPending}
                 onPress={handleSubmit(onSubmit)}
-                disabled={!isValid || isSubmitting}
+                disabled={!isValid || isPending}
                 message={
-                    task?.status === taskStatus.in_progress
-                        ? 'Выполняется'
-                        : 'Приступить'
+                    isPending
+                        ? '...Загрузка'
+                        : task?.status === 'IN_PROGRESS'
+                          ? 'Выполняется'
+                          : 'Приступить'
                 }
                 style={
-                    task?.status === taskStatus.in_progress
+                    task?.status === 'IN_PROGRESS' && !isPending
                         ? colors.primary
                         : colors.secondary
                 }
