@@ -1,19 +1,32 @@
 import { z } from 'zod';
 
 export const taskFormSchema = z.object({
-    customer: z.object({
-        customerName: z
+    consumer: z.object({
+        // eslint-disable-next-line camelcase
+        full_name: z
             .string()
             .trim()
             .min(1, 'Введите ФИО')
             .min(5, 'ФИО слишком короткое')
             .max(150, 'ФИО слишком длинное'),
-
-        personalAccount: z
+        // eslint-disable-next-line camelcase
+        phone_number: z
+            .string()
+            .trim()
+            .min(1, 'Введите номер телефона')
+            .transform((value) => value.replace(/[^\d+]/g, ''))
+            .refine(
+                (value) => /^(?:\+7|7|8)\d{10}$/.test(value),
+                'Телефон должен быть в формате +7XXXXXXXXXX'
+            ),
+    }),
+    address: z.object({
+        // eslint-disable-next-line camelcase
+        account_number: z
             .string()
             .trim()
             .min(1, 'Введите лицевой счет')
-            .regex(/^\d{10,12}$/, 'Лицевой счет должен содержать 10-12 цифр'),
+            .regex(/^\d*$/, 'Лицевой счет должен содержать только цифры'),
     }),
 
     meter: z.object({
@@ -28,5 +41,21 @@ export const taskFormSchema = z.object({
             .trim()
             .min(1, 'Введите номер старого ПУ')
             .max(40, 'Номер старого ПУ слишком длинный'),
+
+        // eslint-disable-next-line camelcase
+        installation_location: z
+            .string()
+            .trim()
+            .min(1, 'Введите место установки'),
     }),
+    realMeter: z
+        .object({
+            number: z
+                .string()
+                .trim()
+                .max(40, 'Номер фактического ПУ слишком длинный'),
+        })
+        .optional(),
+    // eslint-disable-next-line camelcase
+    task_data: z.object({ service_reason: z.string().trim() }).optional(),
 });

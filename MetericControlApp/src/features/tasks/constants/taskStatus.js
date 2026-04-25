@@ -1,7 +1,6 @@
 export const taskStatus = {
-    new: 'new',
-    //eslint-disable-next-line
-    in_progress: 'in progress',
-    completed: 'completed',
-    rejected: 'rejected',
+    NEW: 'новая',
+    IN_PROGRESS: 'в работе',
+    COMPLETED: 'завершена',
+    REJECTED: 'отклонена',
 };
