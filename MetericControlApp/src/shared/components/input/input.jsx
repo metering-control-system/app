@@ -2,11 +2,17 @@ import { useController } from 'react-hook-form';
 import { StyleSheet, Text, TextInput } from 'react-native';
 import { colors } from '@/shared/consts/baseColors';
 
-export const FormInput = ({ control, name, placeholder, ...other }) => {
+export const FormInput = ({
+    control,
+    name,
+    placeholder,
+    multiline,
+    ...other
+}) => {
     const {
         field,
         fieldState: { invalid, error },
-    } = useController({ name, control, rules: { required: true } });
+    } = useController({ name, control });
 
     return (
         <>
@@ -18,6 +24,7 @@ export const FormInput = ({ control, name, placeholder, ...other }) => {
                 onChangeText={field.onChange}
                 placeholder={placeholder}
                 accessibilityLabelledBy={name}
+                multiline={multiline}
                 {...other}
             />
             {invalid && <Text style={styles.error}>{error.message}</Text>}

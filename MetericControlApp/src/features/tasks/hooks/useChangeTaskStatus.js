@@ -6,7 +6,7 @@ import useParams from '@/features/tasks/store/useParams';
 const useChangeTaskStatus = () => {
     const setUpdateSince = useParams((state) => state.setUpdateSince);
 
-    const { mutate, error } = useMutation({
+    const { mutate, error, isPending } = useMutation({
         mutationFn: changeTaskStatus,
         onMutate: async ({ id, status }, context) => {
             await context.client.cancelQueries({ queryKey: ['tasks'] });
@@ -43,7 +43,7 @@ const useChangeTaskStatus = () => {
         mutate({ id, status });
     };
 
-    return { changeStatus, error };
+    return { changeStatus, error, isPending };
 };
 
 export default useChangeTaskStatus;

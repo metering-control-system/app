@@ -6,6 +6,11 @@ export const colors = StyleSheet.create({
         backgroundColor: '#fff5f5',
         color: '#d84c4c',
     },
+    attention: {
+        backgroundColor: '#fefcbf',
+        color: '#744210',
+        borderColor: '#f6e05e',
+    },
     primary: {
         backgroundColor: '#d4f7cf',
         borderColor: 'rgba(84, 216, 56, 0.3)',
