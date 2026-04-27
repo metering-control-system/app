@@ -1,54 +1,46 @@
-import { SectionList, StyleSheet, Text } from 'react-native';
+import { FlatList, StyleSheet, Text } from 'react-native';
 
 import Task from '@/features/tasks/components/task';
+import useTasks from '@/features/tasks/hooks/useTasks';
+import ScreenLoader from '@/shared/components/loader/screenLoader';
+import useUpdateTasks from '@/features/tasks/hooks/useUpdateTasks';
+import { useEffect } from 'react';
 
-import { tasks } from '@/shared/consts/tasks';
-import { colors } from '@/shared/consts/baseColors';
+const TasksList = ({ setError }) => {
+    const { tasks, isPending, error } = useTasks();
+    const {
+        updateTasks,
+        isPending: isRefrehsing,
+        error: refreshError,
+    } = useUpdateTasks();
 
-const TasksList = () => {
+    useEffect(() => {
+        setError(null);
+        if (error) {
+            setError(error?.message);
+        } else if (refreshError) {
+            setError(refreshError?.message);
+        }
+    }, [error, refreshError]);
+
+    if (isPending) {
+        return <ScreenLoader />;
+    }
+
     return (
-        <SectionList
+        <FlatList
+            data={tasks ?? []}
             style={styles.list}
-            sections={[
-                {
-                    title: 'Срочные',
-                    data: tasks.filter((task) => task.isUrgent),
-                },
-                {
-                    title: 'Обычные',
-                    data: tasks.filter((task) => !task.isUrgent),
-                },
-            ]}
             renderItem={({ item: task }) => <Task task={task} />}
             keyExtractor={(item) => item.id}
             contentContainerStyle={styles.list}
-            renderSectionHeader={({ section }) => (
-                <Text
-                    style={[
-                        styles.listHeader,
-                        section?.data[0]?.isUrgent
-                            ? colors.warning
-                            : colors.primary,
-                    ]}>
-                    {section.title}
-                </Text>
-            )}
+            ListEmptyComponent={<Text>No tasks found.</Text>}
+            refreshing={isRefrehsing}
+            onRefresh={updateTasks}
         />
     );
 };
 
-const styles = StyleSheet.create({
-    list: { minWidth: '100%' },
-    listHeader: {
-        fontSize: 18,
-        fontWeight: 'bold',
-        paddingHorizontal: 5,
-        paddingVertical: 10,
-        borderRadius: 24,
-        borderStyle: 'solid',
-        borderWidth: 1,
-        marginVertical: 5,
-    },
-});
+const styles = StyleSheet.create({ list: { minWidth: '100%', gap: 20 } });
 
 export default TasksList;

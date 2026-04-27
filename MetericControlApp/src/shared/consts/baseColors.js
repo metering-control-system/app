@@ -2,13 +2,28 @@ import { StyleSheet } from 'react-native';
 
 export const colors = StyleSheet.create({
     warning: {
-        backgroundColor: '#ffd6d6',
-        borderColor: 'rgba(255, 58, 58, 0.3)',
-        color: '#7a1c1c',
+        borderColor: '#d84c4c',
+        backgroundColor: '#fff5f5',
+        color: '#d84c4c',
+    },
+    attention: {
+        backgroundColor: '#fefcbf',
+        color: '#744210',
+        borderColor: '#f6e05e',
     },
     primary: {
         backgroundColor: '#d4f7cf',
         borderColor: 'rgba(84, 216, 56, 0.3)',
         color: '#1e4620',
+    },
+    secondary: {
+        backgroundColor: '#b8d9ff',
+        borderColor: '#278cff',
+        color: '#1a5eb0',
+    },
+    ordinary: {
+        backgroundColor: '#e4e4e4',
+        borderColor: '#ababab',
+        color: '#727272',
     },
 });

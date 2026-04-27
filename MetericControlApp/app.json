@@ -19,15 +19,25 @@
       },
       "package": "com.pr1de.MetericControlApp"
     },
-    "extra": {
-      "eas": {
-        "projectId": "11ea2ffa-57a3-466f-b9a8-71bbeff51214"
-      }
-    },
-    "owner": "pr1de",
     "plugins": [
       "expo-router",
-      "expo-secure-store"
-    ]
+      "expo-secure-store",
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "Allow metric-control to access your camera",
+          "recordAudioAndroid": false,
+          "barcodeScannerEnabled": false
+        }
+      ],
+      "expo-image"
+    ],
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "22f0391a-fa8d-417b-857c-39673711ae68"
+      }
+    },
+    "owner": "pr1de"
   }
 }

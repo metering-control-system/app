@@ -1,57 +1,94 @@
-import { Pressable, Text, StyleSheet, View } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import { useRouter } from 'expo-router';
+import Card from '@/shared/components/wrapper/card';
+import { taskStatus } from '@/features/tasks/constants/taskStatus';
+import { taskPriority } from '@/features/tasks/constants/taskPriority';
+import {
+    taskPriorityColors,
+    taskStatusColors,
+} from '@/features/tasks/constants/taskColors';
+import { colors } from '@/shared/consts/baseColors';
 
 const Task = ({ task }) => {
     const router = useRouter();
-
     return (
-        <Pressable
+        <Card
+            clickable
             onPress={() => {
-                router.push(`taskDetails/${task.id}`);
+                router.push(`/(authorized)/taskDetails/${task.id}`);
             }}
-            style={({ pressed }) => [
-                styles.card,
-                pressed ? styles.btnPressed : undefined,
-            ]}>
-            <View>
-                <Text style={styles.cardTitle}>{task.addr}</Text>
-                <View style={{ paddingVertical: 15, columnGap: 15 }}>
-                    <Text style={styles.cardText}>{task.customerName}</Text>
-                    <Text style={styles.cardText}>Срок: {task.period}</Text>
-                </View>
-                <View
-                    style={{
-                        paddingVertical: 15,
-                        borderTopWidth: 1,
-                        borderColor: '#ddd',
-                        columnGap: 15,
-                    }}>
-                    <Text style={styles.cardText}>{task.personalAccount}</Text>
-                </View>
+            title={task.address?.display_address}
+            titleAlign={'flex-start'}>
+            <Text style={styles.cardText}>{task.consumer?.full_name}</Text>
+
+            <View style={styles.cardPeriod}>
+                <Text
+                    style={[
+                        {
+                            borderRadius: 5,
+                            paddingVertical: 2,
+                            paddingHorizontal: 5,
+                            borderWidth: 1,
+                        },
+                        taskStatusColors[task?.status] ?? taskStatusColors.NEW,
+                    ]}>
+                    {taskStatus[task?.status] ?? 'не назначен'}
+                </Text>
+                <Text
+                    style={[
+                        {
+                            borderRadius: 5,
+                            paddingVertical: 2,
+                            paddingHorizontal: 5,
+                            borderWidth: 1,
+                        },
+                        taskPriorityColors[task?.manual_priority] ??
+                            taskPriorityColors.NOT_SPECIFIED,
+                    ]}>
+                    {taskPriority[task?.manual_priority] ?? 'не назначена'}
+                </Text>
+                {task.task_data?.has_request && (
+                    <Text
+                        style={[
+                            {
+                                borderRadius: 5,
+                                paddingVertical: 2,
+                                paddingHorizontal: 5,
+                                borderWidth: 1,
+                            },
+                            colors.primary,
+                        ]}>
+                        {task.task_data?.has_request ? 'по запросу' : null}
+                    </Text>
+                )}
             </View>
-        </Pressable>
+            <View
+                style={{
+                    paddingVertical: 15,
+                    borderTopWidth: 1,
+                    borderColor: '#ddd',
+                    columnGap: 15,
+                }}>
+                <Text
+                    style={
+                        styles.cardText
+                    }>{`Тип ПУ: ${task.meter?.type}`}</Text>
+                <Text
+                    style={
+                        styles.cardText
+                    }>{`Лицевой счет: ${task.address?.account_number}`}</Text>
+                <Text
+                    style={
+                        styles.cardText
+                    }>{`Фаза ПУ: ${task.meter?.phase}`}</Text>
+            </View>
+        </Card>
     );
 };
 
 const styles = StyleSheet.create({
-    card: {
-        width: '100%',
-        flexDirection: 'column',
-        borderRadius: 12,
-        rowGap: 5,
-        minHeight: 100,
-        boxSizing: 'border-box',
-        shadowColor: '#000',
-        shadowOffset: { width: 10, height: 50 },
-        shadowOpacity: 1,
-        shadowRadius: 10,
-        paddingHorizontal: 5,
-        paddingVertical: 5,
-        backgroundColor: 'white',
-        marginBottom: 15,
-    },
-    cardTitle: { fontSize: 16, fontWeight: 'bold' },
-    cardText: { fontSize: 14, fontWeight: 'normal' },
+    cardText: { fontSize: 14, fontWeight: 'normal', color: '#9a9a9a' },
+    cardPeriod: { flexDirection: 'row', gap: 10, alignItems: 'center' },
     btnPressed: { opacity: 0.75 },
 });
 
