@@ -1,41 +1,35 @@
 import { useMutation } from '@tanstack/react-query';
 import { changeTaskStatus } from '@/features/tasks/api/changeTaskStatusApi';
-import { mergeTasks } from '@/features/tasks/lib/mergeTasks';
-import useParams from '@/features/tasks/store/useParams';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
 
 const useChangeTaskStatus = () => {
-    const setUpdateSince = useParams((state) => state.setUpdateSince);
+    const replaceTasks = useTasksStore((state) => state.replaceTasks);
+    const setUpdatedTasks = useTasksStore((state) => state.setUpdatedTasks);
 
     const { mutate, error, isPending } = useMutation({
         mutationFn: changeTaskStatus,
-        onMutate: async ({ id, status }, context) => {
-            await context.client.cancelQueries({ queryKey: ['tasks'] });
-            const previousTasks = context.client.getQueryData(['tasks']);
+        onMutate: async ({ id, status }) => {
+            const previousStoreTasks = useTasksStore.getState().tasks;
 
-            context.client.setQueryData(['tasks'], (oldTasks) => [
-                ...(oldTasks?.map((task) => {
+            const optimisticTasks =
+                previousStoreTasks?.map((task) => {
                     if (task.id === id) {
                         return { ...task, status };
                     }
                     return task;
-                }) ?? []),
-            ]);
-            return { previousTasks };
+                }) ?? [];
+
+            replaceTasks(optimisticTasks);
+
+            return { previousStoreTasks };
         },
-        onSuccess: async (data, _, onMutateResult, context) => {
-            const serverDate = data?.serverDate;
-            if (serverDate) {
-                setUpdateSince(serverDate);
+        onSuccess: (data) => {
+            if (data?.tasks) {
+                setUpdatedTasks([data.tasks]);
             }
-            context.client.setQueryData(['tasks'], (oldTasks = []) => [
-                ...mergeTasks(oldTasks, [data?.task]),
-            ]);
         },
-        onError: (err, newTodo, onMutateResult, context) => {
-            context.client.setQueryData(
-                ['tasks'],
-                onMutateResult.previousTasks
-            );
+        onError: (_error, _variables, context) => {
+            replaceTasks(context?.previousStoreTasks ?? null);
         },
     });
 
