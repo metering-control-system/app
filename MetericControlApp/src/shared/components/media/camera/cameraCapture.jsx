@@ -9,6 +9,7 @@ import {
 import CameraPermissionScreen from '@/shared/components/media/camera/cameraPermissionScreen';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import { compressCapturedImage } from '@/shared/lib/media/compressCapturedImage';
+import * as Linking from 'expo-linking';
 
 const flashModes = ['off', 'on', 'auto'];
 
@@ -96,6 +97,15 @@ export default function CameraCapture({
 
     if (!permission) {
         return <View style={styles.container} />;
+    }
+
+    if (!permission.canAskAgain) {
+        return (
+            <CameraPermissionScreen
+                style={styles.container}
+                requestPermission={async () => await Linking.openSettings()}
+            />
+        );
     }
 
     if (!permission.granted) {
