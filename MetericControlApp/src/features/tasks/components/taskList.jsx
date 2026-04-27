@@ -5,9 +5,18 @@ import useTasks from '@/features/tasks/hooks/useTasks';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useUpdateTasks from '@/features/tasks/hooks/useUpdateTasks';
 import { useEffect } from 'react';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
 
 const TasksList = ({ setError }) => {
-    const { tasks, isPending, error } = useTasks();
+    const tasks = useTasksStore((state) => state.tasks);
+    const {
+        fetchNextPage,
+        isPending,
+        error,
+        isFetching,
+        isFetchingNextPage,
+        hasNextPage,
+    } = useTasks();
     const {
         updateTasks,
         isPending: isRefrehsing,
@@ -28,16 +37,29 @@ const TasksList = ({ setError }) => {
     }
 
     return (
-        <FlatList
-            data={tasks ?? []}
-            style={styles.list}
-            renderItem={({ item: task }) => <Task task={task} />}
-            keyExtractor={(item) => item.id}
-            contentContainerStyle={styles.list}
-            ListEmptyComponent={<Text>No tasks found.</Text>}
-            refreshing={isRefrehsing}
-            onRefresh={updateTasks}
-        />
+        <>
+            <FlatList
+                data={tasks ?? []}
+                style={styles.list}
+                renderItem={({ item: task }) => <Task task={task} />}
+                keyExtractor={(item) => item.id}
+                contentContainerStyle={styles.list}
+                ListEmptyComponent={<Text>No tasks found.</Text>}
+                refreshing={isRefrehsing}
+                onRefresh={updateTasks}
+                onEndReached={() => {
+                    if (hasNextPage && !isFetching) {
+                        fetchNextPage({ cancelRefetch: false });
+                    }
+                }}
+                onEndReachedThreshold={1}
+            />
+            {isFetchingNextPage && (
+                <Text style={{ alignSelf: 'center', marginHorizontal: 10 }}>
+                    Идет загрузка...
+                </Text>
+            )}
+        </>
     );
 };
 

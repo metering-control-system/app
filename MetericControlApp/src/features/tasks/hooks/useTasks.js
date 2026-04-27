@@ -1,27 +1,64 @@
 import { getTasks } from '@/features/tasks/api/getTasksApi';
-import { useQuery } from '@tanstack/react-query';
-import useParams from '@/features/tasks/store/useParams';
+import { useInfiniteQuery } from '@tanstack/react-query';
+import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
+import { useEffect } from 'react';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
 
 const useTasks = () => {
-    const setUpdateSince = useParams((state) => state.setUpdateSince);
+    const setListSnapshotAt = useTasksSyncStore(
+        (state) => state.setListSnapshotAt
+    );
+    const setLastSyncAt = useTasksSyncStore((state) => state.setLastSyncAt);
+    const setUpdatedTasks = useTasksStore((state) => state.setUpdatedTasks);
 
     const {
-        data: tasks,
+        data,
+        fetchNextPage,
         isPending,
+        isFetching,
+        isFetchingNextPage,
+        hasNextPage,
         error,
-    } = useQuery({
+    } = useInfiniteQuery({
         queryKey: ['tasks'],
-        queryFn: async () => {
-            const response = await getTasks();
-            if (response.serverDate) {
-                setUpdateSince(response.serverDate);
+        queryFn: async ({ pageParam }) => {
+            const listSnapshotAt = useTasksSyncStore.getState().listSnapshotAt;
+            const lastSyncAt = useTasksSyncStore.getState().lastSyncAt;
+            const response = await getTasks({
+                limit: 5,
+                // eslint-disable-next-line camelcase
+                snapshot_at: listSnapshotAt,
+                cursor: pageParam,
+            });
+            if (response.snapshot_at) {
+                if (!listSnapshotAt) {
+                    setListSnapshotAt(response.snapshot_at);
+                }
+                if (!lastSyncAt) {
+                    setLastSyncAt(response.snapshot_at);
+                }
             }
-            return response.tasks ?? [];
+            return response;
         },
-        staleTime: Infinity,
+        initialPageParam: undefined,
+        getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
     });
 
-    return { tasks, error, isPending };
+    useEffect(() => {
+        if (data) {
+            const allTasks = data.pages.flatMap((page) => page.tasks ?? []);
+            setUpdatedTasks(allTasks);
+        }
+    }, [data]);
+
+    return {
+        fetchNextPage,
+        error,
+        isPending,
+        isFetching,
+        isFetchingNextPage,
+        hasNextPage,
+    };
 };
 
 export default useTasks;
