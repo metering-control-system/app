@@ -1,28 +1,23 @@
-import { mergeTasks } from '@/features/tasks/lib/mergeTasks';
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { getTasks } from '@/features/tasks/api/getTasksApi';
-import useParams from '@/features/tasks/store/useParams';
+import { useMutation } from '@tanstack/react-query';
+import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
+import { getTasksUpdate } from '@/features/tasks/api/getTasksUpdateApi';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
 
 const useUpdateTasks = () => {
-    const queryClient = useQueryClient();
-    const setUpdateSince = useParams((state) => state.setUpdateSince);
+    const setLastSyncAt = useTasksSyncStore((state) => state.setLastSyncAt);
+    const setUpdatedTasks = useTasksStore((state) => state.setUpdatedTasks);
 
     const { mutate, error, isPending } = useMutation({
         mutationFn: async () => {
-            const updateSince = useParams.getState().updateSince;
-            return getTasks(
-                //eslint-disable-next-line
-                updateSince ? { update_since: updateSince } : undefined
-            );
+            const lastSyncAt = useTasksSyncStore.getState().lastSyncAt;
+            return getTasksUpdate(lastSyncAt ? { lastSyncAt } : undefined);
         },
         onSuccess: (data) => {
             const serverDate = data?.serverDate;
             if (serverDate) {
-                setUpdateSince(serverDate);
+                setLastSyncAt(serverDate);
             }
-            queryClient.setQueryData(['tasks'], (oldTasks = []) => [
-                ...mergeTasks(oldTasks, data?.tasks ?? []),
-            ]);
+            setUpdatedTasks(data?.tasks);
         },
     });
 
