@@ -34,7 +34,6 @@ const TaskDetailsForm = ({ task, id }) => {
     const clearPhoto = useStorePictures((state) => state.clearPhoto);
     const { changeStatus, isPending } = useChangeTaskStatus();
     const setPhoto = useStorePictures((state) => state.setPhoto);
-    const { changeStatus } = useChangeTaskStatus();
 
     useEffect(() => {
         if (task) {

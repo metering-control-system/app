@@ -1,4 +1,4 @@
-import { ImageManipulator } from 'expo-image-manipulator';
+import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
 export const transformImage = async ({ uri, rotate = 0, compress = 1 }) => {
     if (!uri) {
@@ -13,8 +13,5 @@ export const transformImage = async ({ uri, rotate = 0, compress = 1 }) => {
 
     const renderedImage = await context.renderAsync();
 
-    return renderedImage.saveAsync({
-        compress,
-        format: ImageManipulator.SaveFormat.JPEG,
-    });
+    return renderedImage.saveAsync({ compress, format: SaveFormat.JPEG });
 };

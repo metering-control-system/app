@@ -30,11 +30,13 @@ export default function MediaBlock({
                     setModalVisible(true);
                 }}
             />
-            <Pressable
-                style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
-                onPress={handleDeletePhoto}>
-                <Entypo name='circle-with-cross' size={20} color='#999' />
-            </Pressable>
+            {uri && (
+                <Pressable
+                    style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
+                    onPress={handleDeletePhoto}>
+                    <Entypo name='circle-with-cross' size={20} color='#999' />
+                </Pressable>
+            )}
             <ImagePreview
                 uri={uri}
                 handleUpdatePhoto={handleUpdatePhoto}
