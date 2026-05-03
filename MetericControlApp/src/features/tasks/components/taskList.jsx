@@ -2,7 +2,7 @@ import { SectionList, StyleSheet, Text, View } from 'react-native';
 
 import Task from '@/features/tasks/components/task';
 import useTasks from '@/features/tasks/hooks/useTasks';
-import { processTasks } from '@/features/tasks/components/taskSort';
+import { processTasks } from '@/features/tasks/lib/taskSort';
 
 import { colors } from '@/shared/consts/baseColors';
 
