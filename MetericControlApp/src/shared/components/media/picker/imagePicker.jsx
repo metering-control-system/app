@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { validatePickedImage } from '@/shared/lib/media/validatePickedImage';
 
-export default function ImagePickerExample({ handleUploadPhoto }) {
+export default function ImagePickerButton({ handleUploadPhoto }) {
     const pickImage = async () => {
         const permissionResult =
             await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -24,7 +24,7 @@ export default function ImagePickerExample({ handleUploadPhoto }) {
 
         if (!result.canceled) {
             const asset = result.assets[0];
-            const validationError = validatePickedImage(asset);
+            const validationError = await validatePickedImage(asset);
 
             if (validationError) {
                 Alert.alert('Файл слишком большой', validationError);
