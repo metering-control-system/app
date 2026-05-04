@@ -1,4 +1,5 @@
 import {
+    Alert,
     FlatList,
     Modal,
     Pressable,
@@ -56,6 +57,11 @@ const ImagePreview = ({
             handleUpdatePhoto(updatedUri);
             setCurrentRotate(0);
             closeModal();
+        } catch (error) {
+            Alert.alert(
+                'Не удалось сохранить изменения',
+                error?.message ?? 'Попробуйте еще раз.'
+            );
         } finally {
             setIsApplying(false);
         }

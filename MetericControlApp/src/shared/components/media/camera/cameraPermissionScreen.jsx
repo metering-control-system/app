@@ -7,7 +7,7 @@ const CameraPermissionScreen = ({ style, requestPermission }) => {
     const [modalVisible, setModalVisible] = useState(false);
 
     return (
-        <View safe style={style}>
+        <View style={style}>
             <ScreenLayout safe style={[styles.topBar]}>
                 <Pressable onPress={() => setModalVisible(true)}>
                     <FontAwesome
@@ -35,7 +35,7 @@ const CameraPermissionScreen = ({ style, requestPermission }) => {
                     <Text style={styles.message}>
                         Зайдите в настройки. Перейдите в раздел приложения и
                         найдите это приложение. Нажмите на него и в разделе
-                        разрешения выдайт доступ к камере.
+                        разрешения выдайте доступ к камере.
                     </Text>
                     <Button
                         onPress={() => setModalVisible(false)}
