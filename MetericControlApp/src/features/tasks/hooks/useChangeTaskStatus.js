@@ -24,8 +24,8 @@ const useChangeTaskStatus = () => {
             return { previousStoreTasks };
         },
         onSuccess: (data) => {
-            if (data?.tasks) {
-                setUpdatedTasks([data.tasks]);
+            if (data) {
+                setUpdatedTasks([data]);
             }
         },
         onError: (_error, _variables, context) => {
