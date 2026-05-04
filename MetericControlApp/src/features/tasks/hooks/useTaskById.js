@@ -5,7 +5,7 @@ import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
 const useTaskById = (id) => {
     const tasks = useTasksStore((state) => state.tasks);
 
-    const taskFromStore = tasks?.find((task) => task.id === id) ?? 0;
+    const taskFromStore = tasks?.find((task) => task.id === id) ?? null;
 
     const { data: task, isPending } = useQuery({
         queryKey: ['task', id],
@@ -13,8 +13,9 @@ const useTaskById = (id) => {
         enabled: !taskFromStore && Boolean(id),
         staleTime: 5 * 60 * 1000,
     });
-
-    return { task: taskFromStore ?? task ?? null, isPending };
+    return {
+        task: taskFromStore ?? task ?? null,
+        isPending: taskFromStore ? false : isPending,
+    };
 };
-
 export default useTaskById;
