@@ -10,10 +10,10 @@ const useUpdateTasks = () => {
     const { mutate, error, isPending } = useMutation({
         mutationFn: async () => {
             const lastSyncAt = useTasksSyncStore.getState().lastSyncAt;
-            return getTasksUpdate(lastSyncAt ? { lastSyncAt } : undefined);
+            return getTasksUpdate({ lastSyncAt });
         },
         onSuccess: (data) => {
-            const serverDate = data?.serverDate;
+            const serverDate = data?.snapshot_at;
             if (serverDate) {
                 setLastSyncAt(serverDate);
             }
