@@ -17,7 +17,6 @@ const CameraButton = ({ handleOpenCamera }) => {
 
 const styles = StyleSheet.create({
     button: {
-        width: '100%',
         justifyContent: 'center',
         alignItems: 'center',
         borderRadius: 12,

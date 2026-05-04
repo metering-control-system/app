@@ -1,5 +1,5 @@
 import { useRef } from 'react';
-import CameraCapture from '@/shared/components/camera/cameraCapture';
+import CameraCapture from '@/shared/components/media/camera/cameraCapture';
 import useStorePictures from '@/shared/store/useStorePictures';
 import { useRouter } from 'expo-router';
 
@@ -14,16 +14,17 @@ const TaskCameraCapture = ({ id }) => {
 
     return (
         <CameraCapture
-            ref={cameraRef}
-            setUri={(uri) =>
+            cameraRef={cameraRef}
+            setUri={(uri) => {
                 setPhoto({
                     entity: 'task',
                     entityId: id,
                     slot: 'new_meteric_control',
                     uri,
-                })
-            }
+                });
+            }}
             onHandlePhoto={onHandlePhoto}
+            onClose={() => router.back()}
         />
     );
 };

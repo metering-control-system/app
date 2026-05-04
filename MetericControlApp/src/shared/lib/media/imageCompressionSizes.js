@@ -1,0 +1,5 @@
+export const CAMERA_IMAGE_COMPRESSION = 0.72;
+export const MAX_PICKED_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+export const MAX_PICKED_IMAGE_SIZE_MB = Math.round(
+    MAX_PICKED_IMAGE_SIZE_BYTES / (1024 * 1024)
+);

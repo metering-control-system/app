@@ -46,7 +46,6 @@ const styles = StyleSheet.create({
         flex: 1,
         paddingHorizontal: 10,
         paddingVertical: 20,
-        backgroundColor: '#e1ebfd',
         boxSizing: 'border-box',
         position: 'relative',
     },

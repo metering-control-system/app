@@ -1,0 +1,292 @@
+import { CameraView, useCameraPermissions } from 'expo-camera';
+import { useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, View } from 'react-native';
+import {
+    FontAwesome6,
+    Ionicons,
+    MaterialCommunityIcons,
+} from '@expo/vector-icons';
+import CameraPermissionScreen from '@/shared/components/media/camera/cameraPermissionScreen';
+import ScreenLayout from '@/shared/components/screen/screenLayout';
+import { compressCapturedImage } from '@/shared/lib/media/compressCapturedImage';
+import * as Linking from 'expo-linking';
+
+const flashModes = ['off', 'on', 'auto'];
+
+export default function CameraCapture({
+    cameraRef,
+    setUri,
+    onHandlePhoto,
+    onClose,
+}) {
+    const [facing, setFacing] = useState('back');
+    const [permission, requestPermission] = useCameraPermissions();
+    const [flashMode, setFlashMode] = useState('off');
+    const [torchEnabled, setTorchEnabled] = useState(false);
+    const [isCapturing, setIsCapturing] = useState(false);
+    const [isCameraReady, setIsCameraReady] = useState(false);
+    const [tapPoint, setTapPoint] = useState(null);
+    const tapPointTimer = useRef(null);
+
+    useEffect(() => {
+        return () => {
+            if (tapPointTimer.current) {
+                clearTimeout(tapPointTimer.current);
+            }
+        };
+    }, []);
+
+    const handlePreviewTap = ({ nativeEvent }) => {
+        setTapPoint({ x: nativeEvent.locationX, y: nativeEvent.locationY });
+
+        if (tapPointTimer.current) {
+            clearTimeout(tapPointTimer.current);
+        }
+
+        tapPointTimer.current = setTimeout(() => {
+            setTapPoint(null);
+        }, 700);
+    };
+
+    const takePicture = async () => {
+        if (!cameraRef?.current || isCapturing || !isCameraReady) {
+            return;
+        }
+
+        setIsCapturing(true);
+
+        try {
+            const photo = await cameraRef.current.takePictureAsync({
+                quality: 1,
+            });
+
+            if (photo?.uri) {
+                const processedUri = await compressCapturedImage(
+                    photo.uri
+                ).catch(() => photo.uri);
+                setUri(processedUri);
+                onHandlePhoto?.();
+            }
+        } finally {
+            setIsCapturing(false);
+        }
+    };
+
+    const toggleCameraFacing = () => {
+        setFacing((current) => (current === 'back' ? 'front' : 'back'));
+    };
+
+    const cycleFlashMode = () => {
+        setFlashMode((current) => {
+            const currentIndex = flashModes.indexOf(current);
+            return flashModes[(currentIndex + 1) % flashModes.length];
+        });
+    };
+
+    const getFlashIconName = () => {
+        if (flashMode === 'on') {
+            return 'flash';
+        }
+
+        if (flashMode === 'auto') {
+            return 'flash-auto';
+        }
+
+        return 'flash-off';
+    };
+
+    if (!permission) {
+        return <View style={styles.container} />;
+    }
+
+    if (!permission.canAskAgain) {
+        return (
+            <CameraPermissionScreen
+                style={styles.container}
+                requestPermission={async () => await Linking.openSettings()}
+            />
+        );
+    }
+
+    if (!permission.granted) {
+        return (
+            <CameraPermissionScreen
+                style={styles.container}
+                requestPermission={requestPermission}
+            />
+        );
+    }
+
+    return (
+        <View style={styles.cameraContainer}>
+            <CameraView
+                style={styles.camera}
+                ref={cameraRef}
+                facing={facing}
+                flash={flashMode}
+                enableTorch={torchEnabled}
+                responsiveOrientationWhenOrientationLocked
+                onCameraReady={() => setIsCameraReady(true)}
+                onMountError={() => setIsCameraReady(false)}
+            />
+
+            <Pressable
+                style={styles.previewTouchArea}
+                onPress={handlePreviewTap}>
+                {tapPoint && (
+                    <View
+                        pointerEvents='none'
+                        style={[
+                            styles.focusRing,
+                            { left: tapPoint.x - 22, top: tapPoint.y - 22 },
+                        ]}
+                    />
+                )}
+            </Pressable>
+
+            <ScreenLayout safe style={[styles.topBar]}>
+                <Pressable
+                    onPress={onClose}
+                    style={({ pressed }) => [
+                        styles.iconButton,
+                        pressed && styles.iconButtonPressed,
+                    ]}>
+                    <Ionicons name='close' size={26} color='#fff' />
+                </Pressable>
+
+                <View style={styles.topBarActions}>
+                    <Pressable
+                        onPress={cycleFlashMode}
+                        style={({ pressed }) => [
+                            styles.iconButton,
+                            pressed && styles.iconButtonPressed,
+                        ]}>
+                        <MaterialCommunityIcons
+                            name={getFlashIconName()}
+                            size={24}
+                            color={flashMode === 'off' ? '#fff' : '#ffd24d'}
+                        />
+                    </Pressable>
+
+                    <Pressable
+                        onPress={() => setTorchEnabled((current) => !current)}
+                        style={({ pressed }) => [
+                            styles.iconButton,
+                            pressed && styles.iconButtonPressed,
+                        ]}>
+                        <Ionicons
+                            name={
+                                torchEnabled
+                                    ? 'flashlight'
+                                    : 'flashlight-outline'
+                            }
+                            size={22}
+                            color={torchEnabled ? '#ffd24d' : '#fff'}
+                        />
+                    </Pressable>
+                </View>
+            </ScreenLayout>
+
+            <ScreenLayout safe style={styles.bottomBar}>
+                <Pressable
+                    disabled={isCapturing || !isCameraReady}
+                    onPress={takePicture}
+                    style={({ pressed }) => [
+                        styles.shutterBtn,
+                        (pressed || isCapturing || !isCameraReady) &&
+                            styles.shutterPressed,
+                    ]}>
+                    <View
+                        style={[
+                            styles.shutterBtnInner,
+                            isCapturing && styles.shutterBtnInnerActive,
+                        ]}
+                    />
+                </Pressable>
+
+                <Pressable
+                    onPress={toggleCameraFacing}
+                    style={({ pressed }) => [
+                        styles.iconButton,
+                        styles.rotateButton,
+                        pressed && styles.iconButtonPressed,
+                    ]}>
+                    <FontAwesome6 name='rotate-left' size={24} color='#fff' />
+                </Pressable>
+            </ScreenLayout>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: {
+        flex: 1,
+        backgroundColor: '#fff',
+        alignItems: 'center',
+        justifyContent: 'center',
+        paddingHorizontal: 24,
+    },
+    cameraContainer: {
+        ...StyleSheet.absoluteFillObject,
+        backgroundColor: '#000',
+    },
+    camera: StyleSheet.absoluteFillObject,
+    previewTouchArea: StyleSheet.absoluteFillObject,
+    focusRing: {
+        position: 'absolute',
+        width: 44,
+        height: 44,
+        borderRadius: 22,
+        borderWidth: 2,
+        borderColor: '#ffd24d',
+        backgroundColor: 'rgba(255, 210, 77, 0.12)',
+    },
+    topBar: {
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        right: 0,
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 20,
+    },
+    topBarActions: { flexDirection: 'row', gap: 12 },
+    bottomBar: {
+        position: 'absolute',
+        left: 0,
+        right: 0,
+        bottom: 0,
+        flexDirection: 'row',
+        justifyContent: 'center',
+        alignItems: 'center',
+        paddingHorizontal: 24,
+    },
+    iconButton: {
+        width: 48,
+        height: 48,
+        borderRadius: 24,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0, 0, 0, 0.36)',
+    },
+    iconButtonPressed: { opacity: 0.7 },
+    shutterBtn: {
+        width: 86,
+        height: 86,
+        borderRadius: 43,
+        borderWidth: 5,
+        borderColor: '#fff',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    shutterBtnInner: {
+        width: 68,
+        height: 68,
+        borderRadius: 34,
+        backgroundColor: '#fff',
+    },
+    shutterBtnInnerActive: { transform: [{ scale: 0.9 }] },
+    shutterPressed: { opacity: 0.7 },
+    rotateButton: { position: 'absolute', right: 24, bottom: 28 },
+});

@@ -10,7 +10,7 @@ import Checkbox from '@/shared/components/button/checkbox';
 import { useEffect, useState } from 'react';
 import useChangeTaskStatus from '@/features/tasks/hooks/useChangeTaskStatus';
 import { colors } from '@/shared/consts/baseColors';
-import CameraBlock from '@/shared/components/camera/cameraBlock';
+import MediaBlock from '@/shared/components/media/mediaBlock';
 import { useRouter } from 'expo-router';
 import useStorePictures from '@/shared/store/useStorePictures';
 
@@ -33,12 +33,13 @@ const TaskDetailsForm = ({ task, id }) => {
     );
     const clearPhoto = useStorePictures((state) => state.clearPhoto);
     const { changeStatus, isPending } = useChangeTaskStatus();
+    const setPhoto = useStorePictures((state) => state.setPhoto);
 
     useEffect(() => {
         if (task) {
             reset(task);
         }
-    }, [task]);
+    }, [reset, task]);
 
     const handleOpenCamera = () => {
         router?.push({
@@ -54,6 +55,14 @@ const TaskDetailsForm = ({ task, id }) => {
             slot: 'new_meteric_control',
         });
     };
+
+    const handleUploadPhoto = (uri) =>
+        setPhoto({
+            entity: 'task',
+            entityId: id,
+            slot: 'new_meteric_control',
+            uri,
+        });
 
     const onSubmit = async () => {
         if (isValid && !isSubmitting) {
@@ -148,9 +157,11 @@ const TaskDetailsForm = ({ task, id }) => {
                                 style={styles.label}>
                                 Фото текущего счетчика
                             </Text>
-                            <CameraBlock
+                            <MediaBlock
                                 handleOpenCamera={handleOpenCamera}
                                 handleDeletePhoto={handleDeletePhoto}
+                                handleUploadPhoto={handleUploadPhoto}
+                                handleUpdatePhoto={handleUploadPhoto}
                                 uri={uri}
                             />
                         </View>
