@@ -7,23 +7,22 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import FormButton from '@/shared/components/button/formButton';
 
 const LoginForm = ({ setError }) => {
-    const {
-        handleSubmit,
-        control,
-        formState: { isValid },
-    } = useForm({
+    const { handleSubmit, control } = useForm({
         defaultValues: { login: '', password: '' },
         resolver: zodResolver(loginSchema),
     });
     const { isPending, userLogin } = useLogin();
 
     const onSubmit = async (data) => {
-        if (!isValid || isPending) {
+        if (isPending) {
             return;
         }
         try {
             setError(null);
-            await userLogin({ login: data.login, password: data.password });
+            await userLogin({
+                login: data.login.trim(),
+                password: data.password,
+            });
         } catch (error) {
             setError(error.message);
         }
@@ -41,10 +40,11 @@ const LoginForm = ({ setError }) => {
                     name='login'
                     control={control}
                     placeholder='Введите логин'
-                    textContentType='name'
+                    textContentType='username'
                     returnKeyType='done'
                     editable={!isPending}
                     autoFocus
+                    autoComplete='username'
                 />
             </View>
             <View style={styles.field}>
@@ -57,13 +57,14 @@ const LoginForm = ({ setError }) => {
                     textContentType='password'
                     returnKeyType='done'
                     editable={!isPending}
+                    autoComplete='password'
                 />
             </View>
             <View style={styles.field}>
                 <FormButton
                     onPress={handleSubmit(onSubmit, onError)}
                     isPending={isPending}
-                    disabled={!isValid}
+                    disabled={isPending}
                     message='Войти'
                 />
             </View>
