@@ -1,9 +1,10 @@
 import { Pressable, Text, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
-const CameraButton = ({ handleOpenCamera }) => {
+const CameraButton = ({ handleOpenCamera, disabled }) => {
     return (
         <Pressable
+            disabled={disabled}
             onPress={handleOpenCamera}
             style={({ pressed }) => [
                 styles.button,

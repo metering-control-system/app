@@ -12,14 +12,21 @@ export default function MediaBlock({
     handleDeletePhoto,
     handleUploadPhoto,
     handleUpdatePhoto,
+    disabled,
 }) {
     const [modalVisible, setModalVisible] = useState(false);
 
     return (
         <View style={styles.container}>
             <View style={{ width: '100%', gap: 10 }}>
-                <CameraButton handleOpenCamera={handleOpenCamera} />
-                <ImagePicker handleUploadPhoto={handleUploadPhoto} />
+                <CameraButton
+                    handleOpenCamera={handleOpenCamera}
+                    disabled={disabled}
+                />
+                <ImagePicker
+                    handleUploadPhoto={handleUploadPhoto}
+                    disabled={disabled}
+                />
             </View>
             <PictureWrapper
                 uri={uri}

@@ -3,7 +3,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { validatePickedImage } from '@/shared/lib/media/validatePickedImage';
 
-export default function ImagePickerButton({ handleUploadPhoto }) {
+export default function ImagePickerButton({ handleUploadPhoto, disabled }) {
     const pickImage = async () => {
         const permissionResult =
             await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -37,6 +37,7 @@ export default function ImagePickerButton({ handleUploadPhoto }) {
 
     return (
         <Pressable
+            disabled={disabled}
             onPress={pickImage}
             style={({ pressed }) => [
                 styles.button,

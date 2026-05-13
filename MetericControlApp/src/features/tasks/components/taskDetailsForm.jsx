@@ -13,6 +13,7 @@ import { colors } from '@/shared/consts/baseColors';
 import MediaBlock from '@/shared/components/media/mediaBlock';
 import { useRouter } from 'expo-router';
 import useStorePictures from '@/shared/store/useStorePictures';
+import { taskStatus } from '@/features/tasks/constants/taskStatus';
 
 const TaskDetailsForm = ({ task, id }) => {
     const {
@@ -27,6 +28,10 @@ const TaskDetailsForm = ({ task, id }) => {
     });
 
     const [active, setActive] = useState(false);
+    const disabled = task?.status in taskStatus && task?.status !== 'NEW';
+    const changable = !(
+        task?.status === 'REJECTED' || task?.status === 'COMPLETED'
+    );
     const router = useRouter();
     const uri = useStorePictures(
         (state) => state.photos.task?.[id]?.['new_meteric_control'] ?? null
@@ -66,7 +71,11 @@ const TaskDetailsForm = ({ task, id }) => {
 
     const onSubmit = async () => {
         if (isValid && !isSubmitting) {
-            void changeStatus({ id: task?.id, status: 'IN_PROGRESS' });
+            try {
+                await changeStatus({ id: task?.id, status: 'IN_PROGRESS' });
+            } catch {
+                console.error('Ошибка изменения статуса');
+            }
         }
     };
 
@@ -81,6 +90,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='consumer.full_name'
                         control={control}
                         placeholder='Введите имя клиента'
+                        editable={changable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -91,6 +101,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='consumer.phone_number'
                         control={control}
                         placeholder='Введите номер телефона клиента'
+                        editable={changable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -101,6 +112,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='address.account_number'
                         control={control}
                         placeholder='Введите номер лицевого счета'
+                        editable={changable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -111,6 +123,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='meter.type'
                         control={control}
                         placeholder='Введите тип ПУ'
+                        editable={changable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -121,6 +134,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='meter.number'
                         control={control}
                         placeholder='Введите номер ПУ'
+                        editable={changable}
                     />
                 </View>
             </View>
@@ -149,6 +163,7 @@ const TaskDetailsForm = ({ task, id }) => {
                                 name='realMeter.number'
                                 control={control}
                                 placeholder='Введите номер фактического ПУ'
+                                editable={changable}
                             />
                         </View>
                         <View style={styles.control}>
@@ -162,6 +177,7 @@ const TaskDetailsForm = ({ task, id }) => {
                                 handleDeletePhoto={handleDeletePhoto}
                                 handleUploadPhoto={handleUploadPhoto}
                                 handleUpdatePhoto={handleUploadPhoto}
+                                disabled={!changable}
                                 uri={uri}
                             />
                         </View>
@@ -177,6 +193,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='meter.installation_location'
                         control={control}
                         placeholder='Введите место установки ПУ'
+                        editable={changable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -187,13 +204,14 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='task_data.service_reason'
                         control={control}
                         placeholder='Введите причину замены'
+                        editable={changable}
                     />
                 </View>
             </View>
             <FormButton
                 isPending={isPending}
                 onPress={handleSubmit(onSubmit)}
-                disabled={!isValid || isPending}
+                disabled={isPending || disabled}
                 message={
                     isPending
                         ? '...Загрузка'
