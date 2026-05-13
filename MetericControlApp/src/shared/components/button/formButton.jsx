@@ -8,7 +8,7 @@ const FormButton = ({ message, onPress, isPending, disabled, style }) => {
                 (pressed || disabled) && { opacity: 0.75 },
                 { ...style },
             ]}
-            disabled={isPending}
+            disabled={disabled}
             onPress={onPress}>
             <Text style={styles.text}>
                 {isPending ? '...Загрузка' : message}
