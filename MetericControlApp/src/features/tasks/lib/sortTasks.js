@@ -1,12 +1,14 @@
 import priorityOrder from '@/features/tasks/constants/taskPriority';
-
-const getAddressKey = (task) =>
-    [task.address?.locality, task.address?.street, task.address?.house]
-        .filter(Boolean)
-        .join('|');
+import {
+    getAddressKey,
+    getStreetKey,
+    getLocalityKey,
+} from '@/features/tasks/lib/addressHelpers';
 
 const getPriorityOrder = (task) =>
     priorityOrder[task.manual_priority] ?? priorityOrder.NOT_SPECIFIED;
+
+const getGroupPriority = (group) => getPriorityOrder(group[0]);
 
 export const sortTasks = (tasks) => {
     const groupMap = new Map();
@@ -40,10 +42,25 @@ export const sortTasks = (tasks) => {
         });
     }
 
-    const sortedGroups = [...groupMap.values()].sort(
-        (groupA, groupB) =>
-            getPriorityOrder(groupA[0]) - getPriorityOrder(groupB[0])
-    );
+    const groups = [...groupMap.values()];
 
-    return sortedGroups.flat();
+    groups.sort((groupA, groupB) => {
+        const priorityDiff =
+            getGroupPriority(groupA) - getGroupPriority(groupB);
+        if (priorityDiff !== 0) return priorityDiff;
+
+        const streetA = getStreetKey(groupA[0]);
+        const streetB = getStreetKey(groupB[0]);
+        if (streetA < streetB) return -1;
+        if (streetA > streetB) return 1;
+
+        const localityA = getLocalityKey(groupA[0]);
+        const localityB = getLocalityKey(groupB[0]);
+        if (localityA < localityB) return -1;
+        if (localityA > localityB) return 1;
+
+        return 0;
+    });
+
+    return groups.flat();
 };
