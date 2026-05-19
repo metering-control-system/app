@@ -11,13 +11,17 @@
       "backgroundColor": "#ffffff"
     },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.pr1de.MetericControlApp"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE"
       },
-      "package": "com.pr1de.MetericControlApp"
+      "package": "com.pr1de.MetericControlApp",
+      "permissions": [
+        "android.permission.CAMERA"
+      ]
     },
     "plugins": [
       "expo-router",
