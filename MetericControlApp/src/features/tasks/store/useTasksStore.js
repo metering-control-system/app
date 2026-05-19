@@ -1,22 +1,34 @@
 import { create } from 'zustand/react';
+import { createJSONStorage, persist } from 'zustand/middleware';
 import { mergeTasks } from '@/features/tasks/lib/mergeTasks';
-import { sortTasks } from '@/features/tasks/lib/sortTasks';
+import { taskOfflineStorage } from '@/features/tasks/store/taskOfflineStorage';
+import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
 
-const useTasksStore = create((set, get) => ({
-    tasks: null,
-    replaceTasks: (newTasks) => {
-        if (newTasks) {
-            set({ tasks: sortTasks(newTasks) });
+const useTasksStore = create(
+    persist(
+        (set, get) => ({
+            tasks: null,
+            replaceTasks: (newTasks) => {
+                set({ tasks: newTasks ? [...newTasks] : null });
+            },
+            setUpdatedTasks: (updatedTasks) => {
+                if (updatedTasks) {
+                    const oldTasks = get().tasks ?? [];
+                    const mergedTasks = mergeTasks(oldTasks, updatedTasks);
+                    set({ tasks: [...mergedTasks] });
+                }
+            },
+            clearTasks: () => set({ tasks: null }),
+        }),
+        {
+            name: 'tasks-store',
+            storage: createJSONStorage(() =>
+                createPersistStorage(taskOfflineStorage)
+            ),
+            partialize: (state) => ({ tasks: state.tasks }),
+            skipHydration: true,
         }
-    },
-    setUpdatedTasks: (updatedTasks) => {
-        if (updatedTasks) {
-            const oldTasks = get().tasks ?? [];
-            const mergedTasks = mergeTasks(oldTasks, updatedTasks);
-            set({ tasks: sortTasks(mergedTasks) });
-        }
-    },
-    clearTasks: () => set({ tasks: null }),
-}));
+    )
+);
 
 export default useTasksStore;

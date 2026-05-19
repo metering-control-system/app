@@ -3,8 +3,10 @@ import { useInfiniteQuery } from '@tanstack/react-query';
 import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
 import { useEffect } from 'react';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const useTasks = () => {
+    const { isChecked, isOnline } = useNetwork();
     const setListSnapshotAt = useTasksSyncStore(
         (state) => state.setListSnapshotAt
     );
@@ -42,6 +44,7 @@ const useTasks = () => {
         },
         initialPageParam: undefined,
         getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
+        enabled: isOnline,
     });
 
     useEffect(() => {
@@ -49,15 +52,23 @@ const useTasks = () => {
             const allTasks = data.pages.flatMap((page) => page.tasks ?? []);
             setUpdatedTasks(allTasks);
         }
-    }, [data]);
+    }, [data, setUpdatedTasks]);
+
+    useEffect(() => {
+        if (!isChecked || isOnline || useTasksStore.persist.hasHydrated()) {
+            return;
+        }
+
+        void useTasksStore.persist.rehydrate();
+    }, [isChecked, isOnline]);
 
     return {
         fetchNextPage,
         error,
-        isPending,
+        isPending: !isChecked || (isOnline && isPending),
         isFetching,
         isFetchingNextPage,
-        hasNextPage,
+        hasNextPage: isOnline && hasNextPage,
     };
 };
 
