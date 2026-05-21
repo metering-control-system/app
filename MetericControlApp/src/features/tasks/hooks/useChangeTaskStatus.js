@@ -10,7 +10,7 @@ const useChangeTaskStatus = () => {
     const setUpdatedTasks = useTasksStore((state) => state.setUpdatedTasks);
     const { isChecked, isOnline } = useNetwork();
 
-    const { mutate, error, isPending } = useMutation({
+    const { mutateAsync, error, isPending } = useMutation({
         mutationFn: changeTaskStatus,
         onMutate: async ({ id, status }) => {
             const previousStoreTasks = useTasksStore.getState().tasks;
@@ -42,7 +42,7 @@ const useChangeTaskStatus = () => {
                 .setTaskStatus({ id, status });
             return;
         }
-        mutate({ id, status });
+        return await mutateAsync({ id, status });
     };
 
     return { changeStatus, error, isPending };
