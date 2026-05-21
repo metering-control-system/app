@@ -12,7 +12,7 @@ const useTaskById = (id) => {
     const { data: task, isPending } = useQuery({
         queryKey: ['task', id],
         queryFn: () => getTaskById(id),
-        enabled: (!taskFromStore && Boolean(id)) || !isChecked || !isOnline,
+        enabled: !taskFromStore && Boolean(id) && isOnline && isChecked,
         staleTime: 5 * 60 * 1000,
     });
     return {
