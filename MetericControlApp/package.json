@@ -10,7 +10,8 @@
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
     "format": "prettier . --write",
-    "format:check": "prettier . --check ."
+    "format:check": "prettier . --check .",
+    "dev": "APP_VARIANT=development npx expo start"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
@@ -34,6 +35,7 @@
     "expo-dev-client": "~55.0.32",
     "expo-device": "~55.0.16",
     "expo-file-system": "~55.0.17",
+    "expo-font": "~55.0.8",
     "expo-image": "~55.0.10",
     "expo-image-manipulator": "~55.0.16",
     "expo-image-picker": "~55.0.20",
