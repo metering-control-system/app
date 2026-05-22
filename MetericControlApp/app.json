@@ -35,7 +35,8 @@
           "barcodeScannerEnabled": false
         }
       ],
-      "expo-image"
+      "expo-image",
+      "expo-font"
     ],
     "extra": {
       "router": {},
