@@ -1,4 +1,4 @@
-import priorityOrder from '@/features/tasks/constants/taskPriority';
+import { priorityOrder } from '@/features/tasks/constants/taskPriority';
 import {
     getAddressKey,
     getStreetKey,
