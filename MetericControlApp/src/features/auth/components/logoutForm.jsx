@@ -17,6 +17,7 @@ const LogoutForm = () => {
                 isPending={isPending}
                 onPress={handleLogout}
                 message='Выйти'
+                disabled={isPending}
             />
         </View>
     );

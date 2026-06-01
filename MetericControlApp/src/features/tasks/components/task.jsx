@@ -30,26 +30,20 @@ const Task = ({ task }) => {
             <View style={styles.cardPeriod}>
                 <View style={styles.badges}>
                     <Text
+                        numberOfLines={2}
+                        ellipsizeMode='tail'
                         style={[
-                            {
-                                borderRadius: 5,
-                                paddingVertical: 2,
-                                paddingHorizontal: 5,
-                                borderWidth: 1,
-                            },
+                            styles.badge,
                             taskStatusColors[task?.status] ??
                                 taskStatusColors.NEW,
                         ]}>
                         {taskStatus[task?.status] ?? 'не назначен'}
                     </Text>
                     <Text
+                        numberOfLines={2}
+                        ellipsizeMode='tail'
                         style={[
-                            {
-                                borderRadius: 5,
-                                paddingVertical: 2,
-                                paddingHorizontal: 5,
-                                borderWidth: 1,
-                            },
+                            styles.badge,
                             taskPriorityColors[task?.manual_priority] ??
                                 taskPriorityColors.NOT_SPECIFIED,
                         ]}>
@@ -57,15 +51,9 @@ const Task = ({ task }) => {
                     </Text>
                     {task.task_data?.has_request && (
                         <Text
-                            style={[
-                                {
-                                    borderRadius: 5,
-                                    paddingVertical: 2,
-                                    paddingHorizontal: 5,
-                                    borderWidth: 1,
-                                },
-                                colors.primary,
-                            ]}>
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
+                            style={[styles.badge, colors.primary]}>
                             {task.task_data?.has_request ? 'по запросу' : null}
                         </Text>
                     )}
@@ -109,7 +97,20 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         alignItems: 'center',
     },
-    badges: { flexDirection: 'row', gap: 10, alignItems: 'center', flex: 1 },
+    badges: {
+        flexDirection: 'row',
+        gap: 10,
+        alignItems: 'center',
+        flex: 1,
+        flexWrap: 'wrap',
+    },
+    badge: {
+        borderRadius: 5,
+        paddingVertical: 2,
+        paddingHorizontal: 5,
+        borderWidth: 1,
+        maxWidth: '50%',
+    },
     btnPressed: { opacity: 0.75 },
 });
 
