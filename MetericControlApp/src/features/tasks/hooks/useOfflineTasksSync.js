@@ -16,6 +16,8 @@ export const useOfflineTasksSync = () => {
         if (!isChecked || !isOnline || !tasksStatuses || isSyncing.current)
             return;
         isSyncing.current = true;
-        void syncOfflineTaskStatuses(tasksStatuses, changeStatus);
+        syncOfflineTaskStatuses(tasksStatuses, changeStatus).finally(
+            () => (isSyncing.current = false)
+        );
     }, [changeStatus, isChecked, isOnline, tasksStatuses]);
 };
