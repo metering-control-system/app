@@ -36,4 +36,15 @@ export default ({ config }) => ({
         ...config.android,
         package: getUniqueIdentifier(),
     },
+    plugins: [
+        ...(config.plugins ?? []),
+        [
+            'expo-build-properties',
+            {
+                android: {
+                    usesCleartextTraffic: IS_PREVIEW || IS_DEV,
+                },
+            },
+        ],
+    ],
 });
