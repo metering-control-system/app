@@ -1,6 +1,6 @@
 import { create } from 'zustand/react';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { mergeTasks } from '@/features/tasks/lib/mergeTasks';
+import { mergeData } from '@/shared/lib/mergeData';
 import { taskOfflineStorage } from '@/features/tasks/store/taskOfflineStorage';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
 
@@ -14,7 +14,7 @@ const useTasksStore = create(
             setUpdatedTasks: (updatedTasks) => {
                 if (updatedTasks) {
                     const oldTasks = get().tasks ?? [];
-                    const mergedTasks = mergeTasks(oldTasks, updatedTasks);
+                    const mergedTasks = mergeData(oldTasks, updatedTasks);
                     set({ tasks: [...mergedTasks] });
                 }
             },

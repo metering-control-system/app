@@ -1,6 +1,6 @@
 import { baseApi } from '@/shared/api/baseApi';
 import axios from 'axios';
-import { normalizeTask } from '@/features/tasks/lib/processingTaskResponse';
+import { normalizeTaskResponse } from '@/features/tasks/lib/processingTaskResponse';
 
 export const changeTaskStatus = ({ id, status }) =>
     baseApi
@@ -10,7 +10,7 @@ export const changeTaskStatus = ({ id, status }) =>
             {
                 transformResponse: [
                     ...(axios.defaults.transformResponse || []),
-                    (data) => normalizeTask(data),
+                    (data) => normalizeTaskResponse(data),
                 ],
             }
         )
