@@ -1,5 +1,5 @@
 import { Tabs } from 'expo-router';
-import { Ionicons } from '@expo/vector-icons';
+import { AntDesign, Ionicons } from '@expo/vector-icons';
 
 const DashboardLayout = () => {
     return (
@@ -12,6 +12,20 @@ const DashboardLayout = () => {
                     tabBarIcon: ({ focused }) => (
                         <Ionicons
                             name={focused ? 'build' : 'build-outline'}
+                            size={24}
+                            color={focused ? '#0080ff' : '#989898'}
+                        />
+                    ),
+                }}
+            />
+            <Tabs.Screen
+                name='reports'
+                options={{
+                    title: 'Reports',
+                    headerShown: false,
+                    tabBarIcon: ({ focused }) => (
+                        <AntDesign
+                            name='file-done'
                             size={24}
                             color={focused ? '#0080ff' : '#989898'}
                         />
