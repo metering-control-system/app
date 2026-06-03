@@ -4,6 +4,7 @@ import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
 import useStorePictures from '@/shared/store/useStorePictures';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
+import useReportsStore from '@/features/reports/store/useReportsStore';
 
 const clearSessionState = async (queryClient) => {
     await tokenStorage.clearTokens();
@@ -16,6 +17,7 @@ const clearSessionState = async (queryClient) => {
     useTaskOfflineMutationStore.getState().clearTasksStatuses();
     useTaskOfflineMutationStore.persist.clearStorage();
     useTasksStore.persist.clearStorage();
+    useReportsStore.persist.clearStorage();
 };
 
 export default clearSessionState;
