@@ -13,13 +13,22 @@ const ReportDetailsForm = ({ report }) => {
     const [currentPressedImageUrl, setCurrentPressedImageUrl] = useState('');
 
     const submittedAt = report.submitted_at
-        ? new Date(report.submitted_at).toLocaleString(dtLocale)
+        ? new Date(report.submitted_at).toLocaleString(
+              dtLocale.locales,
+              dtLocale.options
+          )
         : null;
     const reviewedAt = report.reviewed_at
-        ? new Date(report.reviewed_at).toLocaleString(dtLocale)
+        ? new Date(report.reviewed_at).toLocaleString(
+              dtLocale.locales,
+              dtLocale.options
+          )
         : null;
     const approvedAt = report.approved_at
-        ? new Date(report.approved_at).toLocaleString(dtLocale)
+        ? new Date(report.approved_at).toLocaleString(
+              dtLocale.locales,
+              dtLocale.options
+          )
         : null;
 
     return (
