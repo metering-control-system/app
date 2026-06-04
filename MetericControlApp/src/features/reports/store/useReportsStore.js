@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { mergeData } from '@/shared/lib/mergeData';
 import { reportOfflineStorage } from '@/features/reports/store/reportOfflineStorage';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
+import { sortingReports } from '@/features/reports/lib/sortingReports';
 
 const useReportsStore = create(
     persist(
@@ -15,7 +16,12 @@ const useReportsStore = create(
                 if (updatedReports) {
                     const oldReports = get().reports ?? [];
                     const mergedReports = mergeData(oldReports, updatedReports);
-                    set({ reports: [...mergedReports] });
+                    try {
+                        const sortedReports = sortingReports(mergedReports);
+                        set({ reports: [...sortedReports] });
+                    } catch {
+                        set({ reports: [...mergedReports] });
+                    }
                 }
             },
             clearReports: () => set({ reports: null }),
