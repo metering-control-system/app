@@ -1,31 +1,23 @@
-import { reportStatus } from '@/features/reports/constants/reportStatus';
-import { reportAdmission } from '@/features/reports/constants/reportAdmission';
-
-export const filteringByStatus = ({ statuses, reports }) => {
-    if (!Array.isArray(reports)) {
-        return;
+export const filteringByStatus = (statuses, reports) => {
+    if (!statuses?.length) {
+        return reports;
     }
 
-    for (const status of statuses) {
-        if (!reportStatus[status]) {
-            return;
-        }
-    }
-
-    return reports.reduce((prev = [], curr) => {
-        for (const status of statuses) {
-            if (curr.status !== status) {
-                return prev;
-            }
-        }
-        return [...prev, curr];
-    });
+    return reports?.filter((curr) => statuses.includes(curr.status));
 };
 
-export const filteringByAdmissionStatus = (status, reports) => {
-    if (!(status in reportAdmission)) {
-        return;
+export const filteringByAdmissionStatus = (statuses, reports) => {
+    if (!statuses?.length) {
+        return reports;
     }
 
-    return reports.filter((report) => report.admission.status === status);
+    return reports?.filter((curr) => statuses.includes(curr.admission?.status));
+};
+
+export const filteringBy = (statuses, reports) => {
+    let filtered = [...(reports ?? [])];
+    filtered = filteringByAdmissionStatus(statuses.admission, filtered);
+    filtered = filteringByStatus(statuses.statuses, filtered);
+
+    return filtered;
 };
