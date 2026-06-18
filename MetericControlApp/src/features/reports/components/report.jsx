@@ -7,7 +7,7 @@ import {
     reportStatusColors,
 } from '@/features/reports/constants/reportColors';
 import { colors } from '@/shared/consts/baseColors';
-import { reportAdmission } from '@/features/reports/constants/reportAdmission';
+import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 
 const Report = ({ report }) => {
     const router = useRouter();

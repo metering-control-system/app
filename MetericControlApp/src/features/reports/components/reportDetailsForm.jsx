@@ -1,12 +1,12 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Card from '@/shared/components/wrapper/card';
 import { defaultValues } from '@/features/reports/constants/reportDefaultValues';
-import { reportAdmission } from '@/features/reports/constants/reportAdmission';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import ImagePreview from '@/shared/components/media/imagePreview';
 import { dtLocale } from '@/shared/consts/datetimeOptions';
 import { FieldRow } from '@/shared/components/field/fieldRow';
+import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 
 const ReportDetailsForm = ({ report }) => {
     const [modalVisible, setModalVisible] = useState(false);
