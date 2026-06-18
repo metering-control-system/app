@@ -4,10 +4,15 @@ import Task from '@/features/tasks/components/task';
 import useTasks from '@/features/tasks/hooks/useTasks';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useUpdateTasks from '@/features/tasks/hooks/useUpdateTasks';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
+import { taskStatus } from '@/features/tasks/constants/taskStatus';
+import { sortBy } from '@/features/tasks/lib/sortTasks';
+import { taskPriority } from '@/features/tasks/constants/taskPriority';
+import { filterBy } from '@/features/tasks/lib/filterTasks';
+import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 
-const TasksList = ({ setError }) => {
+const TasksList = ({ setError, filtering, sorting, search }) => {
     const tasks = useTasksStore((state) => state.tasks);
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
@@ -65,6 +70,18 @@ const TasksList = ({ setError }) => {
         fetchNextPage,
     ]);
 
+    const displayedTasks = useMemo(() => {
+        const selected = [...filtering];
+        const tasksStatuses = selected.filter((s) => taskStatus[s]);
+        const tasksPriority = selected.filter((s) => taskPriority[s]);
+        const filtered = filterBy(
+            { statuses: tasksStatuses, priority: tasksPriority },
+            tasks
+        );
+        const sorted = sortBy(filtered, sorting);
+        return filterBySearch({ query: sorted, input: search });
+    }, [tasks, filtering, sorting, search]);
+
     if (isPending) {
         return <ScreenLoader />;
     }
@@ -76,7 +93,7 @@ const TasksList = ({ setError }) => {
                 setListHeight(event.nativeEvent.layout.height);
             }}>
             <FlatList
-                data={tasks ?? []}
+                data={displayedTasks}
                 style={styles.list}
                 renderItem={({ item: task }) => <Task task={task} />}
                 keyExtractor={(item) => item.id}

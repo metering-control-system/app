@@ -4,10 +4,15 @@ import Report from '@/features/reports/components/report';
 import useReports from '@/features/reports/hooks/useReports';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useUpdateReports from '@/features/reports/hooks/useUpdateReports';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import useReportsStore from '@/features/reports/store/useReportsStore';
+import { filteringBy } from '@/features/reports/lib/filteringReports';
+import { reportStatus } from '@/features/reports/constants/reportStatus';
+import { sortingBy } from '@/features/reports/lib/sortingReports';
+import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
+import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 
-const ReportsList = ({ setError }) => {
+const ReportsList = ({ setError, sorting, filtering, search }) => {
     const reports = useReportsStore((state) => state.reports);
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
@@ -65,6 +70,20 @@ const ReportsList = ({ setError }) => {
         fetchNextPage,
     ]);
 
+    const displayedReports = useMemo(() => {
+        const selected = [...filtering];
+        const reportsStatuses = selected.filter((s) => reportStatus[s]);
+        const reportsAdmissionStatuses = selected.filter(
+            (s) => reportAdmission[s]
+        );
+        const filtered = filteringBy(
+            { statuses: reportsStatuses, admission: reportsAdmissionStatuses },
+            reports
+        );
+        const sorted = sortingBy(filtered, sorting);
+        return filterBySearch({ query: sorted, input: search });
+    }, [reports, filtering, sorting, search]);
+
     if (isPending) {
         return <ScreenLoader />;
     }
@@ -76,7 +95,7 @@ const ReportsList = ({ setError }) => {
                 setListHeight(event.nativeEvent.layout.height);
             }}>
             <FlatList
-                data={reports ?? []}
+                data={displayedReports}
                 style={styles.list}
                 renderItem={({ item: report }) => <Report report={report} />}
                 keyExtractor={(item) => item.id}
