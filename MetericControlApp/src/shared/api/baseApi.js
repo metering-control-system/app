@@ -1,21 +1,16 @@
 import axios from 'axios';
-import Constants from 'expo-constants';
 import clearSessionState from '@/features/auth/lib/clearSessionState';
 import useAuth from '@/features/auth/store/useAuth';
 import refreshToken from '@/features/auth/lib/refreshToken';
 import { queryClient } from '@/shared/api/queryClient';
 
-const hostIP =
-    Constants.expoGoConfig?.debuggerHost?.split(`:`)[0] ||
-    Constants.expoConfig?.hostUri?.split(`:`)[0];
-//eslint-disable-next-line
 const hostAddr = process.env.EXPO_PUBLIC_HOST_ADDR;
 const REQUEST_TIMEOUT = 5000;
 
 let globalRefresh = null;
 
 export const baseApi = axios.create({
-    baseURL: `http://${hostIP}:8000/api/`,
+    baseURL: `${hostAddr}/api/`,
     headers: { 'Content-Type': 'application/json' },
     timeout: REQUEST_TIMEOUT,
 });
