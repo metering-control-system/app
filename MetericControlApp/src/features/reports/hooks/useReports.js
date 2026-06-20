@@ -66,7 +66,7 @@ const useReports = () => {
         void useReportsStore.persist
             .rehydrate()
             .then(() => {
-                const reports = useReportsStore.getState().reports;
+                const reports = useReportsStore.getState().reports ?? [];
                 for (const report of reports) {
                     report.search = concatenateFields(reports);
                 }

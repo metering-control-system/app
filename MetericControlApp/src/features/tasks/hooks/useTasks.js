@@ -63,7 +63,7 @@ const useTasks = () => {
         useTasksStore.persist
             .rehydrate()
             .then(() => {
-                const tasks = useTasksStore.getState().tasks;
+                const tasks = useTasksStore.getState().tasks ?? [];
                 for (const task of tasks) {
                     task.search = concatenateFields(task);
                 }
