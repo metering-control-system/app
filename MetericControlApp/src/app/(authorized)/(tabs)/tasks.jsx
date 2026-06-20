@@ -8,7 +8,13 @@ const TaskScreen = () => {
 
     return (
         <ScreenLayout safe>
-            {error && <Notification variant='warning' message={error} />}
+            {error && (
+                <Notification
+                    variant='warning'
+                    message={error}
+                    handleClose={() => setError(null)}
+                />
+            )}
             <TasksList setError={setError} />
         </ScreenLayout>
     );
