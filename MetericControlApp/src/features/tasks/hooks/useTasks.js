@@ -1,9 +1,10 @@
 import { getTasks } from '@/features/tasks/api/getTasksApi';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
+import { concatenateFields } from '@/shared/lib/collections/concatenateFields';
 
 const useTasks = () => {
     const { isChecked, isOnline } = useNetwork();
@@ -12,6 +13,7 @@ const useTasks = () => {
     );
     const setLastSyncAt = useTasksSyncStore((state) => state.setLastSyncAt);
     const setUpdatedTasks = useTasksStore((state) => state.setUpdatedTasks);
+    const [error, setError] = useState(null);
 
     const {
         data,
@@ -20,7 +22,6 @@ const useTasks = () => {
         isFetching,
         isFetchingNextPage,
         hasNextPage,
-        error,
     } = useInfiniteQuery({
         queryKey: ['tasks'],
         queryFn: async ({ pageParam }) => {
@@ -55,11 +56,20 @@ const useTasks = () => {
     }, [data, setUpdatedTasks]);
 
     useEffect(() => {
-        if (!isChecked || isOnline || useTasksStore.persist.hasHydrated()) {
+        if (!isChecked || isOnline) {
             return;
         }
 
-        void useTasksStore.persist.rehydrate();
+        useTasksStore.persist
+            .rehydrate()
+            .then(() => {
+                const tasks = useTasksStore.getState().tasks;
+                for (const task of tasks) {
+                    task.search = concatenateFields(task);
+                }
+                setError(`${useTasksStore.persist.hasHydrated()}`);
+            })
+            .catch((error) => setError(`ERROR: ${error.message}}`));
     }, [isChecked, isOnline]);
 
     return {
