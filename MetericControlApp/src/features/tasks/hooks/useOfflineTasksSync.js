@@ -13,7 +13,7 @@ export const useOfflineTasksSync = () => {
     );
 
     const syncTasksStatuses = async () => {
-        if (isSyncing.current) return;
+        if (isSyncing.current || !isChecked || !isOnline) return;
         isSyncing.current = true;
         const latestTasksStatuses =
             useTaskOfflineMutationStore.getState().tasksStatuses;
