@@ -1,25 +1,34 @@
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 import Card from '@/shared/components/wrapper/card';
 import { defaultValues } from '@/features/reports/constants/reportDefaultValues';
-import { reportAdmission } from '@/features/reports/constants/reportAdmission';
 import { Image } from 'expo-image';
 import { useState } from 'react';
 import ImagePreview from '@/shared/components/media/imagePreview';
 import { dtLocale } from '@/shared/consts/datetimeOptions';
 import { FieldRow } from '@/shared/components/field/fieldRow';
+import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 
 const ReportDetailsForm = ({ report }) => {
     const [modalVisible, setModalVisible] = useState(false);
     const [currentPressedImageUrl, setCurrentPressedImageUrl] = useState('');
 
     const submittedAt = report.submitted_at
-        ? new Date(report.submitted_at).toLocaleString(dtLocale)
+        ? new Date(report.submitted_at).toLocaleString(
+              dtLocale.locales,
+              dtLocale.options
+          )
         : null;
     const reviewedAt = report.reviewed_at
-        ? new Date(report.reviewed_at).toLocaleString(dtLocale)
+        ? new Date(report.reviewed_at).toLocaleString(
+              dtLocale.locales,
+              dtLocale.options
+          )
         : null;
     const approvedAt = report.approved_at
-        ? new Date(report.approved_at).toLocaleString(dtLocale)
+        ? new Date(report.approved_at).toLocaleString(
+              dtLocale.locales,
+              dtLocale.options
+          )
         : null;
 
     return (
