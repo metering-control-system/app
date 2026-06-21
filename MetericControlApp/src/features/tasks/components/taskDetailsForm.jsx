@@ -29,7 +29,7 @@ const TaskDetailsForm = ({ task, id }) => {
 
     const [active, setActive] = useState(false);
     const disabled = task?.status in taskStatus && task?.status !== 'NEW';
-    const changable = !(
+    const changeable = !(
         task?.status === 'REJECTED' || task?.status === 'COMPLETED'
     );
     const router = useRouter();
@@ -90,7 +90,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='consumer.full_name'
                         control={control}
                         placeholder='Введите имя клиента'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -101,7 +101,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='consumer.phone_number'
                         control={control}
                         placeholder='Введите номер телефона клиента'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -112,7 +112,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='address.account_number'
                         control={control}
                         placeholder='Введите номер лицевого счета'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -123,7 +123,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='meter.type'
                         control={control}
                         placeholder='Введите тип ПУ'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -134,7 +134,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='meter.number'
                         control={control}
                         placeholder='Введите номер ПУ'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
             </View>
@@ -163,7 +163,7 @@ const TaskDetailsForm = ({ task, id }) => {
                                 name='realMeter.number'
                                 control={control}
                                 placeholder='Введите номер фактического ПУ'
-                                editable={changable}
+                                editable={changeable}
                             />
                         </View>
                         <View style={styles.control}>
@@ -177,7 +177,7 @@ const TaskDetailsForm = ({ task, id }) => {
                                 handleDeletePhoto={handleDeletePhoto}
                                 handleUploadPhoto={handleUploadPhoto}
                                 handleUpdatePhoto={handleUploadPhoto}
-                                disabled={!changable}
+                                disabled={!changeable}
                                 uri={uri}
                             />
                         </View>
@@ -193,7 +193,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='meter.installation_location'
                         control={control}
                         placeholder='Введите место установки ПУ'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
                 <View style={styles.control}>
@@ -204,7 +204,7 @@ const TaskDetailsForm = ({ task, id }) => {
                         name='task_data.service_reason'
                         control={control}
                         placeholder='Введите причину замены'
-                        editable={changable}
+                        editable={changeable}
                     />
                 </View>
             </View>

@@ -1,5 +1,5 @@
-export const normalizeTask = (task) => ({
-    ...task,
+export const normalizeTaskResponse = (task) => ({
+    ...(task ?? {}),
     address: {
         ...task.address,
         // eslint-disable-next-line camelcase
@@ -19,5 +19,5 @@ export const normalizeTask = (task) => ({
 
 export const processingTaskResponse = (data) => ({
     ...data,
-    tasks: (data.results ?? []).map((task) => normalizeTask(task)),
+    tasks: (data.results ?? []).map((task) => normalizeTaskResponse(task)),
 });
