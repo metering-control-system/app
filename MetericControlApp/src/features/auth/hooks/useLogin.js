@@ -5,15 +5,18 @@ import useAuth from '@/features/auth/store/useAuth';
 
 export const useLogin = () => {
     const setToken = useAuth((state) => state.setToken);
+    const setLogin = useAuth((state) => state.setLogin);
 
     const { mutateAsync, isPending } = useMutation({
         mutationFn: login,
-        onSuccess: async (data) => {
+        onSuccess: async (data, variables) => {
             const access = data.access;
             const refresh = data.refresh;
             try {
                 await tokenStorage.setTokens({ refresh, access });
+                await tokenStorage.setLogin(variables.login);
                 setToken(access);
+                setLogin(variables.login);
             } catch {
                 /* empty */
             }

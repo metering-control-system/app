@@ -1,6 +1,11 @@
 import { ImageManipulator, SaveFormat } from 'expo-image-manipulator';
 
-export const transformImage = async ({ uri, rotate = 0, compress = 1 }) => {
+export const transformImage = async ({
+    uri,
+    rotate = 0,
+    compress = 1,
+    maxWidth,
+}) => {
     if (!uri) {
         throw new Error('Не удалось обработать изображение: отсутствует uri.');
     }
@@ -9,6 +14,10 @@ export const transformImage = async ({ uri, rotate = 0, compress = 1 }) => {
 
     if (rotate) {
         context.rotate(rotate);
+    }
+
+    if (maxWidth) {
+        context.resize({ width: maxWidth });
     }
 
     const renderedImage = await context.renderAsync();
