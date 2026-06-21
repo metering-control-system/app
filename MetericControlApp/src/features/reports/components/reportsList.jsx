@@ -23,7 +23,7 @@ const ReportsList = ({ setError }) => {
     } = useReports();
     const {
         updateReports,
-        isPending: isRefrehsing,
+        isPending: isRefreshing,
         error: refreshError,
     } = useUpdateReports();
 
@@ -82,7 +82,7 @@ const ReportsList = ({ setError }) => {
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>No reports found.</Text>}
-                refreshing={isRefrehsing}
+                refreshing={isRefreshing}
                 onRefresh={updateReports}
                 onContentSizeChange={(_, height) => {
                     setContentHeight(height);

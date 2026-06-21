@@ -17,6 +17,7 @@ const clearSessionState = async (queryClient) => {
     useTaskOfflineMutationStore.getState().clearTasksStatuses();
     useTaskOfflineMutationStore.persist.clearStorage();
     useTasksStore.persist.clearStorage();
+    useReportsStore.getState().clearReports();
     useReportsStore.persist.clearStorage();
 };
 
