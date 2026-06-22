@@ -18,17 +18,9 @@ import MediaBlock from '@/shared/components/media/mediaBlock';
 import useStorePictures from '@/shared/store/useStorePictures';
 import { colors } from '@/shared/consts/baseColors';
 
-import {
-    createTaskReport,
-    submitReport,
-    uploadReportImage,
-} from '@/features/reports/api/submitReportApi';
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
-import {
-    buildReportImagesPayload,
-    buildReportPayload,
-} from '@/features/reports/lib/buildReportPayload';
+import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -79,12 +71,12 @@ const mapTaskToReportDefaults = (task) => ({
 const ReportSubmitForm = ({ task, id }) => {
     const router = useRouter();
     const [stepIndex, setStepIndex] = useState(0);
-    const [isSubmitting, setIsSubmitting] = useState(false);
     const reportPhotos = useStorePictures(
         (state) => state.photos.report?.[id] ?? {}
     );
     const setPhoto = useStorePictures((state) => state.setPhoto);
     const clearPhoto = useStorePictures((state) => state.clearPhoto);
+    const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
 
     const initialValues = useMemo(() => mapTaskToReportDefaults(task), [task]);
 
@@ -123,26 +115,7 @@ const ReportSubmitForm = ({ task, id }) => {
 
     const onSubmit = async (values) => {
         try {
-            setIsSubmitting(true);
-
-            const reportPayload = buildReportPayload(values);
-            const reportImagesPayload = buildReportImagesPayload(values);
-
-            const reportResponse = await createTaskReport(
-                task?.id ?? id,
-                reportPayload
-            );
-            const reportId = reportResponse?.id ?? reportResponse?.reportId;
-
-            if (!reportId) {
-                throw new Error('Не удалось получить идентификатор отчета');
-            }
-
-            for (const imagePayload of reportImagesPayload) {
-                await uploadReportImage(reportId, imagePayload);
-            }
-
-            await submitReport(reportId);
+            await submitTaskReport({ taskId: task?.id ?? id, values });
 
             Alert.alert(
                 'Успешно',
@@ -155,8 +128,6 @@ const ReportSubmitForm = ({ task, id }) => {
                     error?.message ||
                     'Не удалось отправить отчет.'
             );
-        } finally {
-            setIsSubmitting(false);
         }
     };
 
