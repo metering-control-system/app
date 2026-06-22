@@ -1,4 +1,4 @@
-export const taskReportFormDefaultValues = {
+export const reportSubmitFormDefaultValues = {
     customerName: '',
     personalAccount: '',
     meterBefore: { type: '', number: '', actualType: '', actualNumber: '' },

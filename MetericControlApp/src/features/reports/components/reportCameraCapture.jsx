@@ -3,7 +3,7 @@ import { useRouter } from 'expo-router';
 import CameraCapture from '@/shared/components/media/camera/cameraCapture';
 import useStorePictures from '@/shared/store/useStorePictures';
 
-const TaskReportCameraCapture = ({ id, slot }) => {
+const ReportCameraCapture = ({ id, slot }) => {
     const setPhoto = useStorePictures((state) => state.setPhoto);
     const cameraRef = useRef();
     const router = useRouter();
@@ -20,4 +20,4 @@ const TaskReportCameraCapture = ({ id, slot }) => {
     );
 };
 
-export default TaskReportCameraCapture;
+export default ReportCameraCapture;

@@ -1,6 +1,6 @@
 import { useLocalSearchParams } from 'expo-router';
 import TaskCameraCapture from '@/features/tasks/components/taskCameraCapture';
-import TaskReportCameraCapture from '@/features/tasks/components/taskReportCameraCapture';
+import ReportCameraCapture from '@/features/reports/components/reportCameraCapture';
 
 const CameraScreen = () => {
     const { action, id, slot } = useLocalSearchParams();
@@ -10,7 +10,7 @@ const CameraScreen = () => {
     }
 
     if (action === 'task-report' && slot) {
-        return <TaskReportCameraCapture id={id} slot={slot} />;
+        return <ReportCameraCapture id={id} slot={slot} />;
     }
 
     return null;

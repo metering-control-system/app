@@ -22,13 +22,13 @@ import {
     createTaskReport,
     submitReport,
     uploadReportImage,
-} from '@/features/tasks/api/taskReportsApi';
-import { taskReportFormSchema } from '@/features/tasks/model/taskReportFormSchema';
-import { taskReportFormDefaultValues } from '@/features/tasks/constants/taskReportFormDefaults';
+} from '@/features/reports/api/submitReportApi';
+import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
+import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import {
     buildReportImagesPayload,
     buildReportPayload,
-} from '@/features/tasks/lib/buildReportPayload';
+} from '@/features/reports/lib/buildReportPayload';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -66,17 +66,17 @@ const PHOTO_FIELDS = [
 ];
 
 const mapTaskToReportDefaults = (task) => ({
-    ...taskReportFormDefaultValues,
+    ...reportSubmitFormDefaultValues,
     customerName: task?.consumer?.full_name || '',
     personalAccount: task?.address?.account_number || '',
     meterBefore: {
-        ...taskReportFormDefaultValues.meterBefore,
+        ...reportSubmitFormDefaultValues.meterBefore,
         type: task?.meter?.type || '',
         number: task?.meter?.number || '',
     },
 });
 
-const TaskReportForm = ({ task, id }) => {
+const ReportSubmitForm = ({ task, id }) => {
     const router = useRouter();
     const [stepIndex, setStepIndex] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
@@ -96,7 +96,7 @@ const TaskReportForm = ({ task, id }) => {
         reset,
         formState: { errors },
     } = useForm({
-        resolver: zodResolver(taskReportFormSchema),
+        resolver: zodResolver(reportSubmitFormSchema),
         mode: 'onChange',
         shouldUnregister: false,
         defaultValues: initialValues,
@@ -720,4 +720,4 @@ const styles = StyleSheet.create({
     buttonSpacer: { flex: 1 },
 });
 
-export default TaskReportForm;
+export default ReportSubmitForm;

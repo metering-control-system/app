@@ -29,7 +29,7 @@ const optionalEmailField = z
         'Введите корректный email'
     );
 
-export const taskReportFormSchema = z
+export const reportSubmitFormSchema = z
     .object({
         customerName: z
             .string()
