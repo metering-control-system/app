@@ -39,6 +39,14 @@ const useStorePictures = create((set, get) => ({
             };
         }),
 
+    clearEntityPhotos: ({ entity, entityId }) =>
+        set((state) => {
+            const nextEntityPhotos = { ...(state.photos[entity] ?? {}) };
+            delete nextEntityPhotos[entityId];
+
+            return { photos: { ...state.photos, [entity]: nextEntityPhotos } };
+        }),
+
     resetPhotos: () => set({ photos: { task: {}, report: {} } }),
 }));
 

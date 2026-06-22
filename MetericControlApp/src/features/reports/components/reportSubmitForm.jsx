@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useState } from 'react';
-import { Controller, useForm } from 'react-hook-form';
+import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
     Pressable,
@@ -21,6 +21,7 @@ import { colors } from '@/shared/consts/baseColors';
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -71,14 +72,50 @@ const mapTaskToReportDefaults = (task) => ({
 const ReportSubmitForm = ({ task, id }) => {
     const router = useRouter();
     const [stepIndex, setStepIndex] = useState(0);
+    const draftId = String(task?.id ?? id);
     const reportPhotos = useStorePictures(
         (state) => state.photos.report?.[id] ?? {}
     );
     const setPhoto = useStorePictures((state) => state.setPhoto);
     const clearPhoto = useStorePictures((state) => state.clearPhoto);
+    const clearEntityPhotos = useStorePictures(
+        (state) => state.clearEntityPhotos
+    );
     const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
+    const draftValues = useReportDraftStore(
+        (state) => state.drafts?.[draftId] ?? null
+    );
+    const setDraft = useReportDraftStore((state) => state.setDraft);
+    const clearDraft = useReportDraftStore((state) => state.clearDraft);
 
-    const initialValues = useMemo(() => mapTaskToReportDefaults(task), [task]);
+    const initialValues = useMemo(() => {
+        const taskDefaults = mapTaskToReportDefaults(task);
+
+        return {
+            ...taskDefaults,
+            ...draftValues,
+            meterBefore: {
+                ...taskDefaults.meterBefore,
+                ...draftValues?.meterBefore,
+            },
+            metering: {
+                ...reportSubmitFormDefaultValues.metering,
+                ...draftValues?.metering,
+            },
+            photos: {
+                ...reportSubmitFormDefaultValues.photos,
+                ...draftValues?.photos,
+            },
+            admission: {
+                ...reportSubmitFormDefaultValues.admission,
+                ...draftValues?.admission,
+            },
+            consumerContact: {
+                ...reportSubmitFormDefaultValues.consumerContact,
+                ...draftValues?.consumerContact,
+            },
+        };
+    }, [draftValues, task]);
 
     const {
         control,
@@ -93,6 +130,7 @@ const ReportSubmitForm = ({ task, id }) => {
         shouldUnregister: false,
         defaultValues: initialValues,
     });
+    const formValues = useWatch({ control });
 
     useEffect(() => {
         reset(initialValues);
@@ -113,9 +151,20 @@ const ReportSubmitForm = ({ task, id }) => {
         });
     }, [reportPhotos, setValue]);
 
+    useEffect(() => {
+        if (!formValues) {
+            return;
+        }
+
+        setDraft({ draftId, values: formValues });
+    }, [draftId, formValues, setDraft]);
+
     const onSubmit = async (values) => {
         try {
             await submitTaskReport({ taskId: task?.id ?? id, values });
+            clearDraft(draftId);
+            clearEntityPhotos({ entity: 'report', entityId: id });
+            reset(mapTaskToReportDefaults(task));
 
             Alert.alert(
                 'Успешно',
