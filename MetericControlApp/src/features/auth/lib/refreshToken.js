@@ -1,12 +1,10 @@
 import { refresh } from '@/features/auth/api/refresh';
 import tokenStorage from '@/features/auth/lib/tokenStorage';
 import useAuth from '@/features/auth/store/useAuth';
+import { getRefreshTokenLocally } from '@/features/auth/lib/getTokensLocally';
 
 const refreshToken = async () => {
-    const storedRefreshToken = await tokenStorage.getRefreshToken();
-    if (!storedRefreshToken) {
-        throw new Error('No refresh token');
-    }
+    const storedRefreshToken = await getRefreshTokenLocally();
 
     const tokens = await refresh(storedRefreshToken);
     const accessToken = tokens.access;

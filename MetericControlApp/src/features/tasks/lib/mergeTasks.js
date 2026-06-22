@@ -1,5 +1,10 @@
 export const mergeTasks = (previousTasks, incomingTasks) => {
-    const map = new Map(previousTasks.map((task) => [task.id, task]));
+    const items = previousTasks ?? [];
+    const map = new Map(items.map((task) => [task.id, task]));
+
+    if (!incomingTasks) {
+        return [];
+    }
 
     for (const task of incomingTasks) {
         if (task) {
