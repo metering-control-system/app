@@ -1,0 +1,133 @@
+const toNullableValue = (value) => {
+    if (typeof value !== 'string') {
+        return value ?? null;
+    }
+
+    const trimmedValue = value.trim();
+
+    return trimmedValue ? trimmedValue : null;
+};
+
+const toReadingValue = (value) => {
+    const normalizedValue = toNullableValue(value);
+
+    if (!normalizedValue) {
+        return null;
+    }
+
+    return normalizedValue.replace(',', '.');
+};
+
+const splitFullName = (fullName) => {
+    const normalizedFullName = toNullableValue(fullName);
+
+    if (!normalizedFullName) {
+        return { firstName: null, middleName: null, lastName: null };
+    }
+
+    const [lastName = null, firstName = null, middleName = null] =
+        normalizedFullName.split(/\s+/);
+
+    return { firstName, middleName, lastName };
+};
+
+const buildReactNativeFile = (uri, kind) => {
+    if (!uri) {
+        return null;
+    }
+
+    const uriParts = uri.split('.');
+    const extension = uriParts.at(-1)?.toLowerCase() || 'jpg';
+    const normalizedExtension = extension === 'jpg' ? 'jpeg' : extension;
+
+    return {
+        uri,
+        name: `${kind.toLowerCase()}.${extension}`,
+        type: `image/${normalizedExtension}`,
+    };
+};
+
+export const buildReportPayload = (formValues) => {
+    const contactNameParts = splitFullName(formValues.consumerContact.fullName);
+
+    return {
+        metering: {
+            ['dismantling_completed']: formValues.metering.dismantlingCompleted,
+            ['actual_old_meter_number']: toNullableValue(
+                formValues.meterBefore.actualNumber
+            ),
+            ['actual_old_meter_type']: toNullableValue(
+                formValues.meterBefore.actualType
+            ),
+            ['new_meter_number']: toNullableValue(
+                formValues.metering.newMeterNumber
+            ),
+            ['new_meter_type']: toNullableValue(
+                formValues.metering.newMeterType
+            ),
+            ['removal_reading']: toReadingValue(formValues.metering.oldReading),
+            ['installation_reading']: toReadingValue(
+                formValues.metering.installationReading
+            ),
+            ['seal_location']: toNullableValue(
+                formValues.metering.sealLocation
+            ),
+            ['seal_number']: toNullableValue(formValues.metering.sealNumber),
+        },
+        admission: {
+            status: toNullableValue(formValues.admission.status),
+            ['rejection_reasons']: formValues.admission.rejectionReasons,
+            ['rejection_comment']: toNullableValue(
+                formValues.admission.rejectionComment
+            ),
+        },
+        ['consumer_contact']: {
+            ['is_refused_contact']: formValues.consumerContact.isRefusedContact,
+            ['first_name']: contactNameParts.firstName,
+            ['middle_name']: contactNameParts.middleName,
+            ['last_name']: contactNameParts.lastName,
+            ['phone_number']: toNullableValue(
+                formValues.consumerContact.phoneNumber
+            ),
+            email: toNullableValue(formValues.consumerContact.email),
+        },
+    };
+};
+
+export const buildReportImagesPayload = (formValues) => {
+    return [
+        {
+            kind: 'OLD_METER',
+            file: buildReactNativeFile(formValues.photos.oldMeter, 'old_meter'),
+        },
+        {
+            kind: 'SEAL',
+            file: buildReactNativeFile(formValues.photos.seal, 'seal'),
+        },
+        {
+            kind: 'FRONT_PANEL',
+            file: buildReactNativeFile(
+                formValues.photos.frontPanel,
+                'front_panel'
+            ),
+        },
+        {
+            kind: 'GENERAL_VIEW',
+            file: buildReactNativeFile(
+                formValues.photos.generalView,
+                'general_view'
+            ),
+        },
+        {
+            kind: 'ACT_PAPER',
+            file: buildReactNativeFile(formValues.photos.actPaper, 'act_paper'),
+        },
+        {
+            kind: 'REFUSAL_PROOF',
+            file: buildReactNativeFile(
+                formValues.photos.refusalProof,
+                'refusal_proof'
+            ),
+        },
+    ].filter((item) => item.file);
+};

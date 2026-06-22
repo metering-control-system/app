@@ -13,6 +13,7 @@ import { colors } from '@/shared/consts/baseColors';
 import MediaBlock from '@/shared/components/media/mediaBlock';
 import { useRouter } from 'expo-router';
 import useStorePictures from '@/shared/store/useStorePictures';
+import TaskReportForm from '@/features/tasks/components/taskReportForm';
 
 const TaskDetailsForm = ({ task, id }) => {
     const {
@@ -40,6 +41,10 @@ const TaskDetailsForm = ({ task, id }) => {
             reset(task);
         }
     }, [reset, task]);
+
+    if (task?.status === 'IN_PROGRESS') {
+        return <TaskReportForm task={task} id={id} />;
+    }
 
     const handleOpenCamera = () => {
         router?.push({
