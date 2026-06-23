@@ -6,6 +6,27 @@ import ImagePreview from '@/shared/components/media/imagePreview';
 import { Entypo } from '@expo/vector-icons';
 import ImagePicker from '@/shared/components/media/picker/imagePicker';
 
+/**
+ * Feature-agnostic media panel.
+ *
+ * Renders:
+ * - a button that opens the full-screen camera route;
+ * - a button that picks an image from the gallery;
+ * - a preview tile that opens `ImagePreview`;
+ * - a delete action for the current image.
+ *
+ * The component does not know where images are stored. The feature that uses
+ * it must bind `entity`, `entityId`, and `slot` to callback functions and pass
+ * only ready-to-use handlers here.
+ *
+ * @param {Object} props
+ * @param {string | null} props.uri Current image URI from feature/store state.
+ * @param {Function} props.handleOpenCamera Opens the shared camera route.
+ * @param {Function} props.handleDeletePhoto Deletes the current image.
+ * @param {(uri: string) => void} props.handleUploadPhoto Saves gallery image.
+ * @param {(uri: string) => void} props.handleUpdatePhoto Saves edited preview.
+ * @param {boolean} [props.disabled] Disables camera and gallery actions.
+ */
 export default function MediaBlock({
     uri,
     uris,
