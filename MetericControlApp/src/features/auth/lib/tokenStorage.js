@@ -21,10 +21,6 @@ const tokenStorage = {
         await SecureStore.deleteItemAsync('refresh_token');
         await SecureStore.deleteItemAsync('access_token');
     },
-    getLogin: async () =>
-        SecureStore.getItemAsync('user_login').catch(() => null),
-    setLogin: async (login) => SecureStore.setItemAsync('user_login', login),
-    clearLogin: async () => SecureStore.deleteItemAsync('user_login'),
 };
 
 export default tokenStorage;

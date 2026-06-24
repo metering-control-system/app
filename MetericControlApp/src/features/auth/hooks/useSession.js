@@ -22,13 +22,8 @@ const useSession = () => {
             } else {
                 await refreshToken();
             }
-            const storedLogin = await tokenStorage.getLogin();
-            if (storedLogin) {
-                useAuth.getState().setLogin(storedLogin);
-            }
         } catch {
             await tokenStorage.clearTokens();
-            await tokenStorage.clearLogin();
             clearSession();
         } finally {
             setAuthChecked();

@@ -8,7 +8,6 @@ import useReportsStore from '@/features/reports/store/useReportsStore';
 
 const clearSessionState = async (queryClient) => {
     await tokenStorage.clearTokens();
-    await tokenStorage.clearLogin();
     useAuth.getState().clearSession();
     useTasksSyncStore.getState().setLastSyncAt(null);
     useTasksSyncStore.getState().setListSnapshotAt(null);
