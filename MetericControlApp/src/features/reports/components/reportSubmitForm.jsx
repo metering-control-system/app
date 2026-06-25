@@ -149,7 +149,6 @@ const ReportSubmitForm = ({ task, id }) => {
     }, [setValue, watch]);
 
     const admissionStatus = watch('admission.status');
-    const rejectionReasons = watch('admission.rejectionReasons') || [];
     const isRefusedContact = watch('consumerContact.isRefusedContact');
     const isLastStep = stepIndex === FORM_STEPS.length - 1;
     const isFirstStep = stepIndex === 0;
@@ -190,17 +189,6 @@ const ReportSubmitForm = ({ task, id }) => {
                     'Не удалось отправить отчет.'
             );
         }
-    };
-
-    const toggleRejectionReason = (reasonValue) => {
-        const nextReasons = rejectionReasons.includes(reasonValue)
-            ? rejectionReasons.filter((item) => item !== reasonValue)
-            : [...rejectionReasons, reasonValue];
-
-        setValue('admission.rejectionReasons', nextReasons, {
-            shouldDirty: true,
-            shouldValidate: true,
-        });
     };
 
     const renderTextField = ({
@@ -402,6 +390,14 @@ const ReportSubmitForm = ({ task, id }) => {
                 placeholder: 'Введите фактический номер при отличии',
                 error: errors.meterBefore?.actualNumber,
             })}
+            {renderTextField({
+                name: 'comment',
+                label: 'Комментарий к отчету',
+                placeholder: 'Добавьте комментарий при необходимости',
+                multiline: true,
+                numberOfLines: 4,
+                error: errors.comment,
+            })}
         </View>
     );
 
@@ -495,42 +491,23 @@ const ReportSubmitForm = ({ task, id }) => {
             ) : null}
 
             {admissionStatus === 'NOT_ADMITTED' ? (
-                <View style={styles.control}>
-                    <Text style={styles.label}>Причина недопуска</Text>
-                    <View style={styles.chipsRow}>
-                        {REJECTION_REASON_OPTIONS.map((option) => {
-                            const isSelected = rejectionReasons.includes(
-                                option.value
-                            );
-
-                            return (
-                                <Pressable
-                                    key={option.value}
-                                    onPress={() =>
-                                        toggleRejectionReason(option.value)
-                                    }
-                                    style={[
-                                        styles.chip,
-                                        isSelected && styles.chipSelected,
-                                    ]}>
-                                    <Text
-                                        style={[
-                                            styles.chipText,
-                                            isSelected &&
-                                                styles.chipTextSelected,
-                                        ]}>
-                                        {option.label}
-                                    </Text>
-                                </Pressable>
-                            );
-                        })}
-                    </View>
-                    {errors.admission?.rejectionReasons ? (
-                        <Text style={styles.errorText}>
-                            {errors.admission.rejectionReasons.message}
-                        </Text>
-                    ) : null}
-                </View>
+                <Controller
+                    control={control}
+                    name='admission.rejectionReason'
+                    render={({ field: { onChange, value } }) =>
+                        renderSingleOptionGroup({
+                            label: 'Причина недопуска',
+                            value,
+                            onChange,
+                            options: REJECTION_REASON_OPTIONS,
+                        })
+                    }
+                />
+            ) : null}
+            {errors.admission?.rejectionReason ? (
+                <Text style={styles.errorText}>
+                    {errors.admission.rejectionReason.message}
+                </Text>
             ) : null}
 
             {renderTextField({
@@ -568,6 +545,14 @@ const ReportSubmitForm = ({ task, id }) => {
                                             shouldValidate: true,
                                         }
                                     );
+                                    setValue(
+                                        'consumerContact.phoneNumber2',
+                                        '',
+                                        {
+                                            shouldDirty: true,
+                                            shouldValidate: true,
+                                        }
+                                    );
                                     setValue('consumerContact.email', '', {
                                         shouldDirty: true,
                                         shouldValidate: true,
@@ -590,11 +575,19 @@ const ReportSubmitForm = ({ task, id }) => {
 
             {renderTextField({
                 name: 'consumerContact.phoneNumber',
-                label: 'Телефон',
+                label: 'Телефон 1',
                 placeholder: 'Введите телефон',
                 keyboardType: 'phone-pad',
                 editable: !isRefusedContact,
                 error: errors.consumerContact?.phoneNumber,
+            })}
+            {renderTextField({
+                name: 'consumerContact.phoneNumber2',
+                label: 'Телефон 2',
+                placeholder: 'Введите дополнительный телефон',
+                keyboardType: 'phone-pad',
+                editable: !isRefusedContact,
+                error: errors.consumerContact?.phoneNumber2,
             })}
             {renderTextField({
                 name: 'consumerContact.email',
