@@ -49,8 +49,14 @@ const buildReactNativeFile = (uri, kind) => {
 
 export const buildReportPayload = (formValues) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
+    const rejectionReason =
+        toNullableValue(formValues.admission.rejectionReason) ??
+        formValues.admission.rejectionReasons?.[0] ??
+        null;
 
-    return {
+    const payload = {
+        ['client_report_id']: formValues.clientReportId,
+        ['task_id']: Number(formValues.taskId),
         metering: {
             ['dismantling_completed']: formValues.metering.dismantlingCompleted,
             ['actual_old_meter_number']: toNullableValue(
@@ -76,7 +82,7 @@ export const buildReportPayload = (formValues) => {
         },
         admission: {
             status: toNullableValue(formValues.admission.status),
-            ['rejection_reasons']: formValues.admission.rejectionReasons,
+            ['rejection_reason']: rejectionReason,
             ['rejection_comment']: toNullableValue(
                 formValues.admission.rejectionComment
             ),
@@ -86,12 +92,35 @@ export const buildReportPayload = (formValues) => {
             ['first_name']: contactNameParts.firstName,
             ['middle_name']: contactNameParts.middleName,
             ['last_name']: contactNameParts.lastName,
-            ['phone_number']: toNullableValue(
+            ['phone_number_1']: toNullableValue(
                 formValues.consumerContact.phoneNumber
+            ),
+            ['phone_number_2']: toNullableValue(
+                formValues.consumerContact.phoneNumber2
             ),
             email: toNullableValue(formValues.consumerContact.email),
         },
     };
+
+    const comment = toNullableValue(formValues.comment);
+
+    if (comment) {
+        payload.comment = comment;
+    }
+
+    if (!payload.consumer_contact.phone_number_2) {
+        delete payload.consumer_contact.phone_number_2;
+    }
+
+    if (!payload.admission.rejection_reason) {
+        delete payload.admission.rejection_reason;
+    }
+
+    if (!payload.admission.rejection_comment) {
+        delete payload.admission.rejection_comment;
+    }
+
+    return payload;
 };
 
 export const buildReportImagesPayload = (formValues) => {

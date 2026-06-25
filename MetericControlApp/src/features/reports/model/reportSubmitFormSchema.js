@@ -31,6 +31,8 @@ const optionalEmailField = z
 
 export const reportSubmitFormSchema = z
     .object({
+        clientReportId: z.string().trim().optional(),
+
         customerName: z
             .string()
             .trim()
@@ -43,6 +45,8 @@ export const reportSubmitFormSchema = z
             .trim()
             .min(1, 'Введите лицевой счет')
             .regex(/^\d{1,20}$/, 'Лицевой счет должен содержать только цифры'),
+
+        comment: z.string().trim().max(1000, 'Комментарий слишком длинный'),
 
         meterBefore: z.object({
             type: requiredTrimmedString(
@@ -102,6 +106,7 @@ export const reportSubmitFormSchema = z
 
         admission: z.object({
             status: z.string().trim().min(1, 'Выберите статус допуска'),
+            rejectionReason: z.string().trim(),
             rejectionReasons: z.array(z.string().trim()),
             rejectionComment: z
                 .string()
@@ -112,6 +117,7 @@ export const reportSubmitFormSchema = z
         consumerContact: z.object({
             isRefusedContact: z.boolean(),
             phoneNumber: optionalPhoneField,
+            phoneNumber2: optionalPhoneField,
             email: optionalEmailField,
             fullName: optionalTrimmedString(
                 150,
@@ -122,11 +128,12 @@ export const reportSubmitFormSchema = z
     .superRefine((values, ctx) => {
         if (
             values.admission.status === 'NOT_ADMITTED' &&
+            !values.admission.rejectionReason &&
             values.admission.rejectionReasons.length === 0
         ) {
             ctx.addIssue({
                 code: 'custom',
-                path: ['admission', 'rejectionReasons'],
+                path: ['admission', 'rejectionReason'],
                 message: 'Выберите хотя бы одну причину недопуска',
             });
         }
@@ -134,6 +141,7 @@ export const reportSubmitFormSchema = z
         if (
             values.consumerContact.isRefusedContact &&
             (values.consumerContact.phoneNumber ||
+                values.consumerContact.phoneNumber2 ||
                 values.consumerContact.email ||
                 values.consumerContact.fullName)
         ) {
@@ -148,6 +156,7 @@ export const reportSubmitFormSchema = z
         if (
             !values.consumerContact.isRefusedContact &&
             !values.consumerContact.phoneNumber &&
+            !values.consumerContact.phoneNumber2 &&
             !values.consumerContact.email &&
             !values.consumerContact.fullName
         ) {

@@ -1,6 +1,8 @@
 export const reportSubmitFormDefaultValues = {
+    clientReportId: '',
     customerName: '',
     personalAccount: '',
+    comment: '',
     meterBefore: { type: '', number: '', actualType: '', actualNumber: '' },
     metering: {
         dismantlingCompleted: false,
@@ -19,10 +21,16 @@ export const reportSubmitFormDefaultValues = {
         actPaper: null,
         refusalProof: null,
     },
-    admission: { status: '', rejectionReasons: [], rejectionComment: '' },
+    admission: {
+        status: '',
+        rejectionReason: '',
+        rejectionReasons: [],
+        rejectionComment: '',
+    },
     consumerContact: {
         isRefusedContact: false,
         phoneNumber: '',
+        phoneNumber2: '',
         email: '',
         fullName: '',
     },

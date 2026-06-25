@@ -21,6 +21,7 @@ import { colors } from '@/shared/consts/baseColors';
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const FORM_STEPS = [
@@ -135,6 +136,17 @@ const ReportSubmitForm = ({ task, id }) => {
     useEffect(() => {
         reset(initialValues);
     }, [initialValues, reset]);
+
+    useEffect(() => {
+        if (watch('clientReportId')) {
+            return;
+        }
+
+        setValue('clientReportId', createClientReportId(), {
+            shouldDirty: true,
+            shouldValidate: false,
+        });
+    }, [setValue, watch]);
 
     const admissionStatus = watch('admission.status');
     const rejectionReasons = watch('admission.rejectionReasons') || [];
