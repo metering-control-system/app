@@ -14,6 +14,7 @@ import {
 import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
 import { colors } from '@/shared/consts/baseColors';
+import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
@@ -128,6 +129,21 @@ const ReportSubmitForm = ({ task, id }) => {
     const isFirstStep = stepIndex === 0;
 
     useEffect(() => {
+        if (admissionStatus === 'NOT_ADMITTED') {
+            return;
+        }
+
+        setValue('admission.rejectionReason', '', {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+        setValue('admission.rejectionComment', '', {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+    }, [admissionStatus, setValue]);
+
+    useEffect(() => {
         if (!formValues) {
             return;
         }
@@ -148,9 +164,7 @@ const ReportSubmitForm = ({ task, id }) => {
         } catch (error) {
             Alert.alert(
                 'Ошибка отправки',
-                error?.response?.data?.detail ||
-                    error?.message ||
-                    'Не удалось отправить отчет.'
+                getApiErrorMessage(error, 'Не удалось отправить отчет.')
             );
         }
     };
