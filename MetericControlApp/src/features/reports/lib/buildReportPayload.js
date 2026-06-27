@@ -33,10 +33,9 @@ const splitFullName = (fullName) => {
 
 export const buildReportPayload = (formValues) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
-    const rejectionReason =
-        toNullableValue(formValues.admission.rejectionReason) ??
-        formValues.admission.rejectionReasons?.[0] ??
-        null;
+    const rejectionReason = toNullableValue(
+        formValues.admission.rejectionReason
+    );
 
     const payload = {
         ['client_report_id']: formValues.clientReportId,

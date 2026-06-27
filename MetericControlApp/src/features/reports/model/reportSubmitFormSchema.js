@@ -97,7 +97,6 @@ export const reportSubmitFormSchema = z
         admission: z.object({
             status: z.string().trim().min(1, 'Выберите статус допуска'),
             rejectionReason: z.string().trim(),
-            rejectionReasons: z.array(z.string().trim()),
             rejectionComment: z
                 .string()
                 .trim()
@@ -118,8 +117,7 @@ export const reportSubmitFormSchema = z
     .superRefine((values, ctx) => {
         if (
             values.admission.status === 'NOT_ADMITTED' &&
-            !values.admission.rejectionReason &&
-            values.admission.rejectionReasons.length === 0
+            !values.admission.rejectionReason
         ) {
             ctx.addIssue({
                 code: 'custom',

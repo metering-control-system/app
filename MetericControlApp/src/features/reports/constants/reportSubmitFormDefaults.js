@@ -13,12 +13,7 @@ export const reportSubmitFormDefaultValues = {
         sealNumber: '',
         installationReading: '',
     },
-    admission: {
-        status: '',
-        rejectionReason: '',
-        rejectionReasons: [],
-        rejectionComment: '',
-    },
+    admission: { status: '', rejectionReason: '', rejectionComment: '' },
     consumerContact: {
         isRefusedContact: false,
         phoneNumber: '',
