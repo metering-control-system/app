@@ -31,6 +31,22 @@ const splitFullName = (fullName) => {
     return { firstName, middleName, lastName };
 };
 
+const buildReactNativeFile = (uri, kind) => {
+    if (!uri) {
+        return null;
+    }
+
+    const uriParts = uri.split('.');
+    const extension = uriParts.at(-1)?.toLowerCase() || 'jpg';
+    const normalizedExtension = extension === 'jpg' ? 'jpeg' : extension;
+
+    return {
+        uri,
+        name: `${kind.toLowerCase()}.${extension}`,
+        type: `image/${normalizedExtension}`,
+    };
+};
+
 export const buildReportPayload = (formValues) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
     const rejectionReason = toNullableValue(
@@ -104,4 +120,42 @@ export const buildReportPayload = (formValues) => {
     }
 
     return payload;
+};
+
+export const buildReportImagesPayload = (formValues) => {
+    return [
+        {
+            kind: 'OLD_METER',
+            file: buildReactNativeFile(formValues.photos.oldMeter, 'old_meter'),
+        },
+        {
+            kind: 'SEAL',
+            file: buildReactNativeFile(formValues.photos.seal, 'seal'),
+        },
+        {
+            kind: 'FRONT_PANEL',
+            file: buildReactNativeFile(
+                formValues.photos.frontPanel,
+                'front_panel'
+            ),
+        },
+        {
+            kind: 'GENERAL_VIEW',
+            file: buildReactNativeFile(
+                formValues.photos.generalView,
+                'general_view'
+            ),
+        },
+        {
+            kind: 'ACT_PAPER',
+            file: buildReactNativeFile(formValues.photos.actPaper, 'act_paper'),
+        },
+        {
+            kind: 'REFUSAL_PROOF',
+            file: buildReactNativeFile(
+                formValues.photos.refusalProof,
+                'refusal_proof'
+            ),
+        },
+    ].filter((item) => item.file);
 };
