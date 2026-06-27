@@ -9,7 +9,7 @@ const CameraScreen = () => {
         return <TaskCameraCapture id={id} />;
     }
 
-    if (action === 'task-report' && slot) {
+    if (action === 'reports' && slot) {
         return <ReportCameraCapture id={id} slot={slot} />;
     }
 

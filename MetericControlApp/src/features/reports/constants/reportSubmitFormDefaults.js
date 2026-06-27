@@ -13,6 +13,14 @@ export const reportSubmitFormDefaultValues = {
         sealNumber: '',
         installationReading: '',
     },
+    photos: {
+        oldMeter: null,
+        seal: null,
+        frontPanel: null,
+        generalView: null,
+        actPaper: null,
+        refusalProof: null,
+    },
     admission: { status: '', rejectionReason: '', rejectionComment: '' },
     consumerContact: {
         isRefusedContact: false,

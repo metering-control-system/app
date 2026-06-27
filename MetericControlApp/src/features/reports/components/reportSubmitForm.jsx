@@ -10,11 +10,14 @@ import {
     TextInput,
     View,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 
 import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
 import { colors } from '@/shared/consts/baseColors';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
+import MediaBlock from '@/shared/components/media/mediaBlock';
+import useStorePictures from '@/shared/store/useStorePictures';
 
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
@@ -25,6 +28,7 @@ import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
     { key: 'metering', title: 'Демонтаж и монтаж' },
+    { key: 'photos', title: 'Фотофиксация' },
     { key: 'admission', title: 'Итог и допуск' },
     { key: 'contacts', title: 'Контактные данные' },
 ];
@@ -47,6 +51,15 @@ const REJECTION_REASON_OPTIONS = [
     { label: 'Другое', value: 'OTHER' },
 ];
 
+const PHOTO_FIELDS = [
+    { name: 'oldMeter', title: 'Фото старого счетчика' },
+    { name: 'seal', title: 'Фото пломбы' },
+    { name: 'frontPanel', title: 'Фото лицевой панели счетчика' },
+    { name: 'generalView', title: 'Общий вид' },
+    { name: 'actPaper', title: 'Фото бумажного акта' },
+    { name: 'refusalProof', title: 'Фото подтверждения отказа' },
+];
+
 const mapTaskToReportDefaults = (task) => ({
     ...reportSubmitFormDefaultValues,
     customerName: task?.consumer?.full_name || '',
@@ -59,8 +72,17 @@ const mapTaskToReportDefaults = (task) => ({
 });
 
 const ReportSubmitForm = ({ task, id }) => {
+    const router = useRouter();
     const [stepIndex, setStepIndex] = useState(0);
     const draftId = String(task?.id ?? id);
+    const reportPhotos = useStorePictures(
+        (state) => state.photos.report?.[id] ?? {}
+    );
+    const setPhoto = useStorePictures((state) => state.setPhoto);
+    const clearPhoto = useStorePictures((state) => state.clearPhoto);
+    const clearEntityPhotos = useStorePictures(
+        (state) => state.clearEntityPhotos
+    );
     const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
@@ -81,6 +103,10 @@ const ReportSubmitForm = ({ task, id }) => {
             metering: {
                 ...reportSubmitFormDefaultValues.metering,
                 ...draftValues?.metering,
+            },
+            photos: {
+                ...reportSubmitFormDefaultValues.photos,
+                ...draftValues?.photos,
             },
             admission: {
                 ...reportSubmitFormDefaultValues.admission,
@@ -144,6 +170,15 @@ const ReportSubmitForm = ({ task, id }) => {
     }, [admissionStatus, setValue]);
 
     useEffect(() => {
+        Object.entries(reportPhotos).forEach(([slot, uri]) => {
+            setValue(`photos.${slot}`, uri, {
+                shouldDirty: true,
+                shouldValidate: false,
+            });
+        });
+    }, [reportPhotos, setValue]);
+
+    useEffect(() => {
         if (!formValues) {
             return;
         }
@@ -155,6 +190,7 @@ const ReportSubmitForm = ({ task, id }) => {
         try {
             await submitTaskReport({ taskId: task?.id ?? id, values });
             clearDraft(draftId);
+            clearEntityPhotos({ entity: 'report', entityId: id });
             reset(mapTaskToReportDefaults(task));
 
             Alert.alert(
@@ -386,6 +422,69 @@ const ReportSubmitForm = ({ task, id }) => {
         </View>
     );
 
+    const renderPhotoField = (photoField) => {
+        const uri = reportPhotos?.[photoField.name] || null;
+
+        return (
+            <View key={photoField.name} style={styles.control}>
+                <Text style={styles.label}>{photoField.title}</Text>
+                <MediaBlock
+                    uri={uri}
+                    handleOpenCamera={() => {
+                        router.push({
+                            pathname: '/(authorized)/camera',
+                            params: {
+                                action: 'reports',
+                                id,
+                                slot: photoField.name,
+                            },
+                        });
+                    }}
+                    handleUploadPhoto={(uriValue) => {
+                        setPhoto({
+                            entity: 'report',
+                            entityId: id,
+                            slot: photoField.name,
+                            uri: uriValue,
+                        });
+                        setValue(`photos.${photoField.name}`, uriValue, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                        });
+                    }}
+                    handleUpdatePhoto={(uriValue) => {
+                        setPhoto({
+                            entity: 'report',
+                            entityId: id,
+                            slot: photoField.name,
+                            uri: uriValue,
+                        });
+                        setValue(`photos.${photoField.name}`, uriValue, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                        });
+                    }}
+                    handleDeletePhoto={() => {
+                        clearPhoto({
+                            entity: 'report',
+                            entityId: id,
+                            slot: photoField.name,
+                        });
+                        setValue(`photos.${photoField.name}`, null, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                        });
+                    }}
+                    disabled={isSubmitting}
+                />
+            </View>
+        );
+    };
+
+    const renderPhotosStep = () => (
+        <View style={styles.section}>{PHOTO_FIELDS.map(renderPhotoField)}</View>
+    );
+
     const renderAdmissionStep = () => (
         <View style={styles.section}>
             <Controller
@@ -529,6 +628,8 @@ const ReportSubmitForm = ({ task, id }) => {
                 return renderBeforeWorkStep();
             case 'metering':
                 return renderMeteringStep();
+            case 'photos':
+                return renderPhotosStep();
             case 'admission':
                 return renderAdmissionStep();
             case 'contacts':
