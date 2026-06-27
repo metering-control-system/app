@@ -14,12 +14,12 @@ export const reportSubmitFormDefaultValues = {
         installationReading: '',
     },
     photos: {
-        oldMeter: null,
-        seal: null,
-        frontPanel: null,
-        generalView: null,
-        actPaper: null,
-        refusalProof: null,
+        oldMeter: [],
+        seal: [],
+        frontPanel: [],
+        generalView: [],
+        actPaper: [],
+        refusalProof: [],
     },
     admission: { status: '', rejectionReason: '', rejectionComment: '' },
     consumerContact: {

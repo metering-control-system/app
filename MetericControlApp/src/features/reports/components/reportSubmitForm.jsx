@@ -78,8 +78,9 @@ const ReportSubmitForm = ({ task, id }) => {
     const reportPhotos = useStorePictures(
         (state) => state.photos.report?.[id] ?? {}
     );
-    const setPhoto = useStorePictures((state) => state.setPhoto);
-    const clearPhoto = useStorePictures((state) => state.clearPhoto);
+    const appendPhoto = useStorePictures((state) => state.appendPhoto);
+    const updatePhoto = useStorePictures((state) => state.updatePhoto);
+    const removePhotoAt = useStorePictures((state) => state.removePhotoAt);
     const clearEntityPhotos = useStorePictures(
         (state) => state.clearEntityPhotos
     );
@@ -170,8 +171,8 @@ const ReportSubmitForm = ({ task, id }) => {
     }, [admissionStatus, setValue]);
 
     useEffect(() => {
-        Object.entries(reportPhotos).forEach(([slot, uri]) => {
-            setValue(`photos.${slot}`, uri, {
+        Object.entries(reportPhotos).forEach(([slot, uris]) => {
+            setValue(`photos.${slot}`, Array.isArray(uris) ? uris : [uris], {
                 shouldDirty: true,
                 shouldValidate: false,
             });
@@ -423,13 +424,17 @@ const ReportSubmitForm = ({ task, id }) => {
     );
 
     const renderPhotoField = (photoField) => {
-        const uri = reportPhotos?.[photoField.name] || null;
+        const uris = Array.isArray(reportPhotos?.[photoField.name])
+            ? reportPhotos[photoField.name]
+            : reportPhotos?.[photoField.name]
+              ? [reportPhotos[photoField.name]]
+              : [];
 
         return (
             <View key={photoField.name} style={styles.control}>
                 <Text style={styles.label}>{photoField.title}</Text>
                 <MediaBlock
-                    uri={uri}
+                    uris={uris}
                     handleOpenCamera={() => {
                         router.push({
                             pathname: '/(authorized)/camera',
@@ -441,39 +446,45 @@ const ReportSubmitForm = ({ task, id }) => {
                         });
                     }}
                     handleUploadPhoto={(uriValue) => {
-                        setPhoto({
+                        appendPhoto({
                             entity: 'report',
                             entityId: id,
                             slot: photoField.name,
                             uri: uriValue,
                         });
-                        setValue(`photos.${photoField.name}`, uriValue, {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                        });
+                        setValue(
+                            `photos.${photoField.name}`,
+                            [...uris, uriValue],
+                            { shouldDirty: true, shouldValidate: true }
+                        );
                     }}
-                    handleUpdatePhoto={(uriValue) => {
-                        setPhoto({
+                    handleUpdatePhoto={(uriValue, index) => {
+                        updatePhoto({
                             entity: 'report',
                             entityId: id,
                             slot: photoField.name,
+                            index,
                             uri: uriValue,
                         });
-                        setValue(`photos.${photoField.name}`, uriValue, {
+                        const nextUris = [...uris];
+                        nextUris[index] = uriValue;
+                        setValue(`photos.${photoField.name}`, nextUris, {
                             shouldDirty: true,
                             shouldValidate: true,
                         });
                     }}
-                    handleDeletePhoto={() => {
-                        clearPhoto({
+                    handleDeletePhoto={(index) => {
+                        removePhotoAt({
                             entity: 'report',
                             entityId: id,
                             slot: photoField.name,
+                            index,
                         });
-                        setValue(`photos.${photoField.name}`, null, {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                        });
+                        setValue(
+                            `photos.${photoField.name}`,
+                            uris.filter((_, uriIndex) => uriIndex !== index),
+                            { shouldDirty: true, shouldValidate: true }
+                        );
                     }}
                     disabled={isSubmitting}
                 />

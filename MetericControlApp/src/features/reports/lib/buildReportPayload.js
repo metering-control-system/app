@@ -47,6 +47,18 @@ const buildReactNativeFile = (uri, kind) => {
     };
 };
 
+const normalizePhotoUris = (value) => {
+    if (Array.isArray(value)) {
+        return value.filter(Boolean);
+    }
+
+    if (!value) {
+        return [];
+    }
+
+    return [value];
+};
+
 export const buildReportPayload = (formValues) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
     const rejectionReason = toNullableValue(
@@ -123,39 +135,22 @@ export const buildReportPayload = (formValues) => {
 };
 
 export const buildReportImagesPayload = (formValues) => {
-    return [
-        {
-            kind: 'OLD_METER',
-            file: buildReactNativeFile(formValues.photos.oldMeter, 'old_meter'),
-        },
-        {
-            kind: 'SEAL',
-            file: buildReactNativeFile(formValues.photos.seal, 'seal'),
-        },
-        {
-            kind: 'FRONT_PANEL',
-            file: buildReactNativeFile(
-                formValues.photos.frontPanel,
-                'front_panel'
-            ),
-        },
-        {
-            kind: 'GENERAL_VIEW',
-            file: buildReactNativeFile(
-                formValues.photos.generalView,
-                'general_view'
-            ),
-        },
-        {
-            kind: 'ACT_PAPER',
-            file: buildReactNativeFile(formValues.photos.actPaper, 'act_paper'),
-        },
+    const photoConfigs = [
+        { kind: 'OLD_METER', slot: 'oldMeter', fileName: 'old_meter' },
+        { kind: 'SEAL', slot: 'seal', fileName: 'seal' },
+        { kind: 'FRONT_PANEL', slot: 'frontPanel', fileName: 'front_panel' },
+        { kind: 'GENERAL_VIEW', slot: 'generalView', fileName: 'general_view' },
+        { kind: 'ACT_PAPER', slot: 'actPaper', fileName: 'act_paper' },
         {
             kind: 'REFUSAL_PROOF',
-            file: buildReactNativeFile(
-                formValues.photos.refusalProof,
-                'refusal_proof'
-            ),
+            slot: 'refusalProof',
+            fileName: 'refusal_proof',
         },
-    ].filter((item) => item.file);
+    ];
+
+    return photoConfigs.flatMap(({ kind, slot, fileName }) =>
+        normalizePhotoUris(formValues.photos?.[slot])
+            .map((uri) => ({ kind, file: buildReactNativeFile(uri, fileName) }))
+            .filter((item) => item.file)
+    );
 };

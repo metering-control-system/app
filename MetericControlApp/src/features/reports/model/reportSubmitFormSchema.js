@@ -29,6 +29,8 @@ const optionalEmailField = z
         'Введите корректный email'
     );
 
+const photoArrayField = z.array(z.string().trim()).default([]);
+
 export const reportSubmitFormSchema = z
     .object({
         clientReportId: z.string().trim().optional(),
@@ -95,12 +97,12 @@ export const reportSubmitFormSchema = z
             installationReading: meterReadingField('показания при установке'),
         }),
         photos: z.object({
-            oldMeter: z.any().nullable(),
-            seal: z.any().nullable(),
-            frontPanel: z.any().nullable(),
-            generalView: z.any().nullable(),
-            actPaper: z.any().nullable(),
-            refusalProof: z.any().nullable(),
+            oldMeter: photoArrayField,
+            seal: photoArrayField,
+            frontPanel: photoArrayField,
+            generalView: photoArrayField,
+            actPaper: photoArrayField,
+            refusalProof: photoArrayField,
         }),
         admission: z.object({
             status: z.string().trim().min(1, 'Выберите статус допуска'),

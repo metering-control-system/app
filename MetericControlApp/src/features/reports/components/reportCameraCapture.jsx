@@ -4,7 +4,7 @@ import CameraCapture from '@/shared/components/media/camera/cameraCapture';
 import useStorePictures from '@/shared/store/useStorePictures';
 
 const ReportCameraCapture = ({ id, slot }) => {
-    const setPhoto = useStorePictures((state) => state.setPhoto);
+    const appendPhoto = useStorePictures((state) => state.appendPhoto);
     const cameraRef = useRef();
     const router = useRouter();
 
@@ -12,7 +12,7 @@ const ReportCameraCapture = ({ id, slot }) => {
         <CameraCapture
             cameraRef={cameraRef}
             setUri={(uri) => {
-                setPhoto({ entity: 'report', entityId: id, slot, uri });
+                appendPhoto({ entity: 'report', entityId: id, slot, uri });
             }}
             onHandlePhoto={() => router.back()}
             onClose={() => router.back()}
