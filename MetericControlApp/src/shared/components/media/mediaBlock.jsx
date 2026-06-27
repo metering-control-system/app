@@ -8,6 +8,7 @@ import ImagePicker from '@/shared/components/media/picker/imagePicker';
 
 export default function MediaBlock({
     uri,
+    uris,
     handleOpenCamera,
     handleDeletePhoto,
     handleUploadPhoto,
@@ -15,6 +16,9 @@ export default function MediaBlock({
     disabled,
 }) {
     const [modalVisible, setModalVisible] = useState(false);
+    const [selectedIndex, setSelectedIndex] = useState(0);
+    const imageUris = Array.isArray(uris) ? uris : uri ? [uri] : [];
+    const selectedUri = imageUris[selectedIndex] ?? null;
 
     return (
         <View style={styles.container}>
@@ -28,25 +32,40 @@ export default function MediaBlock({
                     disabled={disabled}
                 />
             </View>
-            <PictureWrapper
-                uri={uri}
-                onPress={() => {
-                    if (!uri) {
-                        return;
-                    }
-                    setModalVisible(true);
-                }}
-            />
-            {uri && (
-                <Pressable
-                    style={({ pressed }) => ({ opacity: pressed ? 0.75 : 1 })}
-                    onPress={handleDeletePhoto}>
-                    <Entypo name='circle-with-cross' size={20} color='#999' />
-                </Pressable>
+            {imageUris.length ? (
+                imageUris.map((itemUri, index) => (
+                    <View
+                        key={`${itemUri}-${index}`}
+                        style={styles.previewWrap}>
+                        <PictureWrapper
+                            uri={itemUri}
+                            onPress={() => {
+                                setSelectedIndex(index);
+                                setModalVisible(true);
+                            }}
+                        />
+                        <Pressable
+                            style={({ pressed }) => [
+                                styles.deleteButton,
+                                pressed && styles.deleteButtonPressed,
+                            ]}
+                            onPress={() => handleDeletePhoto(index)}>
+                            <Entypo
+                                name='circle-with-cross'
+                                size={20}
+                                color='#999'
+                            />
+                        </Pressable>
+                    </View>
+                ))
+            ) : (
+                <PictureWrapper uri={null} onPress={() => {}} />
             )}
             <ImagePreview
-                uri={uri}
-                handleUpdatePhoto={handleUpdatePhoto}
+                uri={selectedUri}
+                handleUpdatePhoto={(nextUri) =>
+                    handleUpdatePhoto(nextUri, selectedIndex)
+                }
                 setModalVisible={setModalVisible}
                 modalVisible={modalVisible}
             />
@@ -62,4 +81,7 @@ const styles = StyleSheet.create({
         flexDirection: 'row',
         flexWrap: 'wrap',
     },
+    previewWrap: { gap: 6, alignItems: 'flex-end' },
+    deleteButton: {},
+    deleteButtonPressed: { opacity: 0.75 },
 });
