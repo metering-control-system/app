@@ -62,6 +62,7 @@ const PHOTO_FIELDS = [
 
 const mapTaskToReportDefaults = (task) => ({
     ...reportSubmitFormDefaultValues,
+    clientReportId: createClientReportId(),
     customerName: task?.consumer?.full_name || '',
     personalAccount: task?.address?.account_number || '',
     meterBefore: {
@@ -210,7 +211,9 @@ const ReportSubmitForm = ({ task, id }) => {
             await submitTaskReport({ taskId: task?.id ?? id, values });
             clearDraft(draftId);
             clearEntityPhotos({ entity: 'report', entityId: id });
-            reset(mapTaskToReportDefaults(task));
+            const nextValues = mapTaskToReportDefaults(task);
+            reset(nextValues);
+            prevSavedDraftRef.current = JSON.stringify(nextValues);
             hydratedDraftIdRef.current = null;
 
             Alert.alert(
