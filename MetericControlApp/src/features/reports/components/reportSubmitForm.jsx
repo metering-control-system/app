@@ -76,8 +76,12 @@ const ReportSubmitForm = ({ task, id }) => {
     const [stepIndex, setStepIndex] = useState(0);
     const hydratedDraftIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
-    const reportPhotos = useStorePictures(
-        (state) => state.photos.report?.[id] ?? {}
+    const reportPhotosRaw = useStorePictures(
+        (state) => state.photos.report?.[id]
+    );
+    const reportPhotos = useMemo(
+        () => reportPhotosRaw ?? {},
+        [reportPhotosRaw]
     );
     const appendPhoto = useStorePictures((state) => state.appendPhoto);
     const updatePhoto = useStorePictures((state) => state.updatePhoto);
@@ -185,11 +189,19 @@ const ReportSubmitForm = ({ task, id }) => {
         });
     }, [reportPhotos, setValue]);
 
+    const prevSavedDraftRef = useRef(null);
+
     useEffect(() => {
         if (!formValues) {
             return;
         }
 
+        const snapshot = JSON.stringify(formValues);
+        if (snapshot === prevSavedDraftRef.current) {
+            return;
+        }
+
+        prevSavedDraftRef.current = snapshot;
         setDraft({ draftId, values: formValues });
     }, [draftId, formValues, setDraft]);
 
