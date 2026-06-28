@@ -45,8 +45,8 @@ const useSubmitReport = () => {
         },
     });
 
-    const submitTaskReport = ({ taskId, values }) => {
-        return mutateAsync({ taskId, values });
+    const submitTaskReport = async ({ taskId, values }) => {
+        return await mutateAsync({ taskId, values });
     };
 
     return { submitTaskReport, error, isPending };
