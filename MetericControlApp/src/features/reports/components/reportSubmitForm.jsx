@@ -700,6 +700,7 @@ const ReportSubmitForm = ({ task, id }) => {
                             setStepIndex((currentStep) => currentStep - 1)
                         }
                         style={styles.secondaryButton}
+                        textStyle={styles.secondaryButtonText}
                     />
                 ) : (
                     <View style={styles.buttonSpacer} />
@@ -810,6 +811,7 @@ const styles = StyleSheet.create({
         borderWidth: 1,
         borderColor: '#278cff',
     },
+    secondaryButtonText: { color: '#278cff' },
     buttonSpacer: { flex: 1 },
 });
 

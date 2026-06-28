@@ -1,6 +1,13 @@
 import { Pressable, Text, StyleSheet } from 'react-native';
 
-const FormButton = ({ message, onPress, isPending, disabled, style }) => {
+const FormButton = ({
+    message,
+    onPress,
+    isPending,
+    disabled,
+    style,
+    textStyle,
+}) => {
     return (
         <Pressable
             style={({ pressed }) => [
@@ -10,7 +17,7 @@ const FormButton = ({ message, onPress, isPending, disabled, style }) => {
             ]}
             disabled={disabled}
             onPress={onPress}>
-            <Text style={styles.text}>
+            <Text style={[styles.text, textStyle]}>
                 {isPending ? '...Загрузка' : message}
             </Text>
         </Pressable>
