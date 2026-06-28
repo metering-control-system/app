@@ -14,7 +14,6 @@ import { useRouter } from 'expo-router';
 
 import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
-import { colors } from '@/shared/consts/baseColors';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 import MediaBlock from '@/shared/components/media/mediaBlock';
 import useStorePictures from '@/shared/store/useStorePictures';
@@ -799,8 +798,18 @@ const styles = StyleSheet.create({
         gap: 16,
     },
     navigationRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
-    primaryButton: { flex: 1, ...colors.secondary },
-    secondaryButton: { flex: 1, ...colors.ordinary },
+    primaryButton: {
+        flex: 1,
+        backgroundColor: '#278cff',
+        borderWidth: 1,
+        borderColor: '#1a73e8',
+    },
+    secondaryButton: {
+        flex: 1,
+        backgroundColor: '#ffffff',
+        borderWidth: 1,
+        borderColor: '#278cff',
+    },
     buttonSpacer: { flex: 1 },
 });
 
