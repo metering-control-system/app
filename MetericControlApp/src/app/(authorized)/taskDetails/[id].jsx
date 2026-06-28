@@ -1,6 +1,7 @@
 import { useLocalSearchParams } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import TaskDetailsForm from '@/features/tasks/components/taskDetailsForm';
+import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
 import { KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
@@ -24,7 +25,11 @@ const TaskDescription = () => {
                         }}
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
-                        <TaskDetailsForm task={task} id={id} />
+                        {task?.status === 'IN_PROGRESS' ? (
+                            <ReportSubmitForm task={task} id={id} />
+                        ) : (
+                            <TaskDetailsForm task={task} id={id} />
+                        )}
                     </ScrollView>
                 </KeyboardAvoidingView>
             )}

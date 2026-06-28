@@ -10,7 +10,6 @@ import useChangeTaskStatus from '@/features/tasks/hooks/useChangeTaskStatus';
 import { colors } from '@/shared/consts/baseColors';
 import { useRouter } from 'expo-router';
 import useStorePictures from '@/shared/store/useStorePictures';
-import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import TaskDetailsTextField from '@/features/tasks/components/taskDetailsForm/taskDetailsTextField';
 import TaskRealMeterSection from '@/features/tasks/components/taskDetailsForm/taskRealMeterSection';
@@ -50,10 +49,6 @@ const TaskDetailsForm = ({ task, id }) => {
             reset(task);
         }
     }, [reset, task]);
-
-    if (task?.status === 'IN_PROGRESS') {
-        return <ReportSubmitForm task={task} id={id} />;
-    }
 
     const handleOpenCamera = () => {
         router?.push({
