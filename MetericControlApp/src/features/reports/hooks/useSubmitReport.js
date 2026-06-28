@@ -1,10 +1,12 @@
 import { useMutation } from '@tanstack/react-query';
 import { queryClient } from '@/shared/api/queryClient';
 import {
+    addReportComment,
     createReport,
     uploadReportImage,
 } from '@/features/reports/api/submitReportApi';
 import {
+    buildReportCommentPayload,
     buildReportImagesPayload,
     buildReportPayload,
 } from '@/features/reports/lib/buildReportPayload';
@@ -13,6 +15,7 @@ const useSubmitReport = () => {
     const { mutateAsync, error, isPending } = useMutation({
         mutationFn: async ({ taskId, values }) => {
             const reportPayload = buildReportPayload({ ...values, taskId });
+            const reportCommentPayload = buildReportCommentPayload(values);
             const reportImagesPayload = buildReportImagesPayload(values);
             const reportResponse = await createReport(reportPayload);
             const reportId = reportResponse?.id;
@@ -21,8 +24,12 @@ const useSubmitReport = () => {
                 throw new Error('Не удалось получить идентификатор отчета');
             }
 
-            for (const imagePayload of reportImagesPayload) {
-                await uploadReportImage(reportId, imagePayload);
+            if (reportCommentPayload) {
+                await addReportComment(reportId, reportCommentPayload);
+            }
+
+            if (reportImagesPayload) {
+                await uploadReportImage(reportId, reportImagesPayload);
             }
 
             return { reportId, reportResponse };

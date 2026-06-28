@@ -59,6 +59,15 @@ const normalizePhotoUris = (value) => {
     return [value];
 };
 
+const createClientImageId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+        const random = Math.floor(Math.random() * 16);
+        const value = char === 'x' ? random : (random & 0x3) | 0x8;
+
+        return value.toString(16);
+    });
+};
+
 export const buildReportPayload = (formValues) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
     const rejectionReason = toNullableValue(
@@ -113,12 +122,6 @@ export const buildReportPayload = (formValues) => {
         },
     };
 
-    const comment = toNullableValue(formValues.comment);
-
-    if (comment) {
-        payload.comment = comment;
-    }
-
     if (!payload.consumer_contact.phone_number_2) {
         delete payload.consumer_contact.phone_number_2;
     }
@@ -132,6 +135,16 @@ export const buildReportPayload = (formValues) => {
     }
 
     return payload;
+};
+
+export const buildReportCommentPayload = (formValues) => {
+    const comment = toNullableValue(formValues.comment);
+
+    if (!comment) {
+        return null;
+    }
+
+    return { content: comment };
 };
 
 export const buildReportImagesPayload = (formValues) => {
@@ -148,9 +161,37 @@ export const buildReportImagesPayload = (formValues) => {
         },
     ];
 
-    return photoConfigs.flatMap(({ kind, slot, fileName }) =>
-        normalizePhotoUris(formValues.photos?.[slot])
-            .map((uri) => ({ kind, file: buildReactNativeFile(uri, fileName) }))
-            .filter((item) => item.file)
-    );
+    const files = photoConfigs
+        .flatMap(({ kind, slot, fileName }) =>
+            normalizePhotoUris(formValues.photos?.[slot]).map((uri, index) => {
+                const file = buildReactNativeFile(uri, fileName);
+
+                if (!file) {
+                    return null;
+                }
+
+                const fileKey = `${fileName}_${index + 1}`;
+
+                return {
+                    fileKey,
+                    file,
+                    image: {
+                        ['file_key']: fileKey,
+                        kind,
+                        ['file_name']: file.name,
+                        ['client_image_id']: createClientImageId(),
+                    },
+                };
+            })
+        )
+        .filter(Boolean);
+
+    if (!files.length) {
+        return null;
+    }
+
+    return {
+        images: files.map(({ image }) => image),
+        files: files.map(({ fileKey, file }) => ({ fileKey, file })),
+    };
 };
