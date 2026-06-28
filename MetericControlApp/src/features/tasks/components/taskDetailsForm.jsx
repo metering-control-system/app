@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useForm } from 'react-hook-form';
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { View } from 'react-native';
 import { taskFormSchema } from '@/features/tasks/model/taskFormSchema';
 import { taskFormDefaultValues } from '@/features/tasks/constants/taskFormDefaults';
@@ -8,18 +8,15 @@ import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
 import useChangeTaskStatus from '@/features/tasks/hooks/useChangeTaskStatus';
 import { colors } from '@/shared/consts/baseColors';
-import { useRouter } from 'expo-router';
-import useStorePictures from '@/shared/store/useStorePictures';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import TaskDetailsTextField from '@/features/tasks/components/taskDetailsForm/taskDetailsTextField';
-import TaskRealMeterSection from '@/features/tasks/components/taskDetailsForm/taskRealMeterSection';
 import {
     additionalTaskDetailsFields,
     primaryTaskDetailsFields,
 } from '@/features/tasks/components/taskDetailsForm/taskDetailsFormFields';
 import { taskDetailsFormStyles as styles } from '@/features/tasks/components/taskDetailsForm/taskDetailsFormStyles';
 
-const TaskDetailsForm = ({ task, id }) => {
+const TaskDetailsForm = ({ task }) => {
     const {
         control,
         handleSubmit,
@@ -31,47 +28,17 @@ const TaskDetailsForm = ({ task, id }) => {
         defaultValues: taskFormDefaultValues,
     });
 
-    const [active, setActive] = useState(false);
     const disabled = task?.status in taskStatus && task?.status !== 'NEW';
     const changeable = !(
         task?.status === 'REJECTED' || task?.status === 'COMPLETED'
     );
-    const router = useRouter();
-    const uri = useStorePictures(
-        (state) => state.photos.task?.[id]?.['new_meteric_control'] ?? null
-    );
-    const clearPhoto = useStorePictures((state) => state.clearPhoto);
     const { changeStatus, isPending } = useChangeTaskStatus();
-    const setPhoto = useStorePictures((state) => state.setPhoto);
 
     useEffect(() => {
         if (task) {
             reset(task);
         }
     }, [reset, task]);
-
-    const handleOpenCamera = () => {
-        router?.push({
-            pathname: '/(authorized)/camera',
-            params: { action: 'tasks', id },
-        });
-    };
-
-    const handleDeletePhoto = () => {
-        clearPhoto({
-            entity: 'task',
-            entityId: id,
-            slot: 'new_meteric_control',
-        });
-    };
-
-    const handleUploadPhoto = (uri) =>
-        setPhoto({
-            entity: 'task',
-            entityId: id,
-            slot: 'new_meteric_control',
-            uri,
-        });
 
     const onSubmit = async () => {
         if (isValid && !isSubmitting) {
@@ -95,16 +62,6 @@ const TaskDetailsForm = ({ task, id }) => {
                     />
                 ))}
             </View>
-            <TaskRealMeterSection
-                active={active}
-                editable={changeable}
-                control={control}
-                uri={uri}
-                onToggle={() => setActive((prev) => !prev)}
-                onOpenCamera={handleOpenCamera}
-                onDeletePhoto={handleDeletePhoto}
-                onUploadPhoto={handleUploadPhoto}
-            />
             <View style={styles.details}>
                 {additionalTaskDetailsFields.map((field) => (
                     <TaskDetailsTextField
