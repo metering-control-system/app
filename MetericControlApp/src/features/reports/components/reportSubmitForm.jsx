@@ -634,6 +634,10 @@ const ReportSubmitForm = ({ task, id }) => {
                 editable: !isRefusedContact,
                 error: errors.consumerContact?.phoneNumber2,
             })}
+            <Text style={styles.hintText}>
+                Поле Телефон 2 заполняется только при наличии дополнительного
+                номера.
+            </Text>
             {renderTextField({
                 name: 'consumerContact.email',
                 label: 'Email',
@@ -765,6 +769,13 @@ const styles = StyleSheet.create({
     inputDisabled: { backgroundColor: '#f5f7fa', color: '#97a3b1' },
     inputError: { borderColor: '#d84c4c', backgroundColor: '#fff5f5' },
     errorText: { marginTop: 6, fontSize: 12, color: '#d84c4c' },
+    hintText: {
+        marginTop: -6,
+        marginBottom: 12,
+        fontSize: 12,
+        lineHeight: 18,
+        color: '#7b8794',
+    },
     chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
     chip: {
         paddingHorizontal: 14,
