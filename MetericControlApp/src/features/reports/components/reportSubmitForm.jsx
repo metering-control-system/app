@@ -68,6 +68,8 @@ const mapTaskToReportDefaults = (task) => ({
         ...reportSubmitFormDefaultValues.meterBefore,
         type: task?.meter?.type || '',
         number: task?.meter?.number || '',
+        actualNumber: task?.realMeter?.number || '',
+        isActualDifferent: Boolean(task?.realMeter?.number),
     },
 });
 
@@ -162,6 +164,7 @@ const ReportSubmitForm = ({ task, id }) => {
 
     const admissionStatus = watch('admission.status');
     const isRefusedContact = watch('consumerContact.isRefusedContact');
+    const isActualMeterDifferent = watch('meterBefore.isActualDifferent');
     const isLastStep = stepIndex === FORM_STEPS.length - 1;
     const isFirstStep = stepIndex === 0;
 
@@ -179,6 +182,21 @@ const ReportSubmitForm = ({ task, id }) => {
             shouldValidate: true,
         });
     }, [admissionStatus, setValue]);
+
+    useEffect(() => {
+        if (isActualMeterDifferent) {
+            return;
+        }
+
+        setValue('meterBefore.actualType', '', {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+        setValue('meterBefore.actualNumber', '', {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+    }, [isActualMeterDifferent, setValue]);
 
     useEffect(() => {
         Object.entries(reportPhotos).forEach(([slot, uris]) => {
@@ -356,18 +374,32 @@ const ReportSubmitForm = ({ task, id }) => {
                 placeholder: 'Введите номер старого ПУ',
                 error: errors.meterBefore?.number,
             })}
-            {renderTextField({
-                name: 'meterBefore.actualType',
-                label: 'Фактический тип старого ПУ',
-                placeholder: 'Введите фактический тип при отличии',
-                error: errors.meterBefore?.actualType,
-            })}
-            {renderTextField({
-                name: 'meterBefore.actualNumber',
-                label: 'Фактический номер старого ПУ',
-                placeholder: 'Введите фактический номер при отличии',
-                error: errors.meterBefore?.actualNumber,
-            })}
+            <View style={styles.switchRow}>
+                <Text style={styles.label}>Фактический ПУ отличается</Text>
+                <Controller
+                    control={control}
+                    name='meterBefore.isActualDifferent'
+                    render={({ field: { onChange, value } }) => (
+                        <Switch value={value} onValueChange={onChange} />
+                    )}
+                />
+            </View>
+            {isActualMeterDifferent ? (
+                <>
+                    {renderTextField({
+                        name: 'meterBefore.actualType',
+                        label: 'Фактический тип старого ПУ',
+                        placeholder: 'Введите фактический тип при отличии',
+                        error: errors.meterBefore?.actualType,
+                    })}
+                    {renderTextField({
+                        name: 'meterBefore.actualNumber',
+                        label: 'Фактический номер старого ПУ',
+                        placeholder: 'Введите фактический номер при отличии',
+                        error: errors.meterBefore?.actualNumber,
+                    })}
+                </>
+            ) : null}
             {renderTextField({
                 name: 'comment',
                 label: 'Комментарий к отчету',
@@ -450,10 +482,14 @@ const ReportSubmitForm = ({ task, id }) => {
             : reportPhotos?.[photoField.name]
               ? [reportPhotos[photoField.name]]
               : [];
+        const title =
+            photoField.name === 'oldMeter' && isActualMeterDifferent
+                ? 'Фото текущего счетчика'
+                : photoField.title;
 
         return (
             <View key={photoField.name} style={styles.control}>
-                <Text style={styles.label}>{photoField.title}</Text>
+                <Text style={styles.label}>{title}</Text>
                 <MediaBlock
                     uris={uris}
                     handleOpenCamera={() => {

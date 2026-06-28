@@ -61,6 +61,7 @@ export const reportSubmitFormSchema = z
                 'Введите номер старого ПУ',
                 'Номер старого ПУ слишком длинный'
             ),
+            isActualDifferent: z.boolean(),
             actualType: optionalTrimmedString(
                 40,
                 'Фактический тип ПУ слишком длинный'
@@ -163,6 +164,17 @@ export const reportSubmitFormSchema = z
                 path: ['consumerContact', 'phoneNumber'],
                 message:
                     'Укажите хотя бы один контактный способ или отметьте отказ',
+            });
+        }
+
+        if (
+            values.meterBefore.isActualDifferent &&
+            !values.meterBefore.actualNumber
+        ) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['meterBefore', 'actualNumber'],
+                message: 'Введите фактический номер старого ПУ',
             });
         }
     });

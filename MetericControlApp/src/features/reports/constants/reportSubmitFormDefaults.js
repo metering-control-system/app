@@ -3,7 +3,13 @@ export const reportSubmitFormDefaultValues = {
     customerName: '',
     personalAccount: '',
     comment: '',
-    meterBefore: { type: '', number: '', actualType: '', actualNumber: '' },
+    meterBefore: {
+        type: '',
+        number: '',
+        actualType: '',
+        actualNumber: '',
+        isActualDifferent: false,
+    },
     metering: {
         dismantlingCompleted: false,
         oldReading: '',
