@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
@@ -74,6 +74,7 @@ const mapTaskToReportDefaults = (task) => ({
 const ReportSubmitForm = ({ task, id }) => {
     const router = useRouter();
     const [stepIndex, setStepIndex] = useState(0);
+    const hydratedDraftIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
     const reportPhotos = useStorePictures(
         (state) => state.photos.report?.[id] ?? {}
@@ -136,8 +137,13 @@ const ReportSubmitForm = ({ task, id }) => {
     const formValues = useWatch({ control });
 
     useEffect(() => {
+        if (hydratedDraftIdRef.current === draftId) {
+            return;
+        }
+
         reset(initialValues);
-    }, [initialValues, reset]);
+        hydratedDraftIdRef.current = draftId;
+    }, [draftId, initialValues, reset]);
 
     useEffect(() => {
         if (watch('clientReportId')) {
@@ -193,6 +199,7 @@ const ReportSubmitForm = ({ task, id }) => {
             clearDraft(draftId);
             clearEntityPhotos({ entity: 'report', entityId: id });
             reset(mapTaskToReportDefaults(task));
+            hydratedDraftIdRef.current = null;
 
             Alert.alert(
                 'Успешно',
