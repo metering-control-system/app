@@ -1,5 +1,3 @@
-const { v4: uuidv4 } = require('uuid');
-
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
         return value ?? null;
@@ -59,6 +57,15 @@ const normalizePhotoUris = (value) => {
     }
 
     return [value];
+};
+
+const createClientImageId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+        const random = Math.floor(Math.random() * 16);
+        const value = char === 'x' ? random : (random & 0x3) | 0x8;
+
+        return value.toString(16);
+    });
 };
 
 export const buildReportPayload = (formValues) => {
@@ -174,7 +181,7 @@ export const buildReportImagesPayload = (formValues) => {
                         ['file_key']: fileKey,
                         kind,
                         ['file_name']: file.name,
-                        ['client_image_id']: uuidv4(),
+                        ['client_image_id']: createClientImageId(),
                     },
                 };
             })

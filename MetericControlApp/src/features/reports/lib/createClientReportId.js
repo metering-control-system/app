@@ -1,3 +1,8 @@
-const { v4: uuidv4 } = require('uuid');
+export const createClientReportId = () => {
+    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
+        const random = Math.floor(Math.random() * 16);
+        const value = char === 'x' ? random : (random & 0x3) | 0x8;
 
-export const createClientReportId = () => uuidv4();
+        return value.toString(16);
+    });
+};
