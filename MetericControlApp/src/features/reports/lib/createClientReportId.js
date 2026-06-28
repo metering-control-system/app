@@ -1,8 +1,3 @@
-export const createClientReportId = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
-        const random = Math.floor(Math.random() * 16);
-        const value = char === 'x' ? random : (random & 0x3) | 0x8;
+import { v4 as uuidv4 } from 'uuid';
 
-        return value.toString(16);
-    });
-};
+export const createClientReportId = () => uuidv4();
