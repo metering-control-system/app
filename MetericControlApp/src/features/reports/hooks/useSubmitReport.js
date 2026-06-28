@@ -1,5 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
-import { queryClient } from '@/shared/api/queryClient';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     addReportComment,
     createReport,
@@ -12,6 +11,7 @@ import {
 } from '@/features/reports/lib/buildReportPayload';
 
 const useSubmitReport = () => {
+    const queryClient = useQueryClient();
     const { mutateAsync, error, isPending } = useMutation({
         mutationFn: async ({ taskId, values }) => {
             const reportPayload = buildReportPayload({ ...values, taskId });
