@@ -1,16 +1,5 @@
 import { create } from 'zustand/react';
-
-const normalizePhotos = (value) => {
-    if (Array.isArray(value)) {
-        return value.filter(Boolean);
-    }
-
-    if (!value) {
-        return [];
-    }
-
-    return [value];
-};
+import { normalizePhotos } from '@/shared/lib/media/normalizePhotos';
 
 const useStorePictures = create((set, get) => ({
     photos: { task: {}, report: {} },
