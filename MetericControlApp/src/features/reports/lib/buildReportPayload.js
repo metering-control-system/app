@@ -73,18 +73,20 @@ export const buildReportPayload = (formValues) => {
     const rejectionReason = toNullableValue(
         formValues.admission.rejectionReason
     );
+    const actualOldMeterNumber =
+        toNullableValue(formValues.meterBefore.actualNumber) ??
+        toNullableValue(formValues.meterBefore.number);
+    const actualOldMeterType =
+        toNullableValue(formValues.meterBefore.actualType) ??
+        toNullableValue(formValues.meterBefore.type);
 
     const payload = {
         ['client_report_id']: formValues.clientReportId,
         ['task_id']: Number(formValues.taskId),
         metering: {
             ['dismantling_completed']: formValues.metering.dismantlingCompleted,
-            ['actual_old_meter_number']: toNullableValue(
-                formValues.meterBefore.actualNumber
-            ),
-            ['actual_old_meter_type']: toNullableValue(
-                formValues.meterBefore.actualType
-            ),
+            ['actual_old_meter_number']: actualOldMeterNumber,
+            ['actual_old_meter_type']: actualOldMeterType,
             ['new_meter_number']: toNullableValue(
                 formValues.metering.newMeterNumber
             ),
