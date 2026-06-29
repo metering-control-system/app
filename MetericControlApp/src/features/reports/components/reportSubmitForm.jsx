@@ -315,6 +315,18 @@ const ReportSubmitForm = ({ task, id }) => {
         </View>
     );
 
+    const renderToggleRow = ({ label, value, onChange }) => (
+        <Pressable
+            onPress={() => onChange(!value)}
+            style={({ pressed }) => [
+                styles.switchRow,
+                pressed && styles.switchRowPressed,
+            ]}>
+            <Text style={styles.switchLabel}>{label}</Text>
+            <Switch value={value} onValueChange={onChange} />
+        </Pressable>
+    );
+
     const renderStepIndicators = () => (
         <View style={styles.stepsWrap}>
             {FORM_STEPS.map((step, index) => {
@@ -374,16 +386,17 @@ const ReportSubmitForm = ({ task, id }) => {
                 placeholder: 'Введите номер старого ПУ',
                 error: errors.meterBefore?.number,
             })}
-            <View style={styles.switchRow}>
-                <Text style={styles.label}>Фактический ПУ отличается</Text>
-                <Controller
-                    control={control}
-                    name='meterBefore.isActualDifferent'
-                    render={({ field: { onChange, value } }) => (
-                        <Switch value={value} onValueChange={onChange} />
-                    )}
-                />
-            </View>
+            <Controller
+                control={control}
+                name='meterBefore.isActualDifferent'
+                render={({ field: { onChange, value } }) =>
+                    renderToggleRow({
+                        label: 'Фактический ПУ отличается',
+                        value,
+                        onChange,
+                    })
+                }
+            />
             {isActualMeterDifferent ? (
                 <>
                     {renderTextField({
@@ -413,16 +426,17 @@ const ReportSubmitForm = ({ task, id }) => {
 
     const renderMeteringStep = () => (
         <View style={styles.section}>
-            <View style={styles.switchRow}>
-                <Text style={styles.label}>Демонтаж выполнен</Text>
-                <Controller
-                    control={control}
-                    name='metering.dismantlingCompleted'
-                    render={({ field: { onChange, value } }) => (
-                        <Switch value={value} onValueChange={onChange} />
-                    )}
-                />
-            </View>
+            <Controller
+                control={control}
+                name='metering.dismantlingCompleted'
+                render={({ field: { onChange, value } }) =>
+                    renderToggleRow({
+                        label: 'Демонтаж выполнен',
+                        value,
+                        onChange,
+                    })
+                }
+            />
 
             {renderTextField({
                 name: 'metering.oldReading',
@@ -606,50 +620,38 @@ const ReportSubmitForm = ({ task, id }) => {
 
     const renderContactsStep = () => (
         <View style={styles.section}>
-            <View style={styles.switchRow}>
-                <Text style={styles.label}>
-                    Отказ от предоставления контактов
-                </Text>
-                <Controller
-                    control={control}
-                    name='consumerContact.isRefusedContact'
-                    render={({ field: { onChange, value } }) => (
-                        <Switch
-                            value={value}
-                            onValueChange={(nextValue) => {
-                                onChange(nextValue);
+            <Controller
+                control={control}
+                name='consumerContact.isRefusedContact'
+                render={({ field: { onChange, value } }) =>
+                    renderToggleRow({
+                        label: 'Отказ от предоставления контактов',
+                        value,
+                        onChange: (nextValue) => {
+                            onChange(nextValue);
 
-                                if (nextValue) {
-                                    setValue(
-                                        'consumerContact.phoneNumber',
-                                        '',
-                                        {
-                                            shouldDirty: true,
-                                            shouldValidate: true,
-                                        }
-                                    );
-                                    setValue(
-                                        'consumerContact.phoneNumber2',
-                                        '',
-                                        {
-                                            shouldDirty: true,
-                                            shouldValidate: true,
-                                        }
-                                    );
-                                    setValue('consumerContact.email', '', {
-                                        shouldDirty: true,
-                                        shouldValidate: true,
-                                    });
-                                    setValue('consumerContact.fullName', '', {
-                                        shouldDirty: true,
-                                        shouldValidate: true,
-                                    });
-                                }
-                            }}
-                        />
-                    )}
-                />
-            </View>
+                            if (nextValue) {
+                                setValue('consumerContact.phoneNumber', '', {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                });
+                                setValue('consumerContact.phoneNumber2', '', {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                });
+                                setValue('consumerContact.email', '', {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                });
+                                setValue('consumerContact.fullName', '', {
+                                    shouldDirty: true,
+                                    shouldValidate: true,
+                                });
+                            }
+                        },
+                    })
+                }
+            />
             {errors.consumerContact?.isRefusedContact ? (
                 <Text style={styles.errorText}>
                     {errors.consumerContact.isRefusedContact.message}
@@ -834,6 +836,8 @@ const styles = StyleSheet.create({
         justifyContent: 'space-between',
         gap: 16,
     },
+    switchRowPressed: { opacity: 0.8 },
+    switchLabel: { flex: 1, fontSize: 13, color: '#4d5f73' },
     navigationRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
     primaryButton: {
         flex: 1,
