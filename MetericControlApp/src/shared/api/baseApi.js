@@ -8,8 +8,7 @@ import { queryClient } from '@/shared/api/queryClient';
 const hostIP =
     Constants.expoGoConfig?.debuggerHost?.split(`:`)[0] ||
     Constants.expoConfig?.hostUri?.split(`:`)[0];
-//eslint-disable-next-line
-const hostAddr = process.env.EXPO_PUBLIC_HOST_ADDR;
+
 const REQUEST_TIMEOUT = 5000;
 
 let globalRefresh = null;

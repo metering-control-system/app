@@ -1,0 +1,55 @@
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    addReportComment,
+    createReport,
+    uploadReportImage,
+} from '@/features/reports/api/submitReportApi';
+import {
+    buildReportCommentPayload,
+    buildReportImagesPayload,
+    buildReportPayload,
+} from '@/features/reports/lib/buildReportPayload';
+
+const useSubmitReport = () => {
+    const queryClient = useQueryClient();
+    const { mutateAsync, error, isPending } = useMutation({
+        mutationFn: async ({ taskId, values }) => {
+            const reportPayload = buildReportPayload({ ...values, taskId });
+            const reportCommentPayload = buildReportCommentPayload(values);
+            const reportImagesPayload = buildReportImagesPayload(values);
+            const reportResponse = await createReport(reportPayload);
+            const reportId = reportResponse?.id;
+
+            if (!reportId) {
+                throw new Error('Не удалось получить идентификатор отчета');
+            }
+
+            if (reportCommentPayload) {
+                await addReportComment(reportId, reportCommentPayload);
+            }
+
+            if (reportImagesPayload) {
+                await uploadReportImage(reportId, reportImagesPayload);
+            }
+
+            return { reportId, reportResponse };
+        },
+        onSuccess: async (_data, variables) => {
+            await Promise.all([
+                queryClient.invalidateQueries({ queryKey: ['reports'] }),
+                queryClient.invalidateQueries({
+                    queryKey: ['task', Number(variables.taskId)],
+                }),
+                queryClient.invalidateQueries({ queryKey: ['tasks'] }),
+            ]);
+        },
+    });
+
+    const submitTaskReport = async ({ taskId, values }) => {
+        return await mutateAsync({ taskId, values });
+    };
+
+    return { submitTaskReport, error, isPending };
+};
+
+export default useSubmitReport;

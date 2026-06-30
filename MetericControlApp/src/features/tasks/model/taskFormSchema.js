@@ -48,14 +48,6 @@ export const taskFormSchema = z.object({
             .trim()
             .min(1, 'Введите место установки'),
     }),
-    realMeter: z
-        .object({
-            number: z
-                .string()
-                .trim()
-                .max(40, 'Номер фактического ПУ слишком длинный'),
-        })
-        .optional(),
     // eslint-disable-next-line camelcase
     task_data: z.object({ service_reason: z.string().trim() }).optional(),
 });
