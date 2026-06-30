@@ -1,14 +1,10 @@
-import Constants from 'expo-constants';
 import axios from 'axios';
 
-const hostIP =
-    Constants.expoGoConfig?.debuggerHost?.split(`:`)[0] ||
-    Constants.expoConfig?.hostUri?.split(`:`)[0];
-
 const REQUEST_TIMEOUT = 5000;
+const hostAddr = process.env.EXPO_PUBLIC_HOST_ADDR;
 
 export const authApi = axios.create({
-    baseURL: `http://${hostIP}:8000/api/`,
+    baseURL: `${hostAddr}/api/`,
     headers: { 'Content-Type': 'application/json' },
     timeout: REQUEST_TIMEOUT,
 });

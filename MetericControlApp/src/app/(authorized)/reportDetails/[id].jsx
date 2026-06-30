@@ -15,7 +15,7 @@ const ReportDescription = () => {
 
     const navigation = useNavigation();
 
-    const tiedTaskId = report.task_id ? +report?.task_id : null;
+    const tiedTaskId = report?.task_id ? +report.task_id : null;
     const { task, isPending: isTaskPending } = useTaskById(tiedTaskId);
 
     useEffect(() => {

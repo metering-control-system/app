@@ -81,12 +81,23 @@ const TaskDetailsForm = ({ task }) => {
                         ? '...Загрузка'
                         : task?.status === 'IN_PROGRESS'
                           ? 'Выполняется'
-                          : 'Приступить'
+                          : task?.status === 'REJECTED'
+                            ? 'Отклонена'
+                            : task?.status === 'COMPLETED'
+                              ? 'Завершена'
+                              : 'Приступить'
                 }
                 style={
                     task?.status === 'IN_PROGRESS' && !isPending
-                        ? colors.primary
-                        : colors.secondary
+                        ? colors.secondary
+                        : task?.status === 'REJECTED'
+                          ? {
+                                ...colors.warning,
+                                backgroundColor: colors.warning.borderColor,
+                            }
+                          : task?.status === 'COMPLETED'
+                            ? colors.primary
+                            : colors.ordinary
                 }
             />
         </Card>

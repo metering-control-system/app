@@ -4,6 +4,7 @@ import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
 import { useEffect } from 'react';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
+import { concatenateFields } from '@/shared/lib/collections/concatenateFields';
 
 const useTasks = () => {
     const { isChecked, isOnline } = useNetwork();
@@ -59,7 +60,12 @@ const useTasks = () => {
             return;
         }
 
-        void useTasksStore.persist.rehydrate();
+        useTasksStore.persist.rehydrate().then(() => {
+            const tasks = useTasksStore.getState().tasks ?? [];
+            for (const task of tasks) {
+                task.search = concatenateFields(task);
+            }
+        });
     }, [isChecked, isOnline]);
 
     return {

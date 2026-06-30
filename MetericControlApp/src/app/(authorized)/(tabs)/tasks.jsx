@@ -6,6 +6,8 @@ import { sortingVariants } from '@/features/tasks/constants/taskSortingVariants'
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { ControlPanel } from '@/shared/components/control/controlPanel';
+import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
+import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
@@ -17,6 +19,11 @@ const TaskScreen = () => {
     const taskSortingVariants = Object.entries(sortingVariants);
     const taskFilteringVariants = Object.entries(taskStatus).concat(
         Object.entries(taskPriority)
+    );
+
+    const syncTasks = useOfflineTasksSync();
+    const pendingCount = useTaskOfflineMutationStore(
+        (state) => Object.keys(state.tasksStatuses ?? {}).length
     );
 
     return (
@@ -43,6 +50,11 @@ const TaskScreen = () => {
                 sorting={sorting}
                 filtering={filtering}
                 search={search}
+                sync={() => {
+                    if (pendingCount) {
+                        void syncTasks();
+                    }
+                }}
             />
         </ScreenLayout>
     );

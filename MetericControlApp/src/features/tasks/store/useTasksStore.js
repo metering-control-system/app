@@ -41,9 +41,12 @@ const useTasksStore = create(
             storage: createJSONStorage(() =>
                 createPersistStorage(taskOfflineStorage)
             ),
-            partialize: (state) => ({
-                tasks: state.tasks?.map(({ search, ...task }) => task),
-            }),
+            partialize: (state) => {
+                if (!state.tasks) return { tasks: null };
+                return {
+                    tasks: state.tasks.map(({ search, ...task }) => task),
+                };
+            },
             skipHydration: true,
         }
     )

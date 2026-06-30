@@ -12,7 +12,7 @@ import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 
-const TasksList = ({ setError, filtering, sorting, search }) => {
+const TasksList = ({ setError, filtering, sorting, search, sync }) => {
     const tasks = useTasksStore((state) => state.tasks);
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
@@ -100,7 +100,10 @@ const TasksList = ({ setError, filtering, sorting, search }) => {
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>No tasks found.</Text>}
                 refreshing={isRefrehsing}
-                onRefresh={updateTasks}
+                onRefresh={() => {
+                    updateTasks();
+                    sync();
+                }}
                 onContentSizeChange={(_, height) => {
                     setContentHeight(height);
                 }}

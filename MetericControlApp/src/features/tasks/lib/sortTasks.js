@@ -26,9 +26,9 @@ export const sortByStatus = (tasks, option) => {
             if (a.status === option && b.status === option) {
                 return sortByUpdatedTime([a, b]);
             } else if (a.status === option) {
-                return 1;
-            } else if (b.status === option) {
                 return -1;
+            } else if (b.status === option) {
+                return 1;
             }
             return sortByUpdatedTime([a, b]);
         });
