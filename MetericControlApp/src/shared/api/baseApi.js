@@ -5,6 +5,7 @@ import refreshToken from '@/features/auth/lib/refreshToken';
 import { queryClient } from '@/shared/api/queryClient';
 
 const hostAddr = process.env.EXPO_PUBLIC_HOST_ADDR;
+
 const REQUEST_TIMEOUT = 5000;
 
 let globalRefresh = null;
