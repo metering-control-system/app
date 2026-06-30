@@ -3,8 +3,9 @@ import ScreenLayout from '@/shared/components/screen/screenLayout';
 import TaskDetailsForm from '@/features/tasks/components/taskDetailsForm';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { ScrollView } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
 const TaskDescription = () => {
     const { id } = useLocalSearchParams();
@@ -17,7 +18,8 @@ const TaskDescription = () => {
             ) : (
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                    behavior={'translate-with-padding'}
+                    keyboardVerticalOffset={100}>
                     <ScrollView
                         contentContainerStyle={{
                             flexGrow: 1,
