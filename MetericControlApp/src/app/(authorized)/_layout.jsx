@@ -2,9 +2,11 @@ import useAuth from '@/features/auth/store/useAuth';
 import { Redirect, Stack } from 'expo-router';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
+import useMe from '@/features/settings/hooks/useMe';
 
 const AuthorizedContent = ({ children }) => {
     useOfflineTasksSync();
+    useMe();
     return children;
 };
 
