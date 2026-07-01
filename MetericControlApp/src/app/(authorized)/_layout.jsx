@@ -1,18 +1,13 @@
 import useAuth from '@/features/auth/store/useAuth';
 import { Redirect, Stack } from 'expo-router';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
-import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
 import useMe from '@/features/settings/hooks/useMe';
-
-const AuthorizedContent = ({ children }) => {
-    useOfflineTasksSync();
-    useMe();
-    return children;
-};
 
 const AuthorizedLayout = () => {
     const isAuthenticated = useAuth((state) => state.isAuthenticated);
     const isAuthChecked = useAuth((state) => state.isAuthChecked);
+
+    useMe();
 
     if (!isAuthChecked) {
         return <ScreenLoader />;
@@ -22,10 +17,6 @@ const AuthorizedLayout = () => {
         return <Redirect href='/(public)/login' />;
     }
 
-    return (
-        <AuthorizedContent>
-            <Stack screenOptions={{ headerShown: false }} />
-        </AuthorizedContent>
-    );
+    return <Stack screenOptions={{ headerShown: false }} />;
 };
 export default AuthorizedLayout;
