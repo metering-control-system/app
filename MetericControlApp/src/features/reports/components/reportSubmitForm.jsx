@@ -606,15 +606,6 @@ const ReportSubmitForm = ({ task, id }) => {
                     {errors.admission.rejectionReason.message}
                 </Text>
             ) : null}
-
-            {renderTextField({
-                name: 'admission.rejectionComment',
-                label: 'Комментарий',
-                placeholder: 'Добавьте комментарий при необходимости',
-                multiline: true,
-                numberOfLines: 4,
-                error: errors.admission?.rejectionComment,
-            })}
         </View>
     );
 
