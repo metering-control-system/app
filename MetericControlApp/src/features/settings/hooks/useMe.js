@@ -17,6 +17,7 @@ const useMe = () => {
     useEffect(() => {
         if (data) {
             setProfile({
+                userId: data.user_id ?? null,
                 fullName: data.full_name ?? null,
                 avatar: data.avatar ?? null,
             });
