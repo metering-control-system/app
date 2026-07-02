@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
@@ -73,9 +73,14 @@ const mapTaskToReportDefaults = (task) => ({
     },
 });
 
-const ReportSubmitForm = ({ task, id }) => {
+const ReportSubmitForm = ({
+    task,
+    id,
+    fillPositions,
+    stepIndex,
+    setStepIndex,
+}) => {
     const router = useRouter();
-    const [stepIndex, setStepIndex] = useState(0);
     const hydratedDraftIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
     const reportPhotosRaw = useStorePictures(
@@ -255,7 +260,11 @@ const ReportSubmitForm = ({ task, id }) => {
         error,
         editable = true,
     }) => (
-        <View style={styles.control}>
+        <View
+            style={styles.control}
+            onLayout={(e) => {
+                fillPositions({ e, name });
+            }}>
             <Text style={styles.label}>{label}</Text>
             <Controller
                 control={control}
@@ -286,8 +295,18 @@ const ReportSubmitForm = ({ task, id }) => {
         </View>
     );
 
-    const renderSingleOptionGroup = ({ label, value, onChange, options }) => (
-        <View style={styles.control}>
+    const renderSingleOptionGroup = ({
+        label,
+        value,
+        onChange,
+        options,
+        name,
+    }) => (
+        <View
+            style={styles.control}
+            onLayout={(e) => {
+                fillPositions({ e, name });
+            }}>
             <Text style={styles.label}>{label}</Text>
             <View style={styles.chipsRow}>
                 {options.map((option) => {
@@ -315,9 +334,12 @@ const ReportSubmitForm = ({ task, id }) => {
         </View>
     );
 
-    const renderToggleRow = ({ label, value, onChange }) => (
+    const renderToggleRow = ({ label, value, onChange, name }) => (
         <Pressable
             onPress={() => onChange(!value)}
+            onLayout={(e) => {
+                fillPositions({ e, name });
+            }}
             style={({ pressed }) => [
                 styles.switchRow,
                 pressed && styles.switchRowPressed,
@@ -391,6 +413,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='meterBefore.isActualDifferent'
                 render={({ field: { onChange, value } }) =>
                     renderToggleRow({
+                        name: 'meterBefore.isActualDifferent',
                         label: 'Фактический ПУ отличается',
                         value,
                         onChange,
@@ -431,6 +454,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='metering.dismantlingCompleted'
                 render={({ field: { onChange, value } }) =>
                     renderToggleRow({
+                        name: 'metering.dismantlingCompleted',
                         label: 'Демонтаж выполнен',
                         value,
                         onChange,
@@ -462,6 +486,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='metering.sealLocation'
                 render={({ field: { onChange, value } }) =>
                     renderSingleOptionGroup({
+                        name: 'metering.sealLocation',
                         label: 'Место установки пломбы',
                         value,
                         onChange,
@@ -501,8 +526,15 @@ const ReportSubmitForm = ({ task, id }) => {
                 ? 'Фото текущего счетчика'
                 : photoField.title;
 
+        const photoFieldName = `photos.${photoField.name}`;
+
         return (
-            <View key={photoField.name} style={styles.control}>
+            <View
+                key={photoField.name}
+                style={styles.control}
+                onLayout={(e) => {
+                    fillPositions({ e, name: photoFieldName });
+                }}>
                 <Text style={styles.label}>{title}</Text>
                 <MediaBlock
                     uris={uris}
@@ -574,6 +606,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='admission.status'
                 render={({ field: { onChange, value } }) =>
                     renderSingleOptionGroup({
+                        name: 'admission.status',
                         label: 'Статус допуска',
                         value,
                         onChange,
@@ -593,6 +626,7 @@ const ReportSubmitForm = ({ task, id }) => {
                     name='admission.rejectionReason'
                     render={({ field: { onChange, value } }) =>
                         renderSingleOptionGroup({
+                            name: 'admission.rejectionReason',
                             label: 'Причина недопуска',
                             value,
                             onChange,
@@ -616,6 +650,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='consumerContact.isRefusedContact'
                 render={({ field: { onChange, value } }) =>
                     renderToggleRow({
+                        name: 'consumerContact.isRefusedContact',
                         label: 'Отказ от предоставления контактов',
                         value,
                         onChange: (nextValue) => {
