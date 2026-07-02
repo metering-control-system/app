@@ -1,8 +1,39 @@
 import Card from '@/shared/components/wrapper/card';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
+import { useCallback } from 'react';
+import { detectReference } from '@/features/comments/lib/detectReference';
+import { useRouter } from 'expo-router';
 
-const Comment = ({ comment, isPending, isOwn, onPress }) => {
+const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
+    const router = useRouter();
+
+    const getCommentText = useCallback((arrayOfMessageWords) => {
+        return (
+            <Text>
+                {arrayOfMessageWords?.reduce((prev, curr) => {
+                    if (detectReference(curr))
+                        return (
+                            <>
+                                <Text>{`${prev} `}</Text>
+                                <Text
+                                    onPress={() =>
+                                        router.push({
+                                            pathname: `/(authorized)/taskFlow/${id}`,
+                                            params: { reference: curr },
+                                        })
+                                    }
+                                    style={{ fontWeight: 'bold' }}>
+                                    <Text>{curr}</Text>
+                                </Text>
+                            </>
+                        );
+                    return `${prev} ${curr}`;
+                })}
+            </Text>
+        );
+    }, []);
+
     return (
         <Pressable
             onPress={() => isOwn && !isPending && onPress?.(comment)}
@@ -20,7 +51,7 @@ const Comment = ({ comment, isPending, isOwn, onPress }) => {
                 )}
                 <View style={styles.contentFlex}>
                     <Card style={isOwn ? styles.ownCard : styles.otherCard}>
-                        <Text>{comment?.content}</Text>
+                        {getCommentText(comment.content?.split(' '))}
                     </Card>
                     {isPending && (
                         <View style={styles.pendingWrapper}>

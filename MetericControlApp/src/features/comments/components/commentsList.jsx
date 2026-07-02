@@ -71,6 +71,7 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
                 isPending={comment?.isPending}
                 isOwn={comment?.author_id === userId}
                 onPress={onSelectComment}
+                id={id}
             />
         ),
         [userId, onSelectComment]
