@@ -6,11 +6,31 @@ import { ScrollView, StyleSheet, View } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ShrinkedChat } from '@/features/comments/components/shrinkedChat';
+import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
+import { useEffect, useRef, useState } from 'react';
+import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
 
 const ReportSubmitScreen = () => {
-    const { id } = useLocalSearchParams();
+    const { id, reference } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
     const router = useRouter();
+
+    const scrollRef = useRef();
+    const [step, setStep] = useState(0);
+
+    const [navigateToElement, fillPositions] = useNavigateToElement(
+        scrollRef,
+        setStep
+    );
+
+    useEffect(() => {
+        if (reference) {
+            navigateToElement({
+                elements: FORM_FIELDS_MAP,
+                scrollableEl: reference,
+            });
+        }
+    }, [reference]);
 
     return (
         <ScreenLayout safe>
@@ -22,10 +42,17 @@ const ReportSubmitScreen = () => {
                     behavior={'translate-with-padding'}
                     keyboardVerticalOffset={100}>
                     <ScrollView
+                        ref={scrollRef}
                         contentContainerStyle={{ flexGrow: 1 }}
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
-                        <ReportSubmitForm task={task} id={id} />
+                        <ReportSubmitForm
+                            task={task}
+                            id={id}
+                            fillPositions={fillPositions}
+                            stepIndex={step}
+                            setStepIndex={setStep}
+                        />
                     </ScrollView>
                     <View style={styles.chatDivider} />
                     <ShrinkedChat
