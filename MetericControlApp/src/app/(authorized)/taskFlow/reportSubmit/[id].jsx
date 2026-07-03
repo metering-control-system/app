@@ -13,6 +13,7 @@ import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
 const ReportSubmitScreen = () => {
     const { id, reference } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
+    const [highlightedField, setHighlightedField] = useState(null);
     const router = useRouter();
 
     const scrollRef = useRef();
@@ -29,6 +30,7 @@ const ReportSubmitScreen = () => {
                 elements: FORM_FIELDS_MAP,
                 scrollableEl: reference,
             });
+            setHighlightedField(FORM_FIELDS_MAP[reference]?.field ?? null);
         }
     }, [reference]);
 
@@ -52,6 +54,7 @@ const ReportSubmitScreen = () => {
                             fillPositions={fillPositions}
                             stepIndex={step}
                             setStepIndex={setStep}
+                            highlightedField={highlightedField}
                         />
                     </ScrollView>
                     <View style={styles.chatDivider} />
