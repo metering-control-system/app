@@ -4,6 +4,7 @@ import { getComments } from '@/features/comments/api/getCommentsApi';
 import { useEffect, useRef, useState } from 'react';
 import useCommentsStore from '@/features/comments/store/useCommentsStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
+import { checkIntersection } from '@/shared/lib/checkIntersection';
 
 export const usePullNewComments = (id, requestEnabled) => {
     const setLastSyncAt = useCommentsSyncStore((state) => state.setLastSyncAt);
@@ -36,7 +37,12 @@ export const usePullNewComments = (id, requestEnabled) => {
             for (const comment of data.comments) {
                 newCommentsIds.add(comment.id);
             }
-            setNewCommentsNumber(newCommentsIds.size);
+            const prevComments = useCommentsStore.getState().comments[id];
+            const intersection = checkIntersection(
+                prevComments,
+                newCommentsIds
+            );
+            setNewCommentsNumber(intersection);
 
             const newComments = data.comments ?? [];
             if (newComments.length > 0) {

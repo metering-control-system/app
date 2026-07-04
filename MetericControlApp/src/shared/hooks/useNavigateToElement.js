@@ -11,7 +11,7 @@ export const useScrollToPosition = (scrollRef) => {
     };
 
     const scrollToElement = useCallback((scrollableEl) => {
-        if (scrollableEl && scrollRef && elementsPositionsRef.current) {
+        if (scrollableEl && scrollRef.current && elementsPositionsRef.current) {
             scrollRef.current.scrollTo({
                 y: elementsPositionsRef.current[scrollableEl?.field],
                 animated: true,

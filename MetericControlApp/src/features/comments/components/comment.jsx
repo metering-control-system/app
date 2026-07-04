@@ -8,10 +8,12 @@ import { useRouter } from 'expo-router';
 const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
     const router = useRouter();
 
-    const getCommentText = useCallback((arrayOfMessageWords) => {
+    const getCommentText = useCallback((message) => {
+        const content = message?.split(/\s+/).filter(Boolean);
+
         return (
             <Text>
-                {arrayOfMessageWords?.reduce((prev, curr) => {
+                {content?.reduce((prev, curr) => {
                     if (detectReference(curr))
                         return (
                             <>
@@ -29,7 +31,7 @@ const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
                             </>
                         );
                     return `${prev} ${curr}`;
-                })}
+                }, '')}
             </Text>
         );
     }, []);
@@ -51,7 +53,7 @@ const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
                 )}
                 <View style={styles.contentFlex}>
                     <Card style={isOwn ? styles.ownCard : styles.otherCard}>
-                        {getCommentText(comment.content?.split(' '))}
+                        {getCommentText(comment.content)}
                     </Card>
                     {isPending && (
                         <View style={styles.pendingWrapper}>

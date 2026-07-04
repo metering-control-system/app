@@ -18,7 +18,7 @@ const useCommentActions = (taskId) => {
         onMutate: async ({ commentId, content }) => {
             const oldContent = useCommentsStore
                 .getState()
-                .comments[taskId].find((c) => c.id === commentId);
+                .comments[taskId]?.find((c) => c.id === commentId).content;
 
             updateCommentInStore(taskId, commentId, {
                 content,
@@ -29,9 +29,9 @@ const useCommentActions = (taskId) => {
         onSuccess: (data, variables) => {
             updateCommentInStore(taskId, variables.commentId, { ...data });
         },
-        onError: (_error, variables) => {
+        onError: (_error, variables, context) => {
             updateCommentInStore(taskId, variables.commentId, {
-                content: variables.oldContent,
+                content: context.oldContent,
             });
         },
     });

@@ -1,7 +1,6 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { getComments } from '@/features/comments/api/getCommentsApi';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
-import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
 import { useEffect, useState } from 'react';
 import useCommentsStore from '@/features/comments/store/useCommentsStore';
 import useCommentsSyncStore from '@/features/comments/store/useCommentsSyncStore';
@@ -27,7 +26,7 @@ export const useReceiveComments = (id) => {
     } = useInfiniteQuery({
         queryKey: ['comments', id],
         queryFn: async ({ pageParam }) => {
-            const lastSyncAt = useTasksSyncStore.getState().lastSyncAt;
+            const lastSyncAt = useCommentsSyncStore.getState().lastSyncAt?.id;
             const response = await getComments({
                 params: { limit: COMMENTS_PER_PAGE, cursor: pageParam },
                 id,

@@ -66,10 +66,8 @@ const useCommentsStore = create(
             partialize: (state) => {
                 const commentsCopy = { ...state.comments };
                 for (const id in commentsCopy) {
-                    commentsCopy[id] = commentsCopy[id].slice(
-                        0,
-                        COMMENTS_PER_PAGE
-                    );
+                    commentsCopy[id] =
+                        commentsCopy[id]?.slice(0, COMMENTS_PER_PAGE) ?? [];
                 }
                 return { comments: commentsCopy };
             },
