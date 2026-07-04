@@ -54,9 +54,8 @@ export const useReceiveComments = (id) => {
     }, [data, id]);
 
     const rehydrateLocaleComments = () => {
-        if (!isChecked || isOnline || useCommentsStore.persist.hasHydrated()) {
-            return;
-        }
+        if (useCommentsStore.persist.hasHydrated()) return;
+
         void useCommentsStore.persist
             .rehydrate()
             .then(() => setRehydrateError(null))
