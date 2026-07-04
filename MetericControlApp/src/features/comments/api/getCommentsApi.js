@@ -4,7 +4,7 @@ import { nanoid } from 'nanoid/non-secure';
 
 export const getComments = ({ params, id }) => {
     return baseApi
-        .get(`tasks/${id}/comments`, {
+        .get(`reports/${id}/comments`, {
             params,
             transformResponse: [
                 ...(axios.defaults.transformResponse || []),

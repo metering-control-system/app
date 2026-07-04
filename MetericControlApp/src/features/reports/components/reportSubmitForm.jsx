@@ -451,7 +451,7 @@ const ReportSubmitForm = ({
             ) : null}
             {renderTextField({
                 name: 'comment',
-                label: 'Комментарий к отчету',
+                label: 'Комментарий к задаче',
                 placeholder: 'Добавьте комментарий при необходимости',
                 multiline: true,
                 numberOfLines: 4,

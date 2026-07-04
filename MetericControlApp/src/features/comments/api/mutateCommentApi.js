@@ -2,7 +2,7 @@ import { baseApi } from '@/shared/api/baseApi';
 
 export const sendComment = ({ id, message }) => {
     return baseApi
-        .post(`/tasks/${id}/comments/`, { content: message })
+        .post(`/reports/${id}/comments/`, { content: message })
         .then((response) => response.data);
 };
 
