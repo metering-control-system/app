@@ -8,10 +8,11 @@ import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { ControlPanel } from '@/shared/components/control/controlPanel';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
+import { useOfflineReportsSync } from '@/features/reports/hooks/useOfflineReportsSync';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
-
     const [filtering, setFiltering] = useState(new Set());
     const [sorting, setSorting] = useState(null);
     const [search, setSearch] = useState('');
@@ -25,6 +26,18 @@ const TaskScreen = () => {
     const pendingCount = useTaskOfflineMutationStore(
         (state) => Object.keys(state.tasksStatuses ?? {}).length
     );
+
+    const syncReportsRecords = useOfflineReportsSync();
+    const reportsPending = Object.entries(
+        useReportDraftStore((state) => state.drafts)
+    ).reduce((prev, curr) => {
+        if (curr[1].reportStatus === 'pending') {
+            return { ...prev, [curr[0]]: curr[1] };
+        }
+        return prev;
+    }, {});
+
+    const reportsPendingCount = Object.keys(reportsPending).length;
 
     return (
         <ScreenLayout safe>
@@ -50,11 +63,15 @@ const TaskScreen = () => {
                 sorting={sorting}
                 filtering={filtering}
                 search={search}
-                sync={() => {
+                sync={async () => {
                     if (pendingCount) {
                         void syncTasks();
                     }
+                    if (reportsPendingCount) {
+                        await syncReportsRecords();
+                    }
                 }}
+                syncingRecords={reportsPending}
             />
         </ScreenLayout>
     );

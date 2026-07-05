@@ -11,7 +11,7 @@ import {
 import { colors } from '@/shared/consts/baseColors';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 
-const Task = ({ task }) => {
+const Task = ({ task, hasPendingTaskReport }) => {
     const router = useRouter();
     const isPendingSync = useTaskOfflineMutationStore(
         (state) => state.tasksStatuses?.[task.id]
@@ -58,7 +58,7 @@ const Task = ({ task }) => {
                         </Text>
                     )}
                 </View>
-                {isPendingSync && (
+                {(isPendingSync || hasPendingTaskReport) && (
                     <Ionicons
                         name='cloud-upload-outline'
                         size={16}

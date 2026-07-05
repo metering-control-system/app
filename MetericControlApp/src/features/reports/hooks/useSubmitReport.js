@@ -9,14 +9,26 @@ import {
     buildReportImagesPayload,
     buildReportPayload,
 } from '@/features/reports/lib/buildReportPayload';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
+    const { isOnline, isChecked } = useNetwork();
+    const setDraft = useReportDraftStore((state) => state.setDraft);
+    const clearDraft = useReportDraftStore((state) => state.clearDraft);
+
     const { mutateAsync, error, isPending } = useMutation({
         mutationFn: async ({ taskId, values }) => {
             const reportPayload = buildReportPayload({ ...values, taskId });
             const reportCommentPayload = buildReportCommentPayload(values);
             const reportImagesPayload = buildReportImagesPayload(values);
+
+            setDraft({
+                draftId: String(taskId),
+                values: { ...values, reportState: 'pending' },
+            });
+
             const reportResponse = await createReport(reportPayload);
             const reportId = reportResponse?.id;
 
@@ -42,6 +54,15 @@ const useSubmitReport = () => {
                 }),
                 queryClient.invalidateQueries({ queryKey: ['tasks'] }),
             ]);
+            clearDraft(String(variables.taskId));
+        },
+        onError: (_data, variables) => {
+            if (isOnline) {
+                setDraft({
+                    draftId: String(variables.taskId),
+                    values: { ...variables.values, reportState: 'error' },
+                });
+            }
         },
     });
 
@@ -49,7 +70,11 @@ const useSubmitReport = () => {
         return await mutateAsync({ taskId, values });
     };
 
-    return { submitTaskReport, error, isPending };
+    return {
+        submitTaskReport,
+        error: isChecked && isOnline && error,
+        isPending,
+    };
 };
 
 export default useSubmitReport;

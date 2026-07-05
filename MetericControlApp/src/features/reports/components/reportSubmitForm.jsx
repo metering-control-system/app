@@ -220,7 +220,7 @@ const ReportSubmitForm = ({ task, id }) => {
         }
 
         prevSavedDraftRef.current = snapshot;
-        setDraft({ draftId, values: formValues });
+        setDraft({ draftId, values: { ...formValues, reportState: 'draft' } });
     }, [draftId, formValues, setDraft]);
 
     const onSubmit = async (values) => {
