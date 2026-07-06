@@ -31,7 +31,7 @@ const TaskScreen = () => {
     const reportsPending = Object.entries(
         useReportDraftStore((state) => state.drafts)
     ).reduce((prev, curr) => {
-        if (curr[1].reportStatus === 'pending') {
+        if (curr[1].reportState === 'pending') {
             return { ...prev, [curr[0]]: curr[1] };
         }
         return prev;
