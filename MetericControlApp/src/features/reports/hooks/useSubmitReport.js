@@ -16,18 +16,12 @@ const useSubmitReport = () => {
     const queryClient = useQueryClient();
     const { isOnline, isChecked } = useNetwork();
     const setDraft = useReportDraftStore((state) => state.setDraft);
-    const clearDraft = useReportDraftStore((state) => state.clearDraft);
 
     const { mutateAsync, error, isPending } = useMutation({
         mutationFn: async ({ taskId, values }) => {
             const reportPayload = buildReportPayload({ ...values, taskId });
             const reportCommentPayload = buildReportCommentPayload(values);
             const reportImagesPayload = buildReportImagesPayload(values);
-
-            setDraft({
-                draftId: String(taskId),
-                values: { ...values, reportState: 'pending' },
-            });
 
             const reportResponse = await createReport(reportPayload);
             const reportId = reportResponse?.id;
@@ -54,7 +48,6 @@ const useSubmitReport = () => {
                 }),
                 queryClient.invalidateQueries({ queryKey: ['tasks'] }),
             ]);
-            clearDraft(String(variables.taskId));
         },
         onError: (_data, variables) => {
             if (isOnline) {
@@ -67,6 +60,13 @@ const useSubmitReport = () => {
     });
 
     const submitTaskReport = async ({ taskId, values }) => {
+        if (!isOnline && isChecked) {
+            setDraft({
+                draftId: String(taskId),
+                values: { ...values, reportState: 'pending' },
+            });
+            return { offline: true };
+        }
         return await mutateAsync({ taskId, values });
     };
 

@@ -225,18 +225,28 @@ const ReportSubmitForm = ({ task, id }) => {
 
     const onSubmit = async (values) => {
         try {
-            await submitTaskReport({ taskId: task?.id ?? id, values });
-            clearDraft(draftId);
-            clearEntityPhotos({ entity: 'report', entityId: id });
-            const nextValues = mapTaskToReportDefaults(task);
-            reset(nextValues);
-            prevSavedDraftRef.current = JSON.stringify(nextValues);
-            hydratedDraftIdRef.current = null;
+            const res = await submitTaskReport({
+                taskId: task?.id ?? id,
+                values,
+            });
+            if (res.offline) {
+                Alert.alert(
+                    'Успешно',
+                    'Отчет сохранен и будет отправлен при появлении интернета.'
+                );
+            } else {
+                clearDraft(draftId);
+                clearEntityPhotos({ entity: 'report', entityId: id });
+                const nextValues = mapTaskToReportDefaults(task);
+                reset(nextValues);
+                prevSavedDraftRef.current = JSON.stringify(nextValues);
+                hydratedDraftIdRef.current = null;
 
-            Alert.alert(
-                'Успешно',
-                'Отчет успешно сохранен и отправлен на проверку.'
-            );
+                Alert.alert(
+                    'Успешно',
+                    'Отчет успешно сохранен и отправлен на проверку.'
+                );
+            }
         } catch (error) {
             Alert.alert(
                 'Ошибка отправки',
