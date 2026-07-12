@@ -1,5 +1,11 @@
 export const checkIntersection = (oldData, newDataSet) => {
-    const intersection = oldData?.filter((dt) => !newDataSet.has(dt.id));
+    if (!oldData || !newDataSet) return 0;
 
-    return intersection;
+    const oldIds = new Set(oldData.map((dt) => dt.id));
+    let count = 0;
+    for (const id of newDataSet) {
+        if (!oldIds.has(id)) count++;
+    }
+
+    return count;
 };

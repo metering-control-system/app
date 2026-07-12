@@ -140,12 +140,6 @@ export const FORM_FIELDS_MAP = {
         field: 'admission.rejectionReason',
         label: 'Причина недопуска',
     },
-    '@METERIC_ADMISSION_REJECTION_COMMENT': {
-        step: 3,
-        stepLabel: 'Допуск',
-        field: 'admission.rejectionComment',
-        label: 'Комментарий к отказу',
-    },
 
     '@METERIC_REFUSED_CONTACT': {
         step: 4,

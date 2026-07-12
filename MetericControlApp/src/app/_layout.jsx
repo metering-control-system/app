@@ -3,7 +3,7 @@ import { QueryClientProvider } from '@tanstack/react-query';
 import { queryClient } from '@/shared/api/queryClient';
 import { Stack } from 'expo-router';
 import AuthBootstrap from '@/features/auth/components/layout/authBootstrap';
-import { UIManager, Platform, KeyboardAvoidingView } from 'react-native';
+import { Platform, UIManager } from 'react-native';
 import { KeyboardProvider } from 'react-native-keyboard-controller';
 
 let TanstackQueryDevTools = ({ children }) => children;

@@ -26,7 +26,7 @@ export const useReceiveComments = (id) => {
     } = useInfiniteQuery({
         queryKey: ['comments', id],
         queryFn: async ({ pageParam }) => {
-            const lastSyncAt = useCommentsSyncStore.getState().lastSyncAt?.id;
+            const lastSyncAt = useCommentsSyncStore.getState().lastSyncAt?.[id];
             const response = await getComments({
                 params: { limit: COMMENTS_PER_PAGE, cursor: pageParam },
                 id,

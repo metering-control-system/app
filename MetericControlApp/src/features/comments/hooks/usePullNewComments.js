@@ -38,11 +38,8 @@ export const usePullNewComments = (id, requestEnabled) => {
                 newCommentsIds.add(comment.id);
             }
             const prevComments = useCommentsStore.getState().comments[id];
-            const intersection = checkIntersection(
-                prevComments,
-                newCommentsIds
-            );
-            setNewCommentsNumber(intersection);
+            const newCount = checkIntersection(prevComments, newCommentsIds);
+            setNewCommentsNumber(newCount);
 
             const newComments = data.comments ?? [];
             if (newComments.length > 0) {
