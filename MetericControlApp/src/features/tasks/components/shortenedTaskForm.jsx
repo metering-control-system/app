@@ -10,7 +10,7 @@ const ShortenedTaskForm = ({ task, id }) => {
         if (!task) {
             return;
         }
-        router.push(`/(authorized)/taskDetails/${id}`);
+        router.push(`/(authorized)/taskFlow/${id}`);
     };
 
     return (

@@ -21,7 +21,7 @@ const Task = ({ task, hasPendingTaskReport }) => {
         <Card
             clickable
             onPress={() => {
-                router.push(`/(authorized)/taskDetails/${task.id}`);
+                router.push(`/(authorized)/taskFlow/${task.id}`);
             }}
             title={task.address?.display_address}
             titleAlign={'flex-start'}>

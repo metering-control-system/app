@@ -3,11 +3,37 @@ import { Text, View, StyleSheet, Pressable } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Entypo } from '@expo/vector-icons';
 
-const Notification = ({ variant, message, handleClose }) => {
+const Notification = ({ variant, message, handleClose, onPress }) => {
     const insets = useSafeAreaInsets();
 
     if (!message) {
         return null;
+    }
+
+    if (onPress) {
+        return (
+            <Pressable style={styles.notification} onPress={onPress}>
+                <View
+                    style={[
+                        styles.card,
+                        { marginTop: insets.top },
+                        {
+                            backgroundColor:
+                                colors[variant ?? 'primary'].backgroundColor,
+                            borderColor:
+                                colors[variant ?? 'primary'].borderColor,
+                        },
+                    ]}>
+                    <Text
+                        style={[
+                            styles.text,
+                            { color: colors[variant ?? 'primary'].color },
+                        ]}>
+                        {message}
+                    </Text>
+                </View>
+            </Pressable>
+        );
     }
 
     return (

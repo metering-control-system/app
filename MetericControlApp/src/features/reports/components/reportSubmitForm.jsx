@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
@@ -15,6 +15,7 @@ import { useRouter } from 'expo-router';
 import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
+import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import MediaBlock from '@/shared/components/media/mediaBlock';
 import useStorePictures from '@/shared/store/useStorePictures';
 
@@ -73,9 +74,15 @@ const mapTaskToReportDefaults = (task) => ({
     },
 });
 
-const ReportSubmitForm = ({ task, id }) => {
+const ReportSubmitForm = ({
+    task,
+    id,
+    fillPositions,
+    stepIndex,
+    setStepIndex,
+    highlightedField,
+}) => {
     const router = useRouter();
-    const [stepIndex, setStepIndex] = useState(0);
     const hydratedDraftIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
     const reportPhotosRaw = useStorePictures(
@@ -264,76 +271,104 @@ const ReportSubmitForm = ({ task, id }) => {
         error,
         editable = true,
     }) => (
-        <View style={styles.control}>
-            <Text style={styles.label}>{label}</Text>
-            <Controller
-                control={control}
-                name={name}
-                render={({ field: { onChange, onBlur, value } }) => (
-                    <TextInput
-                        placeholder={placeholder}
-                        value={value}
-                        style={[
-                            styles.input,
-                            multiline && styles.textArea,
-                            !editable && styles.inputDisabled,
-                            error && styles.inputError,
-                        ]}
-                        keyboardType={keyboardType}
-                        multiline={multiline}
-                        numberOfLines={numberOfLines}
-                        textAlignVertical={multiline ? 'top' : 'center'}
-                        editable={editable}
-                        onBlur={onBlur}
-                        onChangeText={onChange}
-                    />
-                )}
-            />
-            {error ? (
-                <Text style={styles.errorText}>{error.message}</Text>
-            ) : null}
-        </View>
-    );
-
-    const renderSingleOptionGroup = ({ label, value, onChange, options }) => (
-        <View style={styles.control}>
-            <Text style={styles.label}>{label}</Text>
-            <View style={styles.chipsRow}>
-                {options.map((option) => {
-                    const isSelected = value === option.value;
-
-                    return (
-                        <Pressable
-                            key={option.value}
-                            onPress={() => onChange(option.value)}
-                            style={[
-                                styles.chip,
-                                isSelected && styles.chipSelected,
-                            ]}>
-                            <Text
+        <View
+            onLayout={(e) => {
+                fillPositions({ e, name });
+            }}>
+            <HighlightWrap isActive={highlightedField === name}>
+                <View style={styles.control}>
+                    <Text style={styles.label}>{label}</Text>
+                    <Controller
+                        control={control}
+                        name={name}
+                        render={({ field: { onChange, onBlur, value } }) => (
+                            <TextInput
+                                placeholder={placeholder}
+                                value={value}
                                 style={[
-                                    styles.chipText,
-                                    isSelected && styles.chipTextSelected,
-                                ]}>
-                                {option.label}
-                            </Text>
-                        </Pressable>
-                    );
-                })}
-            </View>
+                                    styles.input,
+                                    multiline && styles.textArea,
+                                    !editable && styles.inputDisabled,
+                                    error && styles.inputError,
+                                ]}
+                                keyboardType={keyboardType}
+                                multiline={multiline}
+                                numberOfLines={numberOfLines}
+                                textAlignVertical={multiline ? 'top' : 'center'}
+                                editable={editable}
+                                onBlur={onBlur}
+                                onChangeText={onChange}
+                            />
+                        )}
+                    />
+                    {error ? (
+                        <Text style={styles.errorText}>{error.message}</Text>
+                    ) : null}
+                </View>
+            </HighlightWrap>
         </View>
     );
 
-    const renderToggleRow = ({ label, value, onChange }) => (
-        <Pressable
-            onPress={() => onChange(!value)}
-            style={({ pressed }) => [
-                styles.switchRow,
-                pressed && styles.switchRowPressed,
-            ]}>
-            <Text style={styles.switchLabel}>{label}</Text>
-            <Switch value={value} onValueChange={onChange} />
-        </Pressable>
+    const renderSingleOptionGroup = ({
+        label,
+        value,
+        onChange,
+        options,
+        name,
+    }) => (
+        <View
+            onLayout={(e) => {
+                fillPositions({ e, name });
+            }}>
+            <HighlightWrap isActive={highlightedField === name}>
+                <View style={styles.control}>
+                    <Text style={styles.label}>{label}</Text>
+                    <View style={styles.chipsRow}>
+                        {options.map((option) => {
+                            const isSelected = value === option.value;
+
+                            return (
+                                <Pressable
+                                    key={option.value}
+                                    onPress={() => onChange(option.value)}
+                                    style={[
+                                        styles.chip,
+                                        isSelected && styles.chipSelected,
+                                    ]}>
+                                    <Text
+                                        style={[
+                                            styles.chipText,
+                                            isSelected &&
+                                                styles.chipTextSelected,
+                                        ]}>
+                                        {option.label}
+                                    </Text>
+                                </Pressable>
+                            );
+                        })}
+                    </View>
+                </View>
+            </HighlightWrap>
+        </View>
+    );
+
+    const renderToggleRow = ({ label, value, onChange, name }) => (
+        <View
+            onLayout={(e) => {
+                fillPositions({ e, name });
+            }}>
+            <HighlightWrap isActive={highlightedField === name}>
+                <Pressable
+                    onPress={() => onChange(!value)}
+                    style={({ pressed }) => [
+                        styles.switchRow,
+                        pressed && styles.switchRowPressed,
+                    ]}>
+                    <Text style={styles.switchLabel}>{label}</Text>
+                    <Switch value={value} onValueChange={onChange} />
+                </Pressable>
+            </HighlightWrap>
+        </View>
     );
 
     const renderStepIndicators = () => (
@@ -400,6 +435,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='meterBefore.isActualDifferent'
                 render={({ field: { onChange, value } }) =>
                     renderToggleRow({
+                        name: 'meterBefore.isActualDifferent',
                         label: 'Фактический ПУ отличается',
                         value,
                         onChange,
@@ -424,7 +460,7 @@ const ReportSubmitForm = ({ task, id }) => {
             ) : null}
             {renderTextField({
                 name: 'comment',
-                label: 'Комментарий к отчету',
+                label: 'Комментарий к задаче',
                 placeholder: 'Добавьте комментарий при необходимости',
                 multiline: true,
                 numberOfLines: 4,
@@ -440,6 +476,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='metering.dismantlingCompleted'
                 render={({ field: { onChange, value } }) =>
                     renderToggleRow({
+                        name: 'metering.dismantlingCompleted',
                         label: 'Демонтаж выполнен',
                         value,
                         onChange,
@@ -471,6 +508,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='metering.sealLocation'
                 render={({ field: { onChange, value } }) =>
                     renderSingleOptionGroup({
+                        name: 'metering.sealLocation',
                         label: 'Место установки пломбы',
                         value,
                         onChange,
@@ -510,64 +548,77 @@ const ReportSubmitForm = ({ task, id }) => {
                 ? 'Фото текущего счетчика'
                 : photoField.title;
 
+        const photoFieldName = `photos.${photoField.name}`;
+
         return (
-            <View key={photoField.name} style={styles.control}>
-                <Text style={styles.label}>{title}</Text>
-                <MediaBlock
-                    uris={uris}
-                    handleOpenCamera={() => {
-                        router.push({
-                            pathname: '/(authorized)/camera',
-                            params: {
-                                action: 'reports',
-                                id,
-                                slot: photoField.name,
-                            },
-                        });
-                    }}
-                    handleUploadPhoto={(uriValue) => {
-                        appendPhoto({
-                            entity: 'report',
-                            entityId: id,
-                            slot: photoField.name,
-                            uri: uriValue,
-                        });
-                        setValue(
-                            `photos.${photoField.name}`,
-                            [...uris, uriValue],
-                            { shouldDirty: true, shouldValidate: true }
-                        );
-                    }}
-                    handleUpdatePhoto={(uriValue, index) => {
-                        updatePhoto({
-                            entity: 'report',
-                            entityId: id,
-                            slot: photoField.name,
-                            index,
-                            uri: uriValue,
-                        });
-                        const nextUris = [...uris];
-                        nextUris[index] = uriValue;
-                        setValue(`photos.${photoField.name}`, nextUris, {
-                            shouldDirty: true,
-                            shouldValidate: true,
-                        });
-                    }}
-                    handleDeletePhoto={(index) => {
-                        removePhotoAt({
-                            entity: 'report',
-                            entityId: id,
-                            slot: photoField.name,
-                            index,
-                        });
-                        setValue(
-                            `photos.${photoField.name}`,
-                            uris.filter((_, uriIndex) => uriIndex !== index),
-                            { shouldDirty: true, shouldValidate: true }
-                        );
-                    }}
-                    disabled={isSubmitting}
-                />
+            <View
+                key={photoField.name}
+                onLayout={(e) => {
+                    fillPositions({ e, name: photoFieldName });
+                }}>
+                <HighlightWrap isActive={highlightedField === photoFieldName}>
+                    <View style={styles.control}>
+                        <Text style={styles.label}>{title}</Text>
+                        <MediaBlock
+                            uris={uris}
+                            handleOpenCamera={() => {
+                                router.push({
+                                    pathname: '/(authorized)/camera',
+                                    params: {
+                                        action: 'reports',
+                                        id,
+                                        slot: photoField.name,
+                                    },
+                                });
+                            }}
+                            handleUploadPhoto={(uriValue) => {
+                                appendPhoto({
+                                    entity: 'report',
+                                    entityId: id,
+                                    slot: photoField.name,
+                                    uri: uriValue,
+                                });
+                                setValue(
+                                    `photos.${photoField.name}`,
+                                    [...uris, uriValue],
+                                    { shouldDirty: true, shouldValidate: true }
+                                );
+                            }}
+                            handleUpdatePhoto={(uriValue, index) => {
+                                updatePhoto({
+                                    entity: 'report',
+                                    entityId: id,
+                                    slot: photoField.name,
+                                    index,
+                                    uri: uriValue,
+                                });
+                                const nextUris = [...uris];
+                                nextUris[index] = uriValue;
+                                setValue(
+                                    `photos.${photoField.name}`,
+                                    nextUris,
+                                    { shouldDirty: true, shouldValidate: true }
+                                );
+                            }}
+                            handleDeletePhoto={(index) => {
+                                removePhotoAt({
+                                    entity: 'report',
+                                    entityId: id,
+                                    slot: photoField.name,
+                                    index,
+                                });
+                                setValue(
+                                    `photos.${photoField.name}`,
+                                    uris.filter(
+                                        (_, uriIndex) => uriIndex !== index
+                                    ),
+                                    { shouldDirty: true, shouldValidate: true }
+                                );
+                            }}
+                            disabled={isSubmitting}
+                        />
+                    </View>
+                </HighlightWrap>
             </View>
         );
     };
@@ -583,6 +634,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='admission.status'
                 render={({ field: { onChange, value } }) =>
                     renderSingleOptionGroup({
+                        name: 'admission.status',
                         label: 'Статус допуска',
                         value,
                         onChange,
@@ -602,6 +654,7 @@ const ReportSubmitForm = ({ task, id }) => {
                     name='admission.rejectionReason'
                     render={({ field: { onChange, value } }) =>
                         renderSingleOptionGroup({
+                            name: 'admission.rejectionReason',
                             label: 'Причина недопуска',
                             value,
                             onChange,
@@ -615,15 +668,6 @@ const ReportSubmitForm = ({ task, id }) => {
                     {errors.admission.rejectionReason.message}
                 </Text>
             ) : null}
-
-            {renderTextField({
-                name: 'admission.rejectionComment',
-                label: 'Комментарий',
-                placeholder: 'Добавьте комментарий при необходимости',
-                multiline: true,
-                numberOfLines: 4,
-                error: errors.admission?.rejectionComment,
-            })}
         </View>
     );
 
@@ -634,6 +678,7 @@ const ReportSubmitForm = ({ task, id }) => {
                 name='consumerContact.isRefusedContact'
                 render={({ field: { onChange, value } }) =>
                     renderToggleRow({
+                        name: 'consumerContact.isRefusedContact',
                         label: 'Отказ от предоставления контактов',
                         value,
                         onChange: (nextValue) => {
