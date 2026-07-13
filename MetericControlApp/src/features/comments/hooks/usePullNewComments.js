@@ -23,7 +23,7 @@ export const usePullNewComments = (id, requestEnabled) => {
 
             return getComments({
                 // eslint-disable-next-line camelcase
-                params: { updated_since: currentSyncAt },
+                params: { update_since: currentSyncAt },
                 id,
             });
         },
