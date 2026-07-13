@@ -21,11 +21,12 @@ export const usePullNewComments = (id, requestEnabled) => {
             const currentSyncAt =
                 useCommentsSyncStore.getState().lastSyncAt[id];
 
-            return getComments({
+            const data = await getComments({
                 // eslint-disable-next-line camelcase
                 params: { update_since: currentSyncAt },
                 id,
             });
+            return data ?? { comments: [] };
         },
         enabled: !!(!requestEnabled && id && isOnline),
         refetchInterval: 10 * 1000,
@@ -35,7 +36,9 @@ export const usePullNewComments = (id, requestEnabled) => {
     useEffect(() => {
         if (data && id) {
             for (const comment of data.comments) {
-                newCommentsIds.add(comment.id);
+                if (!comment.is_deleted) {
+                    newCommentsIds.add(comment.id);
+                }
             }
             const prevComments = useCommentsStore.getState().comments[id];
             const newCount = checkIntersection(prevComments, newCommentsIds);

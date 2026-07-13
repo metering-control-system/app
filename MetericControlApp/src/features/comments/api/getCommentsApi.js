@@ -9,6 +9,9 @@ export const getComments = ({ params, id }) => {
             transformResponse: [
                 ...(axios.defaults.transformResponse || []),
                 (data) => {
+                    if (!data || typeof data !== 'object')
+                        return { comments: [] };
+
                     const dataCopy = { ...data };
                     dataCopy.comments = dataCopy.results ?? [];
                     for (const key in dataCopy.comments) {
