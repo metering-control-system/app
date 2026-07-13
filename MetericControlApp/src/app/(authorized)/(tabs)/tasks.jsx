@@ -68,7 +68,7 @@ const TaskScreen = () => {
                         void syncTasks();
                     }
                     if (reportsPendingCount) {
-                        await syncReportsRecords();
+                        return await syncReportsRecords();
                     }
                 }}
                 syncingRecords={reportsPending}
