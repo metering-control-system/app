@@ -30,6 +30,11 @@ const optionalEmailField = z
     );
 
 const photoArrayField = z.array(z.string().trim()).default([]);
+const photoMetadataArrayField = z
+    .array(
+        z.object({ uri: z.string().trim(), clientImageId: z.string().trim() })
+    )
+    .default([]);
 
 export const reportSubmitFormSchema = z
     .object({
@@ -104,6 +109,14 @@ export const reportSubmitFormSchema = z
             generalView: photoArrayField,
             actPaper: photoArrayField,
             refusalProof: photoArrayField,
+        }),
+        photoMetadata: z.object({
+            oldMeter: photoMetadataArrayField,
+            seal: photoMetadataArrayField,
+            frontPanel: photoMetadataArrayField,
+            generalView: photoMetadataArrayField,
+            actPaper: photoMetadataArrayField,
+            refusalProof: photoMetadataArrayField,
         }),
         admission: z.object({
             status: z.string().trim().min(1, 'Выберите статус допуска'),

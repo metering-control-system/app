@@ -123,6 +123,10 @@ const ReportSubmitForm = ({
                 ...reportSubmitFormDefaultValues.photos,
                 ...draftValues?.photos,
             },
+            photoMetadata: {
+                ...reportSubmitFormDefaultValues.photoMetadata,
+                ...draftValues?.photoMetadata,
+            },
             admission: {
                 ...reportSubmitFormDefaultValues.admission,
                 ...draftValues?.admission,

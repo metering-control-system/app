@@ -19,6 +19,8 @@ import {
     selectReportForTask,
 } from '@/features/reports/lib/reportUpsert';
 import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
+import { createClientId } from '@/features/reports/lib/createClientReportId';
+import { prepareReportValues } from '@/features/reports/lib/reportPhotoMetadata';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -40,7 +42,10 @@ const useSubmitReport = () => {
                     { includeEmptyOptionalFields: Boolean(existingReport) }
                 );
                 const reportCommentPayload = buildReportCommentPayload(values);
-                const reportImagesPayload = buildReportImagesPayload(values);
+                const reportImagesPayload = buildReportImagesPayload(
+                    values,
+                    existingReport?.images
+                );
                 const upsertRequest = buildReportUpsertRequest({
                     reportPayload,
                     existingReport,
@@ -61,16 +66,16 @@ const useSubmitReport = () => {
 
                 setUpdatedReports([reportResponse]);
 
-                if (reportCommentPayload) {
-                    await addReportComment(reportId, reportCommentPayload);
-                }
-
                 if (reportImagesPayload) {
                     reportResponse = await uploadReportImage(
                         reportId,
                         reportImagesPayload
                     );
                     setUpdatedReports([reportResponse]);
+                }
+
+                if (reportCommentPayload) {
+                    await addReportComment(reportId, reportCommentPayload);
                 }
 
                 return {
@@ -107,14 +112,16 @@ const useSubmitReport = () => {
     });
 
     const submitTaskReport = async ({ taskId, values }) => {
+        const preparedValues = prepareReportValues(values, createClientId);
+
         if (!isOnline && isChecked) {
             setDraft({
                 draftId: String(taskId),
-                values: { ...values, reportState: 'pending' },
+                values: { ...preparedValues, reportState: 'pending' },
             });
             return { offline: true };
         }
-        return await mutateAsync({ taskId, values });
+        return await mutateAsync({ taskId, values: preparedValues });
     };
 
     return {

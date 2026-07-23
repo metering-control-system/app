@@ -59,15 +59,6 @@ const normalizePhotoUris = (value) => {
     return [value];
 };
 
-const createClientImageId = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
-        const random = Math.floor(Math.random() * 16);
-        const value = char === 'x' ? random : (random & 0x3) | 0x8;
-
-        return value.toString(16);
-    });
-};
-
 export const buildReportPayload = (
     formValues,
     { includeEmptyOptionalFields = false } = {}
@@ -159,7 +150,7 @@ export const buildReportCommentPayload = (formValues) => {
     return { content: comment };
 };
 
-export const buildReportImagesPayload = (formValues) => {
+export const buildReportImagesPayload = (formValues, existingImages = []) => {
     const photoConfigs = [
         { kind: 'OLD_METER', slot: 'oldMeter', fileName: 'old_meter' },
         { kind: 'SEAL', slot: 'seal', fileName: 'seal' },
@@ -173,12 +164,24 @@ export const buildReportImagesPayload = (formValues) => {
         },
     ];
 
+    const existingImageIds = new Set(
+        existingImages
+            .map((image) => image?.['client_image_id'])
+            .filter(Boolean)
+    );
     const files = photoConfigs
         .flatMap(({ kind, slot, fileName }) =>
             normalizePhotoUris(formValues.photos?.[slot]).map((uri, index) => {
                 const file = buildReactNativeFile(uri, fileName);
+                const metadata = formValues.photoMetadata?.[slot]?.[index];
+                const clientImageId =
+                    metadata?.uri === uri ? metadata.clientImageId : null;
 
-                if (!file) {
+                if (
+                    !file ||
+                    !clientImageId ||
+                    existingImageIds.has(clientImageId)
+                ) {
                     return null;
                 }
 
@@ -191,7 +194,7 @@ export const buildReportImagesPayload = (formValues) => {
                         ['file_key']: fileKey,
                         kind,
                         ['file_name']: file.name,
-                        ['client_image_id']: createClientImageId(),
+                        ['client_image_id']: clientImageId,
                     },
                 };
             })
