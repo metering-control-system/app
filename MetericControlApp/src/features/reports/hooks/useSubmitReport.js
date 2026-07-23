@@ -21,6 +21,7 @@ import {
 import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportValues } from '@/features/reports/lib/reportPhotoMetadata';
+import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -67,9 +68,8 @@ const useSubmitReport = () => {
                 setUpdatedReports([reportResponse]);
 
                 if (reportImagesPayload) {
-                    reportResponse = await uploadReportImage(
-                        reportId,
-                        reportImagesPayload
+                    reportResponse = await retryReportImageUpload(() =>
+                        uploadReportImage(reportId, reportImagesPayload)
                     );
                     setUpdatedReports([reportResponse]);
                 }
