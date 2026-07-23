@@ -2,6 +2,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     addReportComment,
     createReport,
+    getReportByTaskId,
+    updateReport,
     uploadReportImage,
 } from '@/features/reports/api/submitReportApi';
 import {
@@ -11,36 +13,81 @@ import {
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import {
+    buildReportUpsertRequest,
+    selectReportForTask,
+} from '@/features/reports/lib/reportUpsert';
+import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
     const { isOnline, isChecked } = useNetwork();
     const setDraft = useReportDraftStore((state) => state.setDraft);
+    const setUpdatedReports = useReportsStore(
+        (state) => state.setUpdatedReports
+    );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: async ({ taskId, values }) => {
-            const reportPayload = buildReportPayload({ ...values, taskId });
-            const reportCommentPayload = buildReportCommentPayload(values);
-            const reportImagesPayload = buildReportImagesPayload(values);
+        mutationFn: ({ taskId, values }) =>
+            enqueueReportSubmission(taskId, async () => {
+                const cachedReports = useReportsStore.getState().reports ?? [];
+                const cachedReport = selectReportForTask(cachedReports, taskId);
+                const existingReport =
+                    cachedReport ?? (await getReportByTaskId(taskId));
+                const reportPayload = buildReportPayload(
+                    { ...values, taskId },
+                    { includeEmptyOptionalFields: Boolean(existingReport) }
+                );
+                const reportCommentPayload = buildReportCommentPayload(values);
+                const reportImagesPayload = buildReportImagesPayload(values);
+                const upsertRequest = buildReportUpsertRequest({
+                    reportPayload,
+                    existingReport,
+                });
 
-            const reportResponse = await createReport(reportPayload);
-            const reportId = reportResponse?.id;
+                let reportResponse =
+                    upsertRequest.operation === 'update'
+                        ? await updateReport(
+                              upsertRequest.reportId,
+                              upsertRequest.payload
+                          )
+                        : await createReport(upsertRequest.payload);
+                const reportId = reportResponse?.id;
 
-            if (!reportId) {
-                throw new Error('Не удалось получить идентификатор отчета');
-            }
+                if (!reportId) {
+                    throw new Error('Не удалось получить идентификатор отчета');
+                }
 
-            if (reportCommentPayload) {
-                await addReportComment(reportId, reportCommentPayload);
-            }
+                setUpdatedReports([reportResponse]);
 
-            if (reportImagesPayload) {
-                await uploadReportImage(reportId, reportImagesPayload);
-            }
+                if (reportCommentPayload) {
+                    await addReportComment(reportId, reportCommentPayload);
+                }
 
-            return { reportId, reportResponse };
-        },
+                if (reportImagesPayload) {
+                    reportResponse = await uploadReportImage(
+                        reportId,
+                        reportImagesPayload
+                    );
+                    setUpdatedReports([reportResponse]);
+                }
+
+                return {
+                    reportId,
+                    reportResponse,
+                    operation: upsertRequest.operation,
+                };
+            }),
         onSuccess: async (_data, variables) => {
+            queryClient.setQueryData(
+                ['report', _data.reportId],
+                _data.reportResponse
+            );
+            queryClient.setQueryData(
+                ['report', 'task', Number(variables.taskId)],
+                _data.reportResponse
+            );
             await Promise.all([
                 queryClient.invalidateQueries({ queryKey: ['reports'] }),
                 queryClient.invalidateQueries({

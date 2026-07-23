@@ -1,7 +1,35 @@
 import { baseApi } from '@/shared/api/baseApi';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
+
+const REPORT_LOOKUP_PAGE_LIMIT = 100;
 
 export const createReport = (payload) =>
     baseApi.post('/reports/', payload).then((response) => response.data);
+
+export const updateReport = (reportId, payload) =>
+    baseApi
+        .patch(`/reports/${reportId}/`, payload)
+        .then((response) => response.data);
+
+export const getReportByTaskId = async (taskId) => {
+    const reports = [];
+    let cursor;
+
+    do {
+        const response = await baseApi.get('/reports/', {
+            params: {
+                limit: REPORT_LOOKUP_PAGE_LIMIT,
+                ...(cursor ? { cursor } : {}),
+            },
+        });
+        const responseData = response.data;
+
+        reports.push(...(responseData?.results ?? []));
+        cursor = responseData?.['next_cursor'] ?? null;
+    } while (cursor);
+
+    return selectReportForTask(reports, taskId);
+};
 
 export const addReportComment = (reportId, payload) =>
     baseApi

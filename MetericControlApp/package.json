@@ -9,6 +9,7 @@
     "web": "expo start --web",
     "lint": "eslint .",
     "lint:fix": "eslint . --fix",
+    "test": "node --experimental-default-type=module --test",
     "format": "prettier . --write",
     "format:check": "prettier . --check .",
     "dev": "APP_VARIANT=development npx expo start"

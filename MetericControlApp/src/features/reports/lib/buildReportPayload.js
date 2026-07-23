@@ -68,7 +68,10 @@ const createClientImageId = () => {
     });
 };
 
-export const buildReportPayload = (formValues) => {
+export const buildReportPayload = (
+    formValues,
+    { includeEmptyOptionalFields = false } = {}
+) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
     const rejectionReason = toNullableValue(
         formValues.admission.rejectionReason
@@ -124,15 +127,22 @@ export const buildReportPayload = (formValues) => {
         },
     };
 
-    if (!payload.consumer_contact.phone_number_2) {
+    if (
+        !includeEmptyOptionalFields &&
+        !payload.consumer_contact.phone_number_2
+    ) {
         delete payload.consumer_contact.phone_number_2;
     }
 
-    if (!payload.admission.rejection_reason) {
+    if (includeEmptyOptionalFields && !payload.admission['rejection_reason']) {
+        payload.admission['rejection_reason'] = '';
+    } else if (!payload.admission['rejection_reason']) {
         delete payload.admission.rejection_reason;
     }
 
-    if (!payload.admission.rejection_comment) {
+    if (includeEmptyOptionalFields && !payload.admission['rejection_comment']) {
+        payload.admission['rejection_comment'] = '';
+    } else if (!payload.admission['rejection_comment']) {
         delete payload.admission.rejection_comment;
     }
 
