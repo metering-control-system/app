@@ -20,7 +20,7 @@ import {
 } from '@/features/reports/lib/reportUpsert';
 import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
-import { prepareReportValues } from '@/features/reports/lib/reportPhotoMetadata';
+import { prepareReportSubmissionValues } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
 
 const useSubmitReport = () => {
@@ -112,11 +112,21 @@ const useSubmitReport = () => {
     });
 
     const submitTaskReport = async ({ taskId, values }) => {
-        const preparedValues = prepareReportValues(values, createClientId);
+        const draftId = String(taskId);
+        const persistedValues = useReportDraftStore
+            .getState()
+            .getDraft(draftId);
+        const preparedValues = prepareReportSubmissionValues({
+            values,
+            persistedValues,
+            createId: createClientId,
+        });
+
+        setDraft({ draftId, values: preparedValues });
 
         if (!isOnline && isChecked) {
             setDraft({
-                draftId: String(taskId),
+                draftId,
                 values: { ...preparedValues, reportState: 'pending' },
             });
             return { offline: true };

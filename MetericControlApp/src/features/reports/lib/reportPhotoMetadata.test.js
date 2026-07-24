@@ -3,6 +3,7 @@ import test from 'node:test';
 
 import {
     prepareReportPhotoMetadata,
+    prepareReportSubmissionValues,
     prepareReportValues,
 } from './reportPhotoMetadata.js';
 
@@ -14,13 +15,19 @@ const createSequentialId = () => {
 
 test('keeps image ids stable across repeated submissions', () => {
     const createId = createSequentialId();
-    const firstValues = prepareReportValues(
-        { photos: { seal: ['file://seal.jpg'] } },
-        createId
-    );
-    const secondValues = prepareReportValues(firstValues, createId);
+    const formValues = {
+        comment: 'Updated comment',
+        photos: { seal: ['file://seal.jpg'] },
+    };
+    const firstValues = prepareReportValues(formValues, createId);
+    const secondValues = prepareReportSubmissionValues({
+        values: formValues,
+        persistedValues: firstValues,
+        createId,
+    });
 
     assert.deepEqual(secondValues.photoMetadata, firstValues.photoMetadata);
+    assert.equal(secondValues.comment, 'Updated comment');
 });
 
 test('adds metadata only for new photos and removes deleted photos', () => {
