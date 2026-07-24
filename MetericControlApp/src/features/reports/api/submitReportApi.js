@@ -1,5 +1,6 @@
 import { baseApi } from '@/shared/api/baseApi';
 import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
+import { registerReportPaginationCursor } from '@/features/reports/lib/reportPaginationGuard';
 
 const REPORT_LOOKUP_PAGE_LIMIT = 100;
 
@@ -13,6 +14,7 @@ export const updateReport = (reportId, payload) =>
 
 export const getReportByTaskId = async (taskId) => {
     const reports = [];
+    const seenCursors = new Set();
     let cursor;
 
     do {
@@ -26,6 +28,7 @@ export const getReportByTaskId = async (taskId) => {
 
         reports.push(...(responseData?.results ?? []));
         cursor = responseData?.['next_cursor'] ?? null;
+        registerReportPaginationCursor(seenCursors, cursor);
     } while (cursor);
 
     return selectReportForTask(reports, taskId);
