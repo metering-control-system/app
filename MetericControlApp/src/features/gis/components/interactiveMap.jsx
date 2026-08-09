@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-import { getScale } from '@/features/gis/lib/tileMap';
 import polygon from '@/features/gis/constants/tiles.json';
 import {
     arrangeTasksByDistrict,
@@ -22,6 +21,10 @@ import { MAX_SCALE, TILED_MIN_ZOOM } from '@/features/gis/constants/mapScale';
 const clamp = (value, min, max) => {
     'worklet';
     return Math.min(Math.max(value, min), max);
+};
+
+const getScale = (screenWidth, mapWidth) => {
+    return screenWidth / mapWidth;
 };
 
 const counterFontSize = 8;
