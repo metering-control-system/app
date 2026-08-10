@@ -62,6 +62,7 @@ const InteractiveMap = ({ tasks }) => {
         if (width) {
             return getScale(width, polygon.width);
         }
+        return 0;
     }, [width]);
 
     const districts = Object.keys(polygon.coordinates);

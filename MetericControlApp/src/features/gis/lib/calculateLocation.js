@@ -25,6 +25,10 @@ export const arrangeTasksByDistrict = async ({ tasks, polygon }) => {
     const districts = polygon.coordinates;
     const { startX, startY, size } = polygon;
 
+    if (!Array.isArray(tasks)) {
+        return;
+    }
+
     for (const task of tasks) {
         const geocoderAddress = [
             task.address?.locality,
@@ -40,7 +44,10 @@ export const arrangeTasksByDistrict = async ({ tasks, polygon }) => {
         let tileDistrict;
         try {
             const coordinates = await getCoordinates(geocoderAddress);
-            if (coordinates?.lat && coordinates?.lng) {
+            if (
+                coordinates?.lat !== undefined &&
+                coordinates?.lng !== undefined
+            ) {
                 let { x, y } = WebMercator.translateFromDegreesToMeters({
                     lat: coordinates.lat,
                     lng: coordinates.lng,
