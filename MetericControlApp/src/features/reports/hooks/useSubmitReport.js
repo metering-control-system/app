@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     addReportComment,
     createReport,
+    deleteReportImage,
     getReportByTaskId,
     updateReport,
     uploadReportImage,
@@ -10,6 +11,7 @@ import {
     buildReportCommentPayload,
     buildReportImagesPayload,
     buildReportPayload,
+    getRemovedReportImageIds,
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
@@ -41,6 +43,10 @@ const useSubmitReport = () => {
                     values,
                     existingReport?.images
                 );
+                const removedImageIds = getRemovedReportImageIds(
+                    values,
+                    existingReport?.images
+                );
                 const upsertRequest = buildReportUpsertRequest({
                     reportPayload,
                     existingReport,
@@ -65,6 +71,18 @@ const useSubmitReport = () => {
                     reportResponse = await retryReportImageUpload(() =>
                         uploadReportImage(reportId, reportImagesPayload)
                     );
+                    setUpdatedReports([reportResponse]);
+                }
+
+                for (const clientImageId of removedImageIds) {
+                    await deleteReportImage(reportId, clientImageId);
+                    reportResponse = {
+                        ...reportResponse,
+                        images: (reportResponse.images ?? []).filter(
+                            (image) =>
+                                image['client_image_id'] !== clientImageId
+                        ),
+                    };
                     setUpdatedReports([reportResponse]);
                 }
 

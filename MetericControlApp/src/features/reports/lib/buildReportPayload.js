@@ -210,3 +210,27 @@ export const buildReportImagesPayload = (formValues, existingImages = []) => {
         files: files.map(({ fileKey, file }) => ({ fileKey, file })),
     };
 };
+
+export const getRemovedReportImageIds = (formValues, existingImages = []) => {
+    const existingIds = new Set(
+        existingImages
+            .map((image) => image?.['client_image_id'])
+            .filter(Boolean)
+    );
+    const retainedIds = new Set(
+        Object.entries(formValues.photos ?? {}).flatMap(([slot, uris]) =>
+            normalizePhotoUris(uris)
+                .map(
+                    (uri) =>
+                        formValues.photoMetadata?.[slot]?.find(
+                            (entry) => entry.uri === uri
+                        )?.clientImageId
+                )
+                .filter(Boolean)
+        )
+    );
+
+    return [...new Set(formValues.removedPhotoIds ?? [])].filter(
+        (id) => existingIds.has(id) && !retainedIds.has(id)
+    );
+};

@@ -23,6 +23,7 @@ import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFor
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
+import { mapReportToFormValues } from '@/features/reports/lib/reportFormHydration';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const FORM_STEPS = [
@@ -76,6 +77,7 @@ const mapTaskToReportDefaults = (task) => ({
 
 const ReportSubmitForm = ({
     task,
+    existingReport,
     id,
     fillPositions,
     stepIndex,
@@ -84,6 +86,7 @@ const ReportSubmitForm = ({
 }) => {
     const router = useRouter();
     const hydratedDraftIdRef = useRef(null);
+    const hydratedPhotosIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
@@ -93,6 +96,7 @@ const ReportSubmitForm = ({
         [reportPhotosRaw]
     );
     const appendPhoto = useStorePictures((state) => state.appendPhoto);
+    const setPhoto = useStorePictures((state) => state.setPhoto);
     const updatePhoto = useStorePictures((state) => state.updatePhoto);
     const removePhotoAt = useStorePictures((state) => state.removePhotoAt);
     const clearEntityPhotos = useStorePictures(
@@ -106,7 +110,10 @@ const ReportSubmitForm = ({
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
 
     const initialValues = useMemo(() => {
-        const taskDefaults = mapTaskToReportDefaults(task);
+        const taskDefaults = mapReportToFormValues(
+            existingReport,
+            mapTaskToReportDefaults(task)
+        );
 
         return {
             ...taskDefaults,
@@ -115,33 +122,25 @@ const ReportSubmitForm = ({
                 ...taskDefaults.meterBefore,
                 ...draftValues?.meterBefore,
             },
-            metering: {
-                ...reportSubmitFormDefaultValues.metering,
-                ...draftValues?.metering,
-            },
-            photos: {
-                ...reportSubmitFormDefaultValues.photos,
-                ...draftValues?.photos,
-            },
+            metering: { ...taskDefaults.metering, ...draftValues?.metering },
+            photos: { ...taskDefaults.photos, ...draftValues?.photos },
             photoMetadata: {
-                ...reportSubmitFormDefaultValues.photoMetadata,
+                ...taskDefaults.photoMetadata,
                 ...draftValues?.photoMetadata,
             },
-            admission: {
-                ...reportSubmitFormDefaultValues.admission,
-                ...draftValues?.admission,
-            },
+            admission: { ...taskDefaults.admission, ...draftValues?.admission },
             consumerContact: {
-                ...reportSubmitFormDefaultValues.consumerContact,
+                ...taskDefaults.consumerContact,
                 ...draftValues?.consumerContact,
             },
         };
-    }, [draftValues, task]);
+    }, [draftValues, existingReport, task]);
 
     const {
         control,
         handleSubmit,
         watch,
+        getValues,
         setValue,
         reset,
         formState: { errors },
@@ -161,6 +160,37 @@ const ReportSubmitForm = ({
         reset(initialValues);
         hydratedDraftIdRef.current = draftId;
     }, [draftId, initialValues, reset]);
+
+    useEffect(() => {
+        if (hydratedPhotosIdRef.current === draftId) {
+            return;
+        }
+
+        Object.entries(initialValues.photos).forEach(([slot, uris]) => {
+            const localUris = Array.isArray(reportPhotos[slot])
+                ? reportPhotos[slot]
+                : reportPhotos[slot]
+                  ? [reportPhotos[slot]]
+                  : [];
+            const mergedUris = [
+                ...uris,
+                ...localUris.filter((uri) => !uris.includes(uri)),
+            ];
+
+            if (
+                mergedUris.length &&
+                mergedUris.some((uri, index) => uri !== localUris[index])
+            ) {
+                setPhoto({
+                    entity: 'report',
+                    entityId: id,
+                    slot,
+                    uri: mergedUris,
+                });
+            }
+        });
+        hydratedPhotosIdRef.current = draftId;
+    }, [draftId, id, initialValues.photos, reportPhotos, setPhoto]);
 
     useEffect(() => {
         if (watch('clientReportId')) {
@@ -247,10 +277,24 @@ const ReportSubmitForm = ({
             } else {
                 clearDraft(draftId);
                 clearEntityPhotos({ entity: 'report', entityId: id });
-                const nextValues = mapTaskToReportDefaults(task);
+                const nextValues = mapReportToFormValues(
+                    res.reportResponse,
+                    mapTaskToReportDefaults(task)
+                );
                 reset(nextValues);
                 prevSavedDraftRef.current = JSON.stringify(nextValues);
-                hydratedDraftIdRef.current = null;
+                hydratedDraftIdRef.current = draftId;
+                hydratedPhotosIdRef.current = draftId;
+                Object.entries(nextValues.photos).forEach(([slot, uris]) => {
+                    if (uris.length) {
+                        setPhoto({
+                            entity: 'report',
+                            entityId: id,
+                            slot,
+                            uri: uris,
+                        });
+                    }
+                });
 
                 Alert.alert(
                     'Успешно',
@@ -553,6 +597,31 @@ const ReportSubmitForm = ({
                 : photoField.title;
 
         const photoFieldName = `photos.${photoField.name}`;
+        const markExistingPhotoRemoved = (uri) => {
+            const metadata = getValues(`photoMetadata.${photoField.name}`);
+            const clientImageId = metadata?.find(
+                (entry) => entry.uri === uri
+            )?.clientImageId;
+            if (!clientImageId) {
+                if (
+                    existingReport?.images?.some((image) => image.url === uri)
+                ) {
+                    Alert.alert(
+                        'Не удалось удалить фото',
+                        'У этого фото нет идентификатора. Обратитесь к администратору.'
+                    );
+                    return false;
+                }
+                return true;
+            }
+
+            setValue(
+                'removedPhotoIds',
+                [...new Set([...getValues('removedPhotoIds'), clientImageId])],
+                { shouldDirty: true }
+            );
+            return true;
+        };
 
         return (
             <View
@@ -589,6 +658,9 @@ const ReportSubmitForm = ({
                                 );
                             }}
                             handleUpdatePhoto={(uriValue, index) => {
+                                if (!markExistingPhotoRemoved(uris[index])) {
+                                    return;
+                                }
                                 updatePhoto({
                                     entity: 'report',
                                     entityId: id,
@@ -605,6 +677,9 @@ const ReportSubmitForm = ({
                                 );
                             }}
                             handleDeletePhoto={(index) => {
+                                if (!markExistingPhotoRemoved(uris[index])) {
+                                    return;
+                                }
                                 removePhotoAt({
                                     entity: 'report',
                                     entityId: id,

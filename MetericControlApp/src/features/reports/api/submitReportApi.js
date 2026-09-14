@@ -40,3 +40,6 @@ export const uploadReportImage = (reportId, payload) => {
         })
         .then((response) => response.data);
 };
+
+export const deleteReportImage = (reportId, clientImageId) =>
+    baseApi.delete(`/reports/${reportId}/images/${clientImageId}/`);

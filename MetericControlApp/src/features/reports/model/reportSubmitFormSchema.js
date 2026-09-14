@@ -118,6 +118,7 @@ export const reportSubmitFormSchema = z
             actPaper: photoMetadataArrayField,
             refusalProof: photoMetadataArrayField,
         }),
+        removedPhotoIds: z.array(z.string().trim()).default([]),
         admission: z.object({
             status: z.string().trim().min(1, 'Выберите статус допуска'),
             rejectionReason: z.string().trim(),

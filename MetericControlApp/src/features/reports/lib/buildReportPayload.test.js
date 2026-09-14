@@ -4,6 +4,7 @@ import test from 'node:test';
 import {
     buildReportImagesPayload,
     buildReportPayload,
+    getRemovedReportImageIds,
 } from './buildReportPayload.js';
 
 const createFormValues = () => ({
@@ -100,5 +101,49 @@ test('does not upload unchanged report photos again', () => {
             { ['client_image_id']: 'existing-image-id' },
         ]),
         null
+    );
+});
+
+test('deletes only explicitly removed photos that still exist remotely', () => {
+    const values = {
+        removedPhotoIds: ['deleted-id', 'deleted-id', 'already-gone-id'],
+    };
+
+    assert.deepEqual(
+        getRemovedReportImageIds(values, [
+            { ['client_image_id']: 'deleted-id' },
+            { ['client_image_id']: 'unchanged-id' },
+        ]),
+        ['deleted-id']
+    );
+});
+
+test('does not delete remote photos when the local form has no photos', () => {
+    assert.deepEqual(
+        getRemovedReportImageIds({ photos: {}, removedPhotoIds: [] }, [
+            { ['client_image_id']: 'remote-id' },
+        ]),
+        []
+    );
+});
+
+test('does not delete a photo removed and then restored before save', () => {
+    assert.deepEqual(
+        getRemovedReportImageIds(
+            {
+                photos: { seal: ['https://example.test/seal.jpg'] },
+                photoMetadata: {
+                    seal: [
+                        {
+                            uri: 'https://example.test/seal.jpg',
+                            clientImageId: 'seal-id',
+                        },
+                    ],
+                },
+                removedPhotoIds: ['seal-id'],
+            },
+            [{ ['client_image_id']: 'seal-id' }]
+        ),
+        []
     );
 });
