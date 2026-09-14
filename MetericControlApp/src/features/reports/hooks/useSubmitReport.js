@@ -14,10 +14,7 @@ import {
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
-import {
-    buildReportUpsertRequest,
-    selectReportForTask,
-} from '@/features/reports/lib/reportUpsert';
+import { buildReportUpsertRequest } from '@/features/reports/lib/reportUpsert';
 import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportSubmissionValues } from '@/features/reports/lib/reportPhotoMetadata';
@@ -34,10 +31,7 @@ const useSubmitReport = () => {
     const { mutateAsync, error, isPending } = useMutation({
         mutationFn: ({ taskId, values }) =>
             enqueueReportSubmission(taskId, async () => {
-                const cachedReports = useReportsStore.getState().reports ?? [];
-                const cachedReport = selectReportForTask(cachedReports, taskId);
-                const existingReport =
-                    cachedReport ?? (await getReportByTaskId(taskId));
+                const existingReport = await getReportByTaskId(taskId);
                 const reportPayload = buildReportPayload(
                     { ...values, taskId },
                     { includeEmptyOptionalFields: Boolean(existingReport) }
