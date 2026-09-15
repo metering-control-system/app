@@ -1,4 +1,4 @@
-import { useMutation } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     updateComment,
     deleteComment,
@@ -12,6 +12,8 @@ const useCommentActions = (taskId) => {
     const removeCommentFromStore = useCommentsStore(
         (s) => s.removeCommentFromStore
     );
+
+    const queryClient = useQueryClient();
 
     const editMutation = useMutation({
         mutationFn: updateComment,
@@ -40,17 +42,40 @@ const useCommentActions = (taskId) => {
     const deleteMutation = useMutation({
         mutationFn: deleteComment,
         onMutate: async ({ commentId }) => {
-            removeCommentFromStore(taskId, commentId);
-            return { commentId };
+            const currentContent = useCommentsStore
+                .getState()
+                .comments[taskId]?.find((c) => c.id === commentId).content;
+
+            updateCommentInStore(taskId, commentId, {
+                content: currentContent,
+                // eslint-disable-next-line camelcase
+                is_deleted: true,
+            });
+
+            return { content: currentContent };
+        },
+        onSuccess: (data, variables) => {
+            removeCommentFromStore(taskId, variables.commentId);
+            queryClient.invalidateQueries({ queryKey: ['comments'] });
+        },
+        onError: (_error, variables, context) => {
+            if (context?.content) {
+                updateCommentInStore(taskId, variables.commentId, {
+                    content: context.content,
+                    // eslint-disable-next-line camelcase
+                    is_deleted: false,
+                });
+            }
+            queryClient.invalidateQueries({ queryKey: ['comments'] });
         },
     });
 
     const handleEdit = async ({ commentId, content }) => {
-        return editMutation.mutateAsync({ commentId, content });
+        return await editMutation.mutateAsync({ commentId, content });
     };
 
     const handleDelete = async ({ commentId }) => {
-        return deleteMutation.mutateAsync({ commentId });
+        return await deleteMutation.mutateAsync({ commentId });
     };
 
     return {

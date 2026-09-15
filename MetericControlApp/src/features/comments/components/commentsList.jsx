@@ -68,7 +68,7 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
         ({ item: comment }) => (
             <Comment
                 comment={comment}
-                isPending={comment?.isPending}
+                isPending={comment?.isPending || comment?.is_deleted}
                 isOwn={comment?.author_id === userId}
                 onPress={onSelectComment}
                 id={id}

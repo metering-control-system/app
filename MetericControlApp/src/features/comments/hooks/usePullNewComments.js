@@ -34,11 +34,13 @@ export const usePullNewComments = (id, requestEnabled) => {
     });
 
     useEffect(() => {
-        if (data && id) {
+        if (data?.comments && id) {
             for (const comment of data.comments) {
-                if (!comment.is_deleted) {
-                    newCommentsIds.add(comment.id);
+                if (comment.is_deleted) {
+                    newCommentsIds.delete(comment.id);
+                    continue;
                 }
+                newCommentsIds.add(comment.id);
             }
             const prevComments = useCommentsStore.getState().comments[id];
             const newCount = checkIntersection(prevComments, newCommentsIds);
