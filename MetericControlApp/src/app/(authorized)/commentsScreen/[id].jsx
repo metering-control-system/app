@@ -6,13 +6,14 @@ import SendMessagePanel from '@/features/comments/components/sendMessagePanel';
 import CommentActionModal from '@/features/comments/components/commentActionModal';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { useCallback, useRef, useState } from 'react';
+import { useMe } from '@/features/comments/hooks/useMe';
 
 const CommentsScreen = () => {
     const { id } = useLocalSearchParams();
     const comments = useCommentsStore(
         (state) => state.comments[Number(id) === 0 ? null : +id]
     );
-
+    const user = useMe();
     const [selectedComment, setSelectedComment] = useState(null);
     const scrollRef = useRef(null);
 
@@ -29,13 +30,13 @@ const CommentsScreen = () => {
                 <CommentsList
                     comments={comments}
                     id={id}
-                    userId={undefined}
+                    userId={user?.user_id}
                     ref={scrollRef}
                     onSelectComment={handleSelectComment}
                 />
                 <SendMessagePanel
                     chatId={Number(id) === 0 ? null : +id}
-                    userId={undefined}
+                    userId={user?.user_id}
                     listRef={scrollRef}
                 />
             </KeyboardAvoidingView>
