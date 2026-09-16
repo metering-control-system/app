@@ -2,6 +2,7 @@ import { StyleSheet, Text, View } from 'react-native';
 import { colorizeMap } from '@/features/gis/lib/colorizeMap';
 
 const LEGEND_ITEMS = [0, 1, 2, 3, 4, 5];
+const MAX_LEGEND_ITEMS = 5;
 
 const MapLegend = () => (
     <View style={styles.container}>
@@ -16,7 +17,9 @@ const MapLegend = () => (
                         ]}
                     />
                     <Text style={styles.label}>
-                        {quantity >= 5 ? `${quantity}+` : quantity}
+                        {quantity >= MAX_LEGEND_ITEMS
+                            ? `${quantity}+`
+                            : quantity}
                     </Text>
                 </View>
             ))}
