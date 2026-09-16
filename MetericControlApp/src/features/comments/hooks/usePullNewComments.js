@@ -1,0 +1,66 @@
+import { useQuery } from '@tanstack/react-query';
+import useCommentsSyncStore from '@/features/comments/store/useCommentsSyncStore';
+import { getComments } from '@/features/comments/api/getCommentsApi';
+import { useEffect, useRef, useState } from 'react';
+import useCommentsStore from '@/features/comments/store/useCommentsStore';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
+import { checkIntersection } from '@/shared/lib/checkIntersection';
+
+export const usePullNewComments = (id, requestEnabled) => {
+    const setLastSyncAt = useCommentsSyncStore((state) => state.setLastSyncAt);
+    const setUpdatedComments = useCommentsStore(
+        (state) => state.setUpdatedComments
+    );
+    const { isOnline } = useNetwork();
+    const newCommentsIds = useRef(new Set()).current;
+    const [newCommentsNumber, setNewCommentsNumber] = useState(0);
+
+    const { data, error, isFetching } = useQuery({
+        queryKey: ['comments', 'poll', id],
+        queryFn: async () => {
+            const currentSyncAt =
+                useCommentsSyncStore.getState().lastSyncAt[id];
+
+            const data = await getComments({
+                // eslint-disable-next-line camelcase
+                params: { update_since: currentSyncAt },
+                id,
+            });
+            return data ?? { comments: [] };
+        },
+        enabled: !!(!requestEnabled && id && isOnline),
+        refetchInterval: 10 * 1000,
+        retry: 5,
+    });
+
+    useEffect(() => {
+        if (data?.comments && id) {
+            for (const comment of data.comments) {
+                if (comment.is_deleted) {
+                    newCommentsIds.delete(comment.id);
+                    continue;
+                }
+                newCommentsIds.add(comment.id);
+            }
+            const prevComments = useCommentsStore.getState().comments[id];
+            const newCount = checkIntersection(prevComments, newCommentsIds);
+            setNewCommentsNumber(newCount);
+
+            const newComments = data.comments ?? [];
+            if (newComments.length > 0) {
+                setUpdatedComments(newComments, id);
+            }
+            if (data.snapshot_at) {
+                setLastSyncAt(data.snapshot_at, id);
+            }
+        }
+    }, [data, id, setUpdatedComments, setLastSyncAt]);
+
+    return {
+        error,
+        isFetching,
+        newCommentsNumber,
+        setNewCommentsNumber,
+        newCommentsIds,
+    };
+};

@@ -8,6 +8,8 @@ import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { ControlPanel } from '@/shared/components/control/controlPanel';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
+import { useOfflineReportsSync } from '@/features/reports/hooks/useOfflineReportsSync';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { OverlayButton } from '@/shared/components/button/overlayButton';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
@@ -29,6 +31,18 @@ const TaskScreen = () => {
     const pendingCount = useTaskOfflineMutationStore(
         (state) => Object.keys(state.tasksStatuses ?? {}).length
     );
+
+    const syncReportsRecords = useOfflineReportsSync();
+    const reportsPending = Object.entries(
+        useReportDraftStore((state) => state.drafts)
+    ).reduce((prev, curr) => {
+        if (curr[1].reportState === 'pending') {
+            return { ...prev, [curr[0]]: curr[1] };
+        }
+        return prev;
+    }, {});
+
+    const reportsPendingCount = Object.keys(reportsPending).length;
 
     return (
         <ScreenLayout safe>
@@ -54,11 +68,15 @@ const TaskScreen = () => {
                 sorting={sorting}
                 filtering={filtering}
                 search={search}
-                sync={() => {
+                sync={async () => {
                     if (pendingCount) {
                         void syncTasks();
                     }
+                    if (reportsPendingCount) {
+                        return await syncReportsRecords();
+                    }
                 }}
+                syncingRecords={reportsPending}
             />
             <OverlayButton
                 onPress={() => router.push('/(authorized)/gis/map')}
