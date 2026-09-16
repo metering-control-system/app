@@ -30,25 +30,29 @@ export const ControlPanel = ({
                 searched={isNotSearched}
                 setSearched={setIsNotSearched}
             />
-            <Picker
-                variants={sortingVariants}
-                label='Сортировка'
-                state={sorting}
-                setState={setSorting}
-                canBeOpened={isNotSearched}
-                setCanBeOpened={setIsNotSearched}
-                icon='sort-amount-up'
-            />
-            <Picker
-                variants={filteringVariants}
-                label='Фильтрация'
-                state={filtering}
-                setState={setFiltering}
-                canBeOpened={isNotSearched}
-                setCanBeOpened={setIsNotSearched}
-                multiSelect
-                icon='filter'
-            />
+            {sortingVariants && (
+                <Picker
+                    variants={sortingVariants}
+                    label='Сортировка'
+                    state={sorting}
+                    setState={setSorting}
+                    canBeOpened={isNotSearched}
+                    setCanBeOpened={setIsNotSearched}
+                    icon='sort-amount-up'
+                />
+            )}
+            {filteringVariants && (
+                <Picker
+                    variants={filteringVariants}
+                    label='Фильтрация'
+                    state={filtering}
+                    setState={setFiltering}
+                    canBeOpened={isNotSearched}
+                    setCanBeOpened={setIsNotSearched}
+                    multiSelect
+                    icon='filter'
+                />
+            )}
         </View>
     );
 };
