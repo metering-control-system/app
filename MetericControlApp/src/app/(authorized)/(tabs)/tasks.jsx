@@ -8,9 +8,13 @@ import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { ControlPanel } from '@/shared/components/control/controlPanel';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
+import { OverlayButton } from '@/shared/components/button/overlayButton';
+import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
+    const router = useRouter();
 
     const [filtering, setFiltering] = useState(new Set());
     const [sorting, setSorting] = useState(null);
@@ -55,6 +59,10 @@ const TaskScreen = () => {
                         void syncTasks();
                     }
                 }}
+            />
+            <OverlayButton
+                onPress={() => router.push('/(authorized)/gis/map')}
+                icon={<FontAwesome name='map' size={20} color='white' />}
             />
         </ScreenLayout>
     );
