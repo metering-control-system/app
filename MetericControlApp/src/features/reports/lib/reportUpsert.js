@@ -18,6 +18,21 @@ export const selectReportForTask = (reports, taskId) => {
     }, null);
 };
 
+export const resolveReportForSubmission = ({
+    taskId,
+    cachedReport,
+    lookupReport,
+}) => {
+    if (
+        cachedReport?.id &&
+        Number(cachedReport['task_id']) === Number(taskId)
+    ) {
+        return cachedReport;
+    }
+
+    return lookupReport(taskId);
+};
+
 export const buildReportUpsertRequest = ({ reportPayload, existingReport }) => {
     if (!existingReport) {
         return { operation: 'create', reportId: null, payload: reportPayload };

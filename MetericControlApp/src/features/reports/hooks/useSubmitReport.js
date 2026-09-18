@@ -16,7 +16,10 @@ import {
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
-import { buildReportUpsertRequest } from '@/features/reports/lib/reportUpsert';
+import {
+    buildReportUpsertRequest,
+    resolveReportForSubmission,
+} from '@/features/reports/lib/reportUpsert';
 import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportSubmissionValues } from '@/features/reports/lib/reportPhotoMetadata';
@@ -33,20 +36,20 @@ const useSubmitReport = () => {
     const { mutateAsync, error, isPending } = useMutation({
         mutationFn: ({ taskId, values }) =>
             enqueueReportSubmission(taskId, async () => {
-                const existingReport = await getReportByTaskId(taskId);
+                const existingReport = await resolveReportForSubmission({
+                    taskId,
+                    cachedReport: queryClient.getQueryData([
+                        'report',
+                        'task',
+                        Number(taskId),
+                    ]),
+                    lookupReport: getReportByTaskId,
+                });
                 const reportPayload = buildReportPayload(
                     { ...values, taskId },
                     { includeEmptyOptionalFields: Boolean(existingReport) }
                 );
                 const reportCommentPayload = buildReportCommentPayload(values);
-                const reportImagesPayload = buildReportImagesPayload(
-                    values,
-                    existingReport?.images
-                );
-                const removedImageIds = getRemovedReportImageIds(
-                    values,
-                    existingReport?.images
-                );
                 const upsertRequest = buildReportUpsertRequest({
                     reportPayload,
                     existingReport,
@@ -66,6 +69,15 @@ const useSubmitReport = () => {
                 }
 
                 setUpdatedReports([reportResponse]);
+
+                const reportImagesPayload = buildReportImagesPayload(
+                    values,
+                    reportResponse.images
+                );
+                const removedImageIds = getRemovedReportImageIds(
+                    values,
+                    reportResponse.images
+                );
 
                 if (reportImagesPayload) {
                     reportResponse = await retryReportImageUpload(() =>
