@@ -160,7 +160,6 @@ const ReportSubmitForm = ({
         control,
         handleSubmit,
         watch,
-        getValues,
         setValue,
         reset,
         formState: { errors },
