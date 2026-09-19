@@ -9,7 +9,9 @@ export const sendComment = ({ id, message }) => {
 export const updateComment = ({ commentId, content }) => {
     return baseApi
         .patch(`comments/${commentId}/`, { content })
-        .then((response) => response.data);
+        .then((response) => {
+            return response.data;
+        });
 };
 
 export const deleteComment = ({ commentId }) => {

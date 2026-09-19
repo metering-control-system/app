@@ -18,19 +18,21 @@ const useCommentsStore = create(
                 });
             },
             setUpdatedComments: (updatedComments, id) => {
-                if (updatedComments) {
-                    const oldComments = get().comments[id] ?? [];
-                    const mergedComments = mergeData(
-                        oldComments,
-                        updatedComments
-                    );
-                    set({
-                        comments: {
-                            ...get().comments,
-                            [id]: mergedComments ? [...mergedComments] : null,
-                        },
-                    });
-                }
+                if (!updatedComments) return;
+
+                const activeComments = updatedComments.filter(
+                    (c) => !c.is_deleted
+                );
+                if (activeComments.length === 0) return;
+
+                const oldComments = get().comments[id] ?? [];
+                const mergedComments = mergeData(oldComments, activeComments);
+                set({
+                    comments: {
+                        ...get().comments,
+                        [id]: mergedComments ? [...mergedComments] : null,
+                    },
+                });
             },
             updateCommentInStore: (taskId, commentId, updates) => {
                 const taskComments = get().comments[taskId];

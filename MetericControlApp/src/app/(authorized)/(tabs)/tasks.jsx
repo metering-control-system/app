@@ -10,9 +10,14 @@ import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMu
 import { useOfflineTasksSync } from '@/features/tasks/hooks/useOfflineTasksSync';
 import { useOfflineReportsSync } from '@/features/reports/hooks/useOfflineReportsSync';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import { OverlayButton } from '@/shared/components/button/overlayButton';
+import { FontAwesome } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
+    const router = useRouter();
+
     const [filtering, setFiltering] = useState(new Set());
     const [sorting, setSorting] = useState(null);
     const [search, setSearch] = useState('');
@@ -72,6 +77,10 @@ const TaskScreen = () => {
                     }
                 }}
                 syncingRecords={reportsPending}
+            />
+            <OverlayButton
+                onPress={() => router.push('/(authorized)/gis/map')}
+                icon={<FontAwesome name='map' size={20} color='white' />}
             />
         </ScreenLayout>
     );
