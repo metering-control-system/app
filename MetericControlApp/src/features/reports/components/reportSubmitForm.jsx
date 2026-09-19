@@ -21,6 +21,7 @@ import useStorePictures from '@/shared/store/useStorePictures';
 
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
+import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import { mapReportToFormValues } from '@/features/reports/lib/reportFormHydration';
@@ -50,15 +51,6 @@ const REJECTION_REASON_OPTIONS = [
     { label: 'Нет доступа', value: 'NO_ACCESS' },
     { label: 'Неисправность прибора', value: 'DEVICE_FAULT' },
     { label: 'Другое', value: 'OTHER' },
-];
-
-const PHOTO_FIELDS = [
-    { name: 'oldMeter', title: 'Фото старого счетчика' },
-    { name: 'seal', title: 'Фото пломбы' },
-    { name: 'frontPanel', title: 'Фото лицевой панели счетчика' },
-    { name: 'generalView', title: 'Общий вид' },
-    { name: 'actPaper', title: 'Фото бумажного акта' },
-    { name: 'refusalProof', title: 'Фото подтверждения отказа' },
 ];
 
 const mapTaskToReportDefaults = (task) => ({
@@ -703,7 +695,9 @@ const ReportSubmitForm = ({
     };
 
     const renderPhotosStep = () => (
-        <View style={styles.section}>{PHOTO_FIELDS.map(renderPhotoField)}</View>
+        <View style={styles.section}>
+            {REPORT_PHOTO_CONFIGS.map(renderPhotoField)}
+        </View>
     );
 
     const renderAdmissionStep = () => (

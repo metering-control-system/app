@@ -1,3 +1,5 @@
+import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
+
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
         return value ?? null;
@@ -151,55 +153,40 @@ export const buildReportCommentPayload = (formValues) => {
 };
 
 export const buildReportImagesPayload = (formValues, existingImages = []) => {
-    const photoConfigs = [
-        { kind: 'OLD_METER', slot: 'oldMeter', fileName: 'old_meter' },
-        { kind: 'SEAL', slot: 'seal', fileName: 'seal' },
-        { kind: 'FRONT_PANEL', slot: 'frontPanel', fileName: 'front_panel' },
-        { kind: 'GENERAL_VIEW', slot: 'generalView', fileName: 'general_view' },
-        { kind: 'ACT_PAPER', slot: 'actPaper', fileName: 'act_paper' },
-        {
-            kind: 'REFUSAL_PROOF',
-            slot: 'refusalProof',
-            fileName: 'refusal_proof',
-        },
-    ];
-
     const existingImageIds = new Set(
         existingImages
             .map((image) => image?.['client_image_id'])
             .filter(Boolean)
     );
-    const files = photoConfigs
-        .flatMap(({ kind, slot, fileName }) =>
-            normalizePhotoUris(formValues.photos?.[slot]).map((uri, index) => {
-                const file = buildReactNativeFile(uri, fileName);
-                const metadata = formValues.photoMetadata?.[slot]?.[index];
-                const clientImageId =
-                    metadata?.uri === uri ? metadata.clientImageId : null;
+    const files = REPORT_PHOTO_CONFIGS.flatMap(({ kind, name, fileName }) =>
+        normalizePhotoUris(formValues.photos?.[name]).map((uri, index) => {
+            const file = buildReactNativeFile(uri, fileName);
+            const metadata = formValues.photoMetadata?.[name]?.[index];
+            const clientImageId =
+                metadata?.uri === uri ? metadata.clientImageId : null;
 
-                if (
-                    !file ||
-                    !clientImageId ||
-                    existingImageIds.has(clientImageId)
-                ) {
-                    return null;
-                }
+            if (
+                !file ||
+                !clientImageId ||
+                existingImageIds.has(clientImageId)
+            ) {
+                return null;
+            }
 
-                const fileKey = `${fileName}_${index + 1}`;
+            const fileKey = `${fileName}_${index + 1}`;
 
-                return {
-                    fileKey,
-                    file,
-                    image: {
-                        ['file_key']: fileKey,
-                        kind,
-                        ['file_name']: file.name,
-                        ['client_image_id']: clientImageId,
-                    },
-                };
-            })
-        )
-        .filter(Boolean);
+            return {
+                fileKey,
+                file,
+                image: {
+                    ['file_key']: fileKey,
+                    kind,
+                    ['file_name']: file.name,
+                    ['client_image_id']: clientImageId,
+                },
+            };
+        })
+    ).filter(Boolean);
 
     if (!files.length) {
         return null;

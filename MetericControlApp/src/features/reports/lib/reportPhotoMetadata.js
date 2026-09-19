@@ -1,11 +1,6 @@
-export const REPORT_PHOTO_SLOTS = [
-    'oldMeter',
-    'seal',
-    'frontPanel',
-    'generalView',
-    'actPaper',
-    'refusalProof',
-];
+import { REPORT_PHOTO_SLOTS } from '../constants/reportPhotoConfigs.js';
+
+export { REPORT_PHOTO_SLOTS };
 
 const normalizeUris = (value) => {
     if (Array.isArray(value)) {

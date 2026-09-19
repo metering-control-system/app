@@ -1,18 +1,11 @@
-const IMAGE_SLOTS = {
-    OLD_METER: 'oldMeter',
-    SEAL: 'seal',
-    FRONT_PANEL: 'frontPanel',
-    GENERAL_VIEW: 'generalView',
-    ACT_PAPER: 'actPaper',
-    REFUSAL_PROOF: 'refusalProof',
-};
+import { REPORT_PHOTO_SLOT_BY_KIND } from '../constants/reportPhotoConfigs.js';
 
 export const mapReportImagesToForm = (images = []) => {
     const photos = {};
     const photoMetadata = {};
 
     images.forEach((image) => {
-        const slot = IMAGE_SLOTS[image.kind];
+        const slot = REPORT_PHOTO_SLOT_BY_KIND[image.kind];
         if (!slot || !image.url) {
             return;
         }
