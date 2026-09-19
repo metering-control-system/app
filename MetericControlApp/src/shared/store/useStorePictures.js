@@ -9,6 +9,7 @@ const useStorePictures = create(
         (set, get) => ({
             photos: { task: {}, report: {} },
             photoMetadata: { task: {}, report: {} },
+            removedPhotoIds: { task: {}, report: {} },
 
             setPhoto: ({ entity, entityId, slot, uri }) =>
                 set((state) => ({
@@ -46,6 +47,26 @@ const useStorePictures = create(
                         },
                     },
                 })),
+
+            addRemovedPhotoId: ({ entity, entityId, clientImageId }) =>
+                set((state) => {
+                    const currentIds =
+                        state.removedPhotoIds[entity]?.[entityId] ?? [];
+
+                    if (currentIds.includes(clientImageId)) {
+                        return state;
+                    }
+
+                    return {
+                        removedPhotoIds: {
+                            ...state.removedPhotoIds,
+                            [entity]: {
+                                ...state.removedPhotoIds[entity],
+                                [entityId]: [...currentIds, clientImageId],
+                            },
+                        },
+                    };
+                }),
 
             appendPhoto: ({ entity, entityId, slot, uri }) =>
                 set((state) => {
@@ -161,14 +182,22 @@ const useStorePictures = create(
                     const nextEntityMetadata = {
                         ...(state.photoMetadata[entity] ?? {}),
                     };
+                    const nextRemovedPhotoIds = {
+                        ...(state.removedPhotoIds[entity] ?? {}),
+                    };
                     delete nextEntityPhotos[entityId];
                     delete nextEntityMetadata[entityId];
+                    delete nextRemovedPhotoIds[entityId];
 
                     return {
                         photos: { ...state.photos, [entity]: nextEntityPhotos },
                         photoMetadata: {
                             ...state.photoMetadata,
                             [entity]: nextEntityMetadata,
+                        },
+                        removedPhotoIds: {
+                            ...state.removedPhotoIds,
+                            [entity]: nextRemovedPhotoIds,
                         },
                     };
                 }),
@@ -177,6 +206,7 @@ const useStorePictures = create(
                 set({
                     photos: { task: {}, report: {} },
                     photoMetadata: { task: {}, report: {} },
+                    removedPhotoIds: { task: {}, report: {} },
                 }),
         }),
         {
@@ -187,6 +217,7 @@ const useStorePictures = create(
             partialize: (state) => ({
                 photos: state.photos,
                 photoMetadata: state.photoMetadata,
+                removedPhotoIds: state.removedPhotoIds,
             }),
         }
     )

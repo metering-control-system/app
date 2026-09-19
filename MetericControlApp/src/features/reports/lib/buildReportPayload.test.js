@@ -107,40 +107,43 @@ test('deletes only explicitly removed photos that still exist remotely', () => {
     };
 
     assert.deepEqual(
-        getRemovedReportImageIds(values, [
-            { ['client_image_id']: 'deleted-id' },
-            { ['client_image_id']: 'unchanged-id' },
-        ]),
+        getRemovedReportImageIds({
+            removedPhotoIds: values.removedPhotoIds,
+            existingImages: [
+                { ['client_image_id']: 'deleted-id' },
+                { ['client_image_id']: 'unchanged-id' },
+            ],
+        }),
         ['deleted-id']
     );
 });
 
 test('does not delete remote photos when the local form has no photos', () => {
     assert.deepEqual(
-        getRemovedReportImageIds({ photos: {}, removedPhotoIds: [] }, [
-            { ['client_image_id']: 'remote-id' },
-        ]),
+        getRemovedReportImageIds({
+            photos: {},
+            removedPhotoIds: [],
+            existingImages: [{ ['client_image_id']: 'remote-id' }],
+        }),
         []
     );
 });
 
 test('does not delete a photo removed and then restored before save', () => {
     assert.deepEqual(
-        getRemovedReportImageIds(
-            {
-                photos: { seal: ['https://example.test/seal.jpg'] },
-                removedPhotoIds: ['seal-id'],
-            },
-            [{ ['client_image_id']: 'seal-id' }],
-            {
+        getRemovedReportImageIds({
+            photos: { seal: ['https://example.test/seal.jpg'] },
+            removedPhotoIds: ['seal-id'],
+            existingImages: [{ ['client_image_id']: 'seal-id' }],
+            photoMetadata: {
                 seal: [
                     {
                         uri: 'https://example.test/seal.jpg',
                         clientImageId: 'seal-id',
                     },
                 ],
-            }
-        ),
+            },
+        }),
         []
     );
 });

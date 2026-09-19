@@ -35,7 +35,7 @@ const useSubmitReport = () => {
     );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: ({ taskId, values, photoMetadata }) =>
+        mutationFn: ({ taskId, values, photoMetadata, removedPhotoIds }) =>
             enqueueReportSubmission(taskId, async () => {
                 const existingReport = await resolveReportForSubmission({
                     taskId,
@@ -76,11 +76,12 @@ const useSubmitReport = () => {
                     reportResponse.images,
                     photoMetadata
                 );
-                const removedImageIds = getRemovedReportImageIds(
-                    values,
-                    reportResponse.images,
-                    photoMetadata
-                );
+                const removedImageIds = getRemovedReportImageIds({
+                    photos: values.photos,
+                    photoMetadata,
+                    removedPhotoIds,
+                    existingImages: reportResponse.images,
+                });
 
                 if (reportImagesPayload) {
                     reportResponse = await retryReportImageUpload(() =>
@@ -151,6 +152,8 @@ const useSubmitReport = () => {
             entityId: draftId,
             photoMetadata,
         });
+        const removedPhotoIds =
+            picturesState.removedPhotoIds.report?.[draftId] ?? [];
 
         setDraft({ draftId, values });
 
@@ -161,7 +164,12 @@ const useSubmitReport = () => {
             });
             return { offline: true };
         }
-        return await mutateAsync({ taskId, values, photoMetadata });
+        return await mutateAsync({
+            taskId,
+            values,
+            photoMetadata,
+            removedPhotoIds,
+        });
     };
 
     return {

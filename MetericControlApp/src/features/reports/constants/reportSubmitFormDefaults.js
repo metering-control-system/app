@@ -27,7 +27,6 @@ export const reportSubmitFormDefaultValues = {
         actPaper: [],
         refusalProof: [],
     },
-    removedPhotoIds: [],
     admission: { status: '', rejectionReason: '', rejectionComment: '' },
     consumerContact: {
         isRefusedContact: false,

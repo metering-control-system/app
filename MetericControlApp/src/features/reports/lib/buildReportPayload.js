@@ -202,18 +202,19 @@ export const buildReportImagesPayload = (
     };
 };
 
-export const getRemovedReportImageIds = (
-    formValues,
+export const getRemovedReportImageIds = ({
+    photos = {},
+    photoMetadata = {},
+    removedPhotoIds = [],
     existingImages = [],
-    photoMetadata = {}
-) => {
+}) => {
     const existingIds = new Set(
         existingImages
             .map((image) => image?.['client_image_id'])
             .filter(Boolean)
     );
     const retainedIds = new Set(
-        Object.entries(formValues.photos ?? {}).flatMap(([slot, uris]) =>
+        Object.entries(photos).flatMap(([slot, uris]) =>
             normalizePhotoUris(uris)
                 .map(
                     (uri) =>
@@ -224,7 +225,7 @@ export const getRemovedReportImageIds = (
         )
     );
 
-    return [...new Set(formValues.removedPhotoIds ?? [])].filter(
+    return [...new Set(removedPhotoIds)].filter(
         (id) => existingIds.has(id) && !retainedIds.has(id)
     );
 };

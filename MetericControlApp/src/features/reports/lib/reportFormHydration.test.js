@@ -12,7 +12,6 @@ test('hydrates existing images and report fields for editing', () => {
         meterBefore: { number: 'OLD-1', type: 'OldType' },
         metering: {},
         photos: { seal: [] },
-        removedPhotoIds: [],
     };
     const values = mapReportToFormValues(
         {

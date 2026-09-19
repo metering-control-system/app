@@ -107,6 +107,9 @@ const ReportSubmitForm = ({
     const setEntityPhotoMetadata = useStorePictures(
         (state) => state.setEntityPhotoMetadata
     );
+    const addRemovedPhotoId = useStorePictures(
+        (state) => state.addRemovedPhotoId
+    );
     const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
@@ -122,6 +125,7 @@ const ReportSubmitForm = ({
         const draftFormValues = draftValues ? { ...draftValues } : null;
         if (draftFormValues) {
             delete draftFormValues.photoMetadata;
+            delete draftFormValues.removedPhotoIds;
         }
 
         return {
@@ -653,11 +657,11 @@ const ReportSubmitForm = ({
                 return true;
             }
 
-            setValue(
-                'removedPhotoIds',
-                [...new Set([...getValues('removedPhotoIds'), clientImageId])],
-                { shouldDirty: true }
-            );
+            addRemovedPhotoId({
+                entity: 'report',
+                entityId: id,
+                clientImageId,
+            });
             return true;
         };
 
