@@ -58,10 +58,6 @@ export const mapReportToFormValues = (report, taskDefaults) => {
             installationReading: metering['installation_reading'] ?? '',
         },
         photos: { ...taskDefaults.photos, ...images.photos },
-        photoMetadata: {
-            ...taskDefaults.photoMetadata,
-            ...images.photoMetadata,
-        },
         admission: {
             status: admission.status ?? '',
             rejectionReason: admission['rejection_reason'] ?? '',

@@ -152,7 +152,11 @@ export const buildReportCommentPayload = (formValues) => {
     return { content: comment };
 };
 
-export const buildReportImagesPayload = (formValues, existingImages = []) => {
+export const buildReportImagesPayload = (
+    formValues,
+    existingImages = [],
+    photoMetadata = {}
+) => {
     const existingImageIds = new Set(
         existingImages
             .map((image) => image?.['client_image_id'])
@@ -161,7 +165,7 @@ export const buildReportImagesPayload = (formValues, existingImages = []) => {
     const files = REPORT_PHOTO_CONFIGS.flatMap(({ kind, name, fileName }) =>
         normalizePhotoUris(formValues.photos?.[name]).map((uri, index) => {
             const file = buildReactNativeFile(uri, fileName);
-            const metadata = formValues.photoMetadata?.[name]?.[index];
+            const metadata = photoMetadata[name]?.[index];
             const clientImageId =
                 metadata?.uri === uri ? metadata.clientImageId : null;
 
@@ -198,7 +202,11 @@ export const buildReportImagesPayload = (formValues, existingImages = []) => {
     };
 };
 
-export const getRemovedReportImageIds = (formValues, existingImages = []) => {
+export const getRemovedReportImageIds = (
+    formValues,
+    existingImages = [],
+    photoMetadata = {}
+) => {
     const existingIds = new Set(
         existingImages
             .map((image) => image?.['client_image_id'])
@@ -209,9 +217,8 @@ export const getRemovedReportImageIds = (formValues, existingImages = []) => {
             normalizePhotoUris(uris)
                 .map(
                     (uri) =>
-                        formValues.photoMetadata?.[slot]?.find(
-                            (entry) => entry.uri === uri
-                        )?.clientImageId
+                        photoMetadata[slot]?.find((entry) => entry.uri === uri)
+                            ?.clientImageId
                 )
                 .filter(Boolean)
         )

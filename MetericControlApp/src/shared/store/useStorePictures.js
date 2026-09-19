@@ -8,6 +8,7 @@ const useStorePictures = create(
     persist(
         (set, get) => ({
             photos: { task: {}, report: {} },
+            photoMetadata: { task: {}, report: {} },
 
             setPhoto: ({ entity, entityId, slot, uri }) =>
                 set((state) => ({
@@ -34,6 +35,17 @@ const useStorePictures = create(
 
                 return normalizePhotos(value);
             },
+
+            setEntityPhotoMetadata: ({ entity, entityId, photoMetadata }) =>
+                set((state) => ({
+                    photoMetadata: {
+                        ...state.photoMetadata,
+                        [entity]: {
+                            ...state.photoMetadata[entity],
+                            [entityId]: photoMetadata,
+                        },
+                    },
+                })),
 
             appendPhoto: ({ entity, entityId, slot, uri }) =>
                 set((state) => {
@@ -146,21 +158,36 @@ const useStorePictures = create(
                     const nextEntityPhotos = {
                         ...(state.photos[entity] ?? {}),
                     };
+                    const nextEntityMetadata = {
+                        ...(state.photoMetadata[entity] ?? {}),
+                    };
                     delete nextEntityPhotos[entityId];
+                    delete nextEntityMetadata[entityId];
 
                     return {
                         photos: { ...state.photos, [entity]: nextEntityPhotos },
+                        photoMetadata: {
+                            ...state.photoMetadata,
+                            [entity]: nextEntityMetadata,
+                        },
                     };
                 }),
 
-            resetPhotos: () => set({ photos: { task: {}, report: {} } }),
+            resetPhotos: () =>
+                set({
+                    photos: { task: {}, report: {} },
+                    photoMetadata: { task: {}, report: {} },
+                }),
         }),
         {
             name: 'pictures-store',
             storage: createJSONStorage(() =>
                 createPersistStorage(picturesStorage)
             ),
-            partialize: (state) => ({ photos: state.photos }),
+            partialize: (state) => ({
+                photos: state.photos,
+                photoMetadata: state.photoMetadata,
+            }),
         }
     )
 );

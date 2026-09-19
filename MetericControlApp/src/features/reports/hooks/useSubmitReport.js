@@ -22,8 +22,9 @@ import {
 } from '@/features/reports/lib/reportUpsert';
 import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
-import { prepareReportSubmissionValues } from '@/features/reports/lib/reportPhotoMetadata';
+import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
+import useStorePictures from '@/shared/store/useStorePictures';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -34,7 +35,7 @@ const useSubmitReport = () => {
     );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: ({ taskId, values }) =>
+        mutationFn: ({ taskId, values, photoMetadata }) =>
             enqueueReportSubmission(taskId, async () => {
                 const existingReport = await resolveReportForSubmission({
                     taskId,
@@ -72,11 +73,13 @@ const useSubmitReport = () => {
 
                 const reportImagesPayload = buildReportImagesPayload(
                     values,
-                    reportResponse.images
+                    reportResponse.images,
+                    photoMetadata
                 );
                 const removedImageIds = getRemovedReportImageIds(
                     values,
-                    reportResponse.images
+                    reportResponse.images,
+                    photoMetadata
                 );
 
                 if (reportImagesPayload) {
@@ -137,25 +140,28 @@ const useSubmitReport = () => {
 
     const submitTaskReport = async ({ taskId, values }) => {
         const draftId = String(taskId);
-        const persistedValues = useReportDraftStore
-            .getState()
-            .getDraft(draftId);
-        const preparedValues = prepareReportSubmissionValues({
-            values,
-            persistedValues,
+        const picturesState = useStorePictures.getState();
+        const photoMetadata = prepareReportPhotoMetadata({
+            photos: values.photos,
+            photoMetadata: picturesState.photoMetadata.report?.[draftId] ?? {},
             createId: createClientId,
         });
+        picturesState.setEntityPhotoMetadata({
+            entity: 'report',
+            entityId: draftId,
+            photoMetadata,
+        });
 
-        setDraft({ draftId, values: preparedValues });
+        setDraft({ draftId, values });
 
         if (!isOnline && isChecked) {
             setDraft({
                 draftId,
-                values: { ...preparedValues, reportState: 'pending' },
+                values: { ...values, reportState: 'pending' },
             });
             return { offline: true };
         }
-        return await mutateAsync({ taskId, values: preparedValues });
+        return await mutateAsync({ taskId, values, photoMetadata });
     };
 
     return {

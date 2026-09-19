@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { mapReportToFormValues } from './reportFormHydration.js';
+import {
+    mapReportImagesToForm,
+    mapReportToFormValues,
+} from './reportFormHydration.js';
 
 test('hydrates existing images and report fields for editing', () => {
     const defaults = {
@@ -9,7 +12,6 @@ test('hydrates existing images and report fields for editing', () => {
         meterBefore: { number: 'OLD-1', type: 'OldType' },
         metering: {},
         photos: { seal: [] },
-        photoMetadata: { seal: [] },
         removedPhotoIds: [],
     };
     const values = mapReportToFormValues(
@@ -34,7 +36,15 @@ test('hydrates existing images and report fields for editing', () => {
     assert.equal(values.meterBefore.isActualDifferent, true);
     assert.equal(values.metering.newMeterNumber, 'NEW-1');
     assert.deepEqual(values.photos.seal, ['https://example.test/seal.jpg']);
-    assert.deepEqual(values.photoMetadata.seal, [
-        { uri: 'https://example.test/seal.jpg', clientImageId: 'image-id' },
-    ]);
+    assert.equal('photoMetadata' in values, false);
+    assert.deepEqual(
+        mapReportImagesToForm([
+            {
+                kind: 'SEAL',
+                url: 'https://example.test/seal.jpg',
+                ['client_image_id']: 'image-id',
+            },
+        ]).photoMetadata.seal,
+        [{ uri: 'https://example.test/seal.jpg', clientImageId: 'image-id' }]
+    );
 });

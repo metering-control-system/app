@@ -30,12 +30,6 @@ const optionalEmailField = z
     );
 
 const photoArrayField = z.array(z.string().trim()).default([]);
-const photoMetadataArrayField = z
-    .array(
-        z.object({ uri: z.string().trim(), clientImageId: z.string().trim() })
-    )
-    .default([]);
-
 export const reportSubmitFormSchema = z
     .object({
         clientReportId: z.string().trim().optional(),
@@ -109,14 +103,6 @@ export const reportSubmitFormSchema = z
             generalView: photoArrayField,
             actPaper: photoArrayField,
             refusalProof: photoArrayField,
-        }),
-        photoMetadata: z.object({
-            oldMeter: photoMetadataArrayField,
-            seal: photoMetadataArrayField,
-            frontPanel: photoMetadataArrayField,
-            generalView: photoMetadataArrayField,
-            actPaper: photoMetadataArrayField,
-            refusalProof: photoMetadataArrayField,
         }),
         removedPhotoIds: z.array(z.string().trim()).default([]),
         admission: z.object({

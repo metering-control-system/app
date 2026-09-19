@@ -39,26 +39,3 @@ export const prepareReportPhotoMetadata = ({
 
         return result;
     }, {});
-
-export const prepareReportValues = (values, createId) => ({
-    ...values,
-    photoMetadata: prepareReportPhotoMetadata({
-        photos: values.photos,
-        photoMetadata: values.photoMetadata,
-        createId,
-    }),
-});
-
-export const prepareReportSubmissionValues = ({
-    values,
-    persistedValues,
-    createId,
-}) =>
-    prepareReportValues(
-        {
-            ...values,
-            photoMetadata:
-                persistedValues?.photoMetadata ?? values.photoMetadata,
-        },
-        createId
-    );

@@ -24,7 +24,10 @@ import { reportSubmitFormDefaultValues } from '@/features/reports/constants/repo
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
-import { mapReportToFormValues } from '@/features/reports/lib/reportFormHydration';
+import {
+    mapReportImagesToForm,
+    mapReportToFormValues,
+} from '@/features/reports/lib/reportFormHydration';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const FORM_STEPS = [
@@ -87,12 +90,22 @@ const ReportSubmitForm = ({
         () => reportPhotosRaw ?? {},
         [reportPhotosRaw]
     );
+    const reportPhotoMetadataRaw = useStorePictures(
+        (state) => state.photoMetadata.report?.[id]
+    );
+    const reportPhotoMetadata = useMemo(
+        () => reportPhotoMetadataRaw ?? {},
+        [reportPhotoMetadataRaw]
+    );
     const appendPhoto = useStorePictures((state) => state.appendPhoto);
     const setPhoto = useStorePictures((state) => state.setPhoto);
     const updatePhoto = useStorePictures((state) => state.updatePhoto);
     const removePhotoAt = useStorePictures((state) => state.removePhotoAt);
     const clearEntityPhotos = useStorePictures(
         (state) => state.clearEntityPhotos
+    );
+    const setEntityPhotoMetadata = useStorePictures(
+        (state) => state.setEntityPhotoMetadata
     );
     const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
     const draftValues = useReportDraftStore(
@@ -106,27 +119,38 @@ const ReportSubmitForm = ({
             existingReport,
             mapTaskToReportDefaults(task)
         );
+        const draftFormValues = draftValues ? { ...draftValues } : null;
+        if (draftFormValues) {
+            delete draftFormValues.photoMetadata;
+        }
 
         return {
             ...taskDefaults,
-            ...draftValues,
+            ...draftFormValues,
             meterBefore: {
                 ...taskDefaults.meterBefore,
-                ...draftValues?.meterBefore,
+                ...draftFormValues?.meterBefore,
             },
-            metering: { ...taskDefaults.metering, ...draftValues?.metering },
-            photos: { ...taskDefaults.photos, ...draftValues?.photos },
-            photoMetadata: {
-                ...taskDefaults.photoMetadata,
-                ...draftValues?.photoMetadata,
+            metering: {
+                ...taskDefaults.metering,
+                ...draftFormValues?.metering,
             },
-            admission: { ...taskDefaults.admission, ...draftValues?.admission },
+            photos: { ...taskDefaults.photos, ...draftFormValues?.photos },
+            admission: {
+                ...taskDefaults.admission,
+                ...draftFormValues?.admission,
+            },
             consumerContact: {
                 ...taskDefaults.consumerContact,
-                ...draftValues?.consumerContact,
+                ...draftFormValues?.consumerContact,
             },
         };
     }, [draftValues, existingReport, task]);
+
+    const initialPhotoMetadata = useMemo(
+        () => mapReportImagesToForm(existingReport?.images).photoMetadata,
+        [existingReport?.images]
+    );
 
     const {
         control,
@@ -181,8 +205,22 @@ const ReportSubmitForm = ({
                 });
             }
         });
+        setEntityPhotoMetadata({
+            entity: 'report',
+            entityId: id,
+            photoMetadata: { ...initialPhotoMetadata, ...reportPhotoMetadata },
+        });
         hydratedPhotosIdRef.current = draftId;
-    }, [draftId, id, initialValues.photos, reportPhotos, setPhoto]);
+    }, [
+        draftId,
+        id,
+        initialPhotoMetadata,
+        initialValues.photos,
+        reportPhotoMetadata,
+        reportPhotos,
+        setEntityPhotoMetadata,
+        setPhoto,
+    ]);
 
     useEffect(() => {
         if (watch('clientReportId')) {
@@ -273,6 +311,9 @@ const ReportSubmitForm = ({
                     res.reportResponse,
                     mapTaskToReportDefaults(task)
                 );
+                const nextPhotoMetadata = mapReportImagesToForm(
+                    res.reportResponse.images
+                ).photoMetadata;
                 reset(nextValues);
                 prevSavedDraftRef.current = JSON.stringify(nextValues);
                 hydratedDraftIdRef.current = draftId;
@@ -286,6 +327,11 @@ const ReportSubmitForm = ({
                             uri: uris,
                         });
                     }
+                });
+                setEntityPhotoMetadata({
+                    entity: 'report',
+                    entityId: id,
+                    photoMetadata: nextPhotoMetadata,
                 });
 
                 Alert.alert(
@@ -590,7 +636,7 @@ const ReportSubmitForm = ({
 
         const photoFieldName = `photos.${photoField.name}`;
         const markExistingPhotoRemoved = (uri) => {
-            const metadata = getValues(`photoMetadata.${photoField.name}`);
+            const metadata = reportPhotoMetadata[photoField.name];
             const clientImageId = metadata?.find(
                 (entry) => entry.uri === uri
             )?.clientImageId;

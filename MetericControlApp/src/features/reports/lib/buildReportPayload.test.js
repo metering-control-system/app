@@ -60,19 +60,18 @@ test('keeps empty optional fields when updating a report', () => {
 test('uploads only new photos with their stable client ids', () => {
     const formValues = {
         photos: { seal: ['file://existing.jpg', 'file://new.jpg'] },
-        photoMetadata: {
-            seal: [
-                {
-                    uri: 'file://existing.jpg',
-                    clientImageId: 'existing-image-id',
-                },
-                { uri: 'file://new.jpg', clientImageId: 'new-image-id' },
-            ],
-        },
     };
-    const payload = buildReportImagesPayload(formValues, [
-        { ['client_image_id']: 'existing-image-id' },
-    ]);
+    const photoMetadata = {
+        seal: [
+            { uri: 'file://existing.jpg', clientImageId: 'existing-image-id' },
+            { uri: 'file://new.jpg', clientImageId: 'new-image-id' },
+        ],
+    };
+    const payload = buildReportImagesPayload(
+        formValues,
+        [{ ['client_image_id']: 'existing-image-id' }],
+        photoMetadata
+    );
 
     assert.deepEqual(payload.images, [
         {
@@ -87,19 +86,17 @@ test('uploads only new photos with their stable client ids', () => {
 });
 
 test('does not upload unchanged report photos again', () => {
-    const formValues = {
-        photos: { seal: ['file://seal.jpg'] },
-        photoMetadata: {
-            seal: [
-                { uri: 'file://seal.jpg', clientImageId: 'existing-image-id' },
-            ],
-        },
+    const formValues = { photos: { seal: ['file://seal.jpg'] } };
+    const photoMetadata = {
+        seal: [{ uri: 'file://seal.jpg', clientImageId: 'existing-image-id' }],
     };
 
     assert.equal(
-        buildReportImagesPayload(formValues, [
-            { ['client_image_id']: 'existing-image-id' },
-        ]),
+        buildReportImagesPayload(
+            formValues,
+            [{ ['client_image_id']: 'existing-image-id' }],
+            photoMetadata
+        ),
         null
     );
 });
@@ -132,17 +129,17 @@ test('does not delete a photo removed and then restored before save', () => {
         getRemovedReportImageIds(
             {
                 photos: { seal: ['https://example.test/seal.jpg'] },
-                photoMetadata: {
-                    seal: [
-                        {
-                            uri: 'https://example.test/seal.jpg',
-                            clientImageId: 'seal-id',
-                        },
-                    ],
-                },
                 removedPhotoIds: ['seal-id'],
             },
-            [{ ['client_image_id']: 'seal-id' }]
+            [{ ['client_image_id']: 'seal-id' }],
+            {
+                seal: [
+                    {
+                        uri: 'https://example.test/seal.jpg',
+                        clientImageId: 'seal-id',
+                    },
+                ],
+            }
         ),
         []
     );
