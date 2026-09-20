@@ -6,12 +6,14 @@ import {
     getReportByTaskId,
     updateReport,
     uploadReportImage,
+    uploadReportPdfAct,
 } from '@/features/reports/api/submitReportApi';
 import {
     buildReportCommentPayload,
     buildReportImagesPayload,
     buildReportPayload,
     getRemovedReportImageIds,
+    buildReportPdfActPayload,
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
@@ -25,6 +27,7 @@ import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
 import useStorePictures from '@/shared/store/useStorePictures';
+import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -55,6 +58,8 @@ const useSubmitReport = () => {
                     reportPayload,
                     existingReport,
                 });
+                const reportPdfActPayload = buildReportPdfActPayload(values);
+
 
                 let reportResponse =
                     upsertRequest.operation === 'update'
@@ -104,6 +109,10 @@ const useSubmitReport = () => {
 
                 if (reportCommentPayload) {
                     await addReportComment(reportId, reportCommentPayload);
+                }
+
+                if (reportPdfActPayload) {
+                    await uploadReportPdfAct(reportId, reportPdfActPayload);
                 }
 
                 return {
@@ -156,9 +165,18 @@ const useSubmitReport = () => {
             picturesState.removedPhotoIds.report?.[draftId] ?? [];
 
         if (!isOnline && isChecked) {
+            const { actPdfUri } = values;
+            const newUri = await savePdfToDocuments({
+                fileName: taskId.toString(),
+                sourceUri: actPdfUri,
+            });
             setDraft({
                 draftId,
-                values: { ...values, reportState: 'pending' },
+                values: {
+                    ...values,
+                    actPdfUri: newUri,
+                    reportState: 'pending',
+                },
             });
             return { offline: true };
         }

@@ -41,5 +41,16 @@ export const uploadReportImage = (reportId, payload) => {
         .then((response) => response.data);
 };
 
+export const uploadReportPdfAct = (reportId, payload) => {
+    const formData = new FormData();
+
+    formData.append('pdfAct', payload);
+    return baseApi
+        .post(`/reports/${reportId}/act/`, formData, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+        })
+        .then((response) => response.data);
+};
+
 export const deleteReportImage = (reportId, clientImageId) =>
     baseApi.delete(`/reports/${reportId}/images/${clientImageId}/`);
