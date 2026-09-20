@@ -119,6 +119,9 @@ export const reportSubmitFormSchema = z
                 'ФИО контактного лица слишком длинное'
             ),
         }),
+
+        actPdfUri: z.string().trim().optional(),
+        actId: z.string().trim().optional(),
     })
     .superRefine((values, ctx) => {
         if (

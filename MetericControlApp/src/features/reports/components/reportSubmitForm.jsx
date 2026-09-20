@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
@@ -30,6 +30,16 @@ import {
 } from '@/features/reports/lib/reportFormHydration';
 import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import * as Print from 'expo-print';
+import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
+import { actTemplates } from '@/features/reports/constants/actTemplates';
+import * as Sharing from 'expo-sharing';
+import ModalPicker from '@/shared/components/picker/modalPicker';
+import { FontAwesome6 } from '@expo/vector-icons';
+import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
+import useActTemplates from '@/features/reports/hooks/useActTemplates';
+import PdfViewer from '@/features/reports/components/pdfViewer';
+import { nanoid } from 'nanoid/non-secure';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -37,6 +47,7 @@ const FORM_STEPS = [
     { key: 'photos', title: 'Фотофиксация' },
     { key: 'admission', title: 'Итог и допуск' },
     { key: 'contacts', title: 'Контактные данные' },
+    { key: 'act', title: 'Акт допуска/замены' },
 ];
 
 const SEAL_LOCATION_OPTIONS = [
@@ -117,7 +128,9 @@ const ReportSubmitForm = ({
     );
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
-
+    //eslint-disable-next-line no-unused-vars
+    const templates = useActTemplatesStore((state) => state.templates);
+    const { requestActTemplates, isPending, isUpToDated } = useActTemplates();
     const initialValues = useMemo(() => {
         const taskDefaults = mapReportToFormValues(
             existingReport,
@@ -149,6 +162,8 @@ const ReportSubmitForm = ({
                 ...taskDefaults.consumerContact,
                 ...draftFormValues?.consumerContact,
             },
+            actPdfUri: draftValues?.actPdfUri,
+            actId: draftValues?.actId,
         };
     }, [draftValues, existingReport, task]);
 
@@ -157,11 +172,19 @@ const ReportSubmitForm = ({
         [existingReport?.images]
     );
 
+    const [template, setTemplate] = useState(actTemplates[0].id);
+    const [templatesPickerVisible, setTemplatesPickerVisible] = useState(false);
+    const htmlTemplates = actTemplates.map((template) => [
+        template.id,
+        template.id,
+    ]);
+
     const {
         control,
         handleSubmit,
         watch,
         setValue,
+        getValues,
         reset,
         formState: { errors },
     } = useForm({
@@ -876,6 +899,88 @@ const ReportSubmitForm = ({
         </View>
     );
 
+    const renderPdfStep = () => {
+        const selectedHtmlTemplate = actTemplates.find(
+            (temp) => temp?.id === template
+        )?.html;
+
+        const shareFile = async (uri) => {
+            const isAvailable = await Sharing.isAvailableAsync();
+            if (isAvailable) {
+                await Sharing.shareAsync(uri);
+            }
+        };
+
+        const printToFile = async () => {
+            if (!selectedHtmlTemplate) {
+                Alert.alert('Предупреждение', 'Не выбран не один шаблон акта.');
+                return;
+            }
+
+            const html = fillActTemplate(
+                selectedHtmlTemplate,
+                formValues ?? {}
+            );
+
+            const { uri } = await Print.printToFileAsync({ html }).catch(
+                (err) => console.error('PRINT_TO_FILE', err)
+            );
+            setValue('actPdfUri', uri);
+            setValue('actId', 'pdf-' + nanoid());
+            void shareFile(uri);
+        };
+
+        return (
+            <View style={{ flex: 1, paddingVertical: 20 }}>
+                <PdfViewer page={0} source={getValues('actPdfUri')} />
+                <View style={styles.navigationRow}>
+                    <Pressable
+                        onPress={() => setTemplatesPickerVisible(true)}
+                        style={{
+                            alignSelf: 'center',
+                            paddingVertical: 5,
+                            paddingHorizontal: 8,
+                            borderRadius: '50%',
+                            outlineStyle: 'solid',
+                            outlineOffset: -3,
+                            outlineColor: 'rgba(73,73,73,0.2)',
+                            outlineWidth: 1,
+                            backgroundColor: 'rgb(176,176,176)',
+                        }}>
+                        <FontAwesome6
+                            name='sticky-note'
+                            size={20}
+                            color='#555'
+                        />
+                    </Pressable>
+                    <FormButton
+                        onPress={printToFile}
+                        message='Сгенерировать акт допуска/замены'
+                        style={styles.primaryButton}
+                    />
+                    <FormButton
+                        onPress={requestActTemplates}
+                        disabled={isUpToDated || isPending}
+                        message={
+                            isPending ? 'Загрузка...' : 'Загрузить шаблоны акта'
+                        }
+                        style={styles.secondaryButton}
+                        textStyle={styles.secondaryButtonText}
+                    />
+                </View>
+                <ModalPicker
+                    variants={htmlTemplates}
+                    state={template}
+                    setState={setTemplate}
+                    label='Выберите шаблон'
+                    visible={templatesPickerVisible}
+                    onClose={() => setTemplatesPickerVisible(false)}>
+                    <Text style={{ fontWeight: 'bold' }}>{template}</Text>
+                </ModalPicker>
+            </View>
+        );
+    };
+
     const renderCurrentStep = () => {
         switch (FORM_STEPS[stepIndex].key) {
             case 'beforeWork':
@@ -888,6 +993,8 @@ const ReportSubmitForm = ({
                 return renderAdmissionStep();
             case 'contacts':
                 return renderContactsStep();
+            case 'act':
+                return renderPdfStep();
             default:
                 return null;
         }
