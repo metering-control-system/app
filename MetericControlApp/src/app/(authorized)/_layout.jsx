@@ -1,11 +1,16 @@
 import useAuth from '@/features/auth/store/useAuth';
 import { Redirect, Stack } from 'expo-router';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
+import useActTemplates from '@/features/reports/hooks/useActTemplates';
+import { useEffect } from 'react';
 import useMe from '@/features/settings/hooks/useMe';
 
 const AuthorizedLayout = () => {
     const isAuthenticated = useAuth((state) => state.isAuthenticated);
     const isAuthChecked = useAuth((state) => state.isAuthChecked);
+    const { requestActTemplates } = useActTemplates();
+
+    useEffect(() => requestActTemplates(), []);
 
     useMe();
 

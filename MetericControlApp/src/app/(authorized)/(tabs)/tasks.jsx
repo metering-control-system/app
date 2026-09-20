@@ -13,9 +13,12 @@ import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { OverlayButton } from '@/shared/components/button/overlayButton';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
+import useActTemplates from '@/features/reports/hooks/useActTemplates';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
+    const { requestedTemplatesError, requestActTemplates } = useActTemplates();
+
     const router = useRouter();
 
     const [filtering, setFiltering] = useState(new Set());
@@ -51,6 +54,17 @@ const TaskScreen = () => {
                     variant='warning'
                     message={error}
                     handleClose={() => setError(null)}
+                />
+            )}
+            {requestedTemplatesError && (
+                <Notification
+                    variant='warning'
+                    message={
+                        requestedTemplatesError
+                            ? 'Не удалось загрузить шаблоны актов.'
+                            : null
+                    }
+                    onPress={requestActTemplates}
                 />
             )}
             <ControlPanel
