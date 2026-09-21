@@ -1,5 +1,5 @@
 import { transformImage } from '@/shared/lib/media/transformImage';
-import { CAMERA_IMAGE_COMPRESSION } from '@/shared/lib/media/imageCompressionSizes';
+import { getPhotoQualityPreset } from '@/features/settings/store/useSettingsStore';
 
 export const applyPreviewImageRotation = async ({ uri, rotation }) => {
     const normalizedRotation = Number(rotation) % 360;
@@ -8,10 +8,12 @@ export const applyPreviewImageRotation = async ({ uri, rotation }) => {
         return uri;
     }
 
+    const { compress } = getPhotoQualityPreset();
+
     const result = await transformImage({
         uri,
         rotate: normalizedRotation,
-        compress: CAMERA_IMAGE_COMPRESSION,
+        compress,
     });
 
     return result.uri;

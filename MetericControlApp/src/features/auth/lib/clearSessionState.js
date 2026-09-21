@@ -5,6 +5,7 @@ import useStorePictures from '@/shared/store/useStorePictures';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
+import useProfileStore from '@/features/settings/store/useProfileStore';
 import useCommentsStore from '@/features/comments/store/useCommentsStore';
 
 const clearSessionState = async (queryClient) => {
@@ -20,6 +21,8 @@ const clearSessionState = async (queryClient) => {
     useTasksStore.persist.clearStorage();
     useReportsStore.getState().clearReports();
     useReportsStore.persist.clearStorage();
+    useProfileStore.getState().clearProfile();
+    useProfileStore.persist.clearStorage();
     useCommentsStore.getState().clearComments();
     useCommentsStore.persist.clearStorage();
 };
