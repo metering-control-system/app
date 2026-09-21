@@ -20,7 +20,7 @@ const ReportSubmitScreen = () => {
     const reportQuery = useQuery({
         queryKey: ['report', 'task', Number(id)],
         queryFn: () => getReportByTaskId(id),
-        enabled: Boolean(task?.id) && isOnline,
+        enabled: Boolean(task?.id) && !task?.is_team_task && isOnline,
         retry: false,
     });
     const [highlightedField, setHighlightedField] = useState(null);
@@ -46,9 +46,10 @@ const ReportSubmitScreen = () => {
 
     return (
         <ScreenLayout safe>
-            {isPending || (isOnline && reportQuery.isPending) ? (
+            {isPending ||
+            (!task?.is_team_task && isOnline && reportQuery.isPending) ? (
                 <ScreenLoader loading />
-            ) : isOnline && reportQuery.isError ? (
+            ) : !task?.is_team_task && isOnline && reportQuery.isError ? (
                 <View style={styles.lookupError}>
                     <Text>Не удалось проверить, есть ли отчёт по задаче.</Text>
                     <Pressable onPress={() => reportQuery.refetch()}>
@@ -66,6 +67,7 @@ const ReportSubmitScreen = () => {
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
                         <ReportSubmitForm
+                            key={id}
                             task={task}
                             existingReport={reportQuery.data}
                             id={id}

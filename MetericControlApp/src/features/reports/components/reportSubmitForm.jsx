@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
+    Keyboard,
     Pressable,
     StyleSheet,
     Switch,
@@ -25,11 +26,14 @@ import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoCo
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
+    buildReportReplacement,
     mapReportImagesToForm,
     mapReportToFormValues,
 } from '@/features/reports/lib/reportFormHydration';
 import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useLoadBrigadeReport from '@/features/reports/hooks/useLoadBrigadeReport';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -81,6 +85,7 @@ const ReportSubmitForm = ({
     highlightedField,
 }) => {
     const router = useRouter();
+    const { isOnline } = useNetwork();
     const hydratedDraftIdRef = useRef(null);
     const hydratedPhotosIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
@@ -97,6 +102,9 @@ const ReportSubmitForm = ({
     const reportPhotoMetadata = useMemo(
         () => reportPhotoMetadataRaw ?? {},
         [reportPhotoMetadataRaw]
+    );
+    const replaceEntityPhotos = useStorePictures(
+        (state) => state.replaceEntityPhotos
     );
     const appendPhoto = useStorePictures((state) => state.appendPhoto);
     const setPhoto = useStorePictures((state) => state.setPhoto);
@@ -120,7 +128,7 @@ const ReportSubmitForm = ({
 
     const initialValues = useMemo(() => {
         const taskDefaults = mapReportToFormValues(
-            existingReport,
+            task?.is_team_task ? null : existingReport,
             mapTaskToReportDefaults(task)
         );
         const draftFormValues = draftValues ? { ...draftValues } : null;
@@ -153,8 +161,11 @@ const ReportSubmitForm = ({
     }, [draftValues, existingReport, task]);
 
     const initialPhotoMetadata = useMemo(
-        () => mapReportImagesToForm(existingReport?.images).photoMetadata,
-        [existingReport?.images]
+        () =>
+            mapReportImagesToForm(
+                task?.is_team_task ? [] : existingReport?.images
+            ).photoMetadata,
+        [existingReport?.images, task?.is_team_task]
     );
 
     const {
@@ -300,7 +311,49 @@ const ReportSubmitForm = ({
         prevSavedDraftRef.current = snapshot;
     }, [draftId, formValues, setDraft]);
 
+    const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
+        taskId: task?.id ?? id,
+        onLoaded: (report) => {
+            const { values, photoMetadata } = buildReportReplacement(
+                report,
+                mapTaskToReportDefaults(task)
+            );
+            hydratedDraftIdRef.current = draftId;
+            hydratedPhotosIdRef.current = draftId;
+            prevSavedDraftRef.current = JSON.stringify(values);
+            replaceEntityPhotos({
+                entity: 'report',
+                entityId: id,
+                photos: values.photos,
+                photoMetadata,
+            });
+            reset(values);
+            setDraft({ draftId, values });
+            setStepIndex(0);
+        },
+    });
+
+    const confirmLoadReport = () => {
+        if (!isOnline || isSubmitting || isLoadingReport) return;
+        Alert.alert(
+            'Заменить ваш отчёт?',
+            'Все заполненные поля и фотографии будут заменены последним отправленным отчётом бригады, включая пустые поля. Ожидающая отправка вашего старого черновика будет отменена. Отменить замену нельзя.',
+            [
+                { text: 'Отмена', style: 'cancel' },
+                {
+                    text: 'Заменить отчёт',
+                    style: 'destructive',
+                    onPress: () => {
+                        Keyboard.dismiss();
+                        void loadReport();
+                    },
+                },
+            ]
+        );
+    };
+
     const onSubmit = async (values) => {
+        if (isLoadingReport) return;
         try {
             const res = await submitTaskReport({
                 taskId: task?.id ?? id,
@@ -388,7 +441,7 @@ const ReportSubmitForm = ({
                                 multiline={multiline}
                                 numberOfLines={numberOfLines}
                                 textAlignVertical={multiline ? 'top' : 'center'}
-                                editable={editable}
+                                editable={editable && !isLoadingReport}
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                             />
@@ -739,7 +792,7 @@ const ReportSubmitForm = ({
                                     { shouldDirty: true, shouldValidate: true }
                                 );
                             }}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isLoadingReport}
                         />
                     </View>
                 </HighlightWrap>
@@ -900,47 +953,68 @@ const ReportSubmitForm = ({
                 проверку.
             </Text>
 
-            {renderStepIndicators()}
-
-            <View style={styles.stepTitleWrap}>
-                <Text style={styles.stepTitle}>
-                    {FORM_STEPS[stepIndex].title}
-                </Text>
-            </View>
-
-            {renderCurrentStep()}
-
-            <View style={styles.navigationRow}>
-                {!isFirstStep ? (
+            {task?.is_team_task && (
+                <View style={styles.brigadeActions}>
                     <FormButton
-                        message='Назад'
-                        onPress={() =>
-                            setStepIndex((currentStep) => currentStep - 1)
-                        }
-                        style={styles.secondaryButton}
-                        textStyle={styles.secondaryButtonText}
+                        message='Загрузить отправленный отчёт'
+                        onPress={confirmLoadReport}
+                        isPending={isLoadingReport}
+                        disabled={!isOnline || isSubmitting || isLoadingReport}
                     />
-                ) : (
-                    <View style={styles.buttonSpacer} />
-                )}
+                    <Text style={styles.description}>
+                        {isLoadingReport
+                            ? 'Загружаем отчёт. Дождитесь завершения.'
+                            : !isOnline
+                              ? 'Для загрузки отчёта бригады нужен интернет.'
+                              : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}
+                    </Text>
+                </View>
+            )}
+            <View
+                pointerEvents={isLoadingReport ? 'none' : 'auto'}
+                style={styles.formBody}>
+                {renderStepIndicators()}
 
-                {isLastStep ? (
-                    <FormButton
-                        message='Сохранить отчет'
-                        onPress={handleSubmit(onSubmit)}
-                        isPending={isSubmitting}
-                        disabled={isSubmitting}
-                        style={styles.primaryButton}
-                    />
-                ) : (
-                    <FormButton
-                        message='Далее'
-                        onPress={() =>
-                            setStepIndex((currentStep) => currentStep + 1)
-                        }
-                        style={styles.primaryButton}
-                    />
-                )}
+                <View style={styles.stepTitleWrap}>
+                    <Text style={styles.stepTitle}>
+                        {FORM_STEPS[stepIndex].title}
+                    </Text>
+                </View>
+
+                {renderCurrentStep()}
+
+                <View style={styles.navigationRow}>
+                    {!isFirstStep ? (
+                        <FormButton
+                            message='Назад'
+                            onPress={() =>
+                                setStepIndex((currentStep) => currentStep - 1)
+                            }
+                            style={styles.secondaryButton}
+                            textStyle={styles.secondaryButtonText}
+                        />
+                    ) : (
+                        <View style={styles.buttonSpacer} />
+                    )}
+
+                    {isLastStep ? (
+                        <FormButton
+                            message='Сохранить отчет'
+                            onPress={handleSubmit(onSubmit)}
+                            isPending={isSubmitting}
+                            disabled={isSubmitting || isLoadingReport}
+                            style={styles.primaryButton}
+                        />
+                    ) : (
+                        <FormButton
+                            message='Далее'
+                            onPress={() =>
+                                setStepIndex((currentStep) => currentStep + 1)
+                            }
+                            style={styles.primaryButton}
+                        />
+                    )}
+                </View>
             </View>
         </Card>
     );
@@ -948,6 +1022,8 @@ const ReportSubmitForm = ({
 
 const styles = StyleSheet.create({
     card: { gap: 16, marginTop: 16 },
+    brigadeActions: { gap: 10 },
+    formBody: { gap: 16 },
     description: { fontSize: 14, lineHeight: 20, color: '#62758f' },
     stepsWrap: {
         flexDirection: 'row',
