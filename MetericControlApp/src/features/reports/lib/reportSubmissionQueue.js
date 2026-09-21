@@ -16,3 +16,6 @@ export const enqueueReportSubmission = (taskId, submit) => {
         }
     });
 };
+
+export const isCurrentReportDraft = (expectedDraft, currentDraft) =>
+    !expectedDraft || expectedDraft === currentDraft;

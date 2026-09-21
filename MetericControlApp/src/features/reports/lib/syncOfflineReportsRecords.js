@@ -3,7 +3,11 @@ export const syncOfflineReportsRecords = async (records, sendReport) => {
     for (const id in records) {
         if (records[id]?.reportState === 'pending') {
             try {
-                await sendReport({ taskId: id, values: records[id] });
+                await sendReport({
+                    taskId: id,
+                    values: records[id],
+                    expectedDraft: records[id],
+                });
             } catch {
                 unsynchronizedReports++;
             }

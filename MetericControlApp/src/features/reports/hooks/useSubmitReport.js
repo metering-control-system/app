@@ -20,7 +20,10 @@ import {
     buildReportUpsertRequest,
     resolveReportForSubmission,
 } from '@/features/reports/lib/reportUpsert';
-import { enqueueReportSubmission } from '@/features/reports/lib/reportSubmissionQueue';
+import {
+    enqueueReportSubmission,
+    isCurrentReportDraft,
+} from '@/features/reports/lib/reportSubmissionQueue';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
@@ -35,83 +38,86 @@ const useSubmitReport = () => {
     );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: ({ taskId, values, photoMetadata, removedPhotoIds }) =>
-            enqueueReportSubmission(taskId, async () => {
-                const existingReport = await resolveReportForSubmission({
-                    taskId,
-                    cachedReport: queryClient.getQueryData([
-                        'report',
-                        'task',
-                        Number(taskId),
-                    ]),
-                    lookupReport: getReportByTaskId,
-                });
-                const reportPayload = buildReportPayload(
-                    { ...values, taskId },
-                    { includeEmptyOptionalFields: Boolean(existingReport) }
+        mutationFn: async ({
+            taskId,
+            values,
+            photoMetadata,
+            removedPhotoIds,
+        }) => {
+            const existingReport = await resolveReportForSubmission({
+                taskId,
+                cachedReport: queryClient.getQueryData([
+                    'report',
+                    'task',
+                    Number(taskId),
+                ]),
+                lookupReport: getReportByTaskId,
+            });
+            const reportPayload = buildReportPayload(
+                { ...values, taskId },
+                { includeEmptyOptionalFields: Boolean(existingReport) }
+            );
+            const reportCommentPayload = buildReportCommentPayload(values);
+            const upsertRequest = buildReportUpsertRequest({
+                reportPayload,
+                existingReport,
+            });
+
+            let reportResponse =
+                upsertRequest.operation === 'update'
+                    ? await updateReport(
+                          upsertRequest.reportId,
+                          upsertRequest.payload
+                      )
+                    : await createReport(upsertRequest.payload);
+            const reportId = reportResponse?.id;
+
+            if (!reportId) {
+                throw new Error('Не удалось получить идентификатор отчета');
+            }
+
+            setUpdatedReports([reportResponse]);
+
+            const reportImagesPayload = buildReportImagesPayload(
+                values,
+                reportResponse.images,
+                photoMetadata
+            );
+            const removedImageIds = getRemovedReportImageIds({
+                photos: values.photos,
+                photoMetadata,
+                removedPhotoIds,
+                existingImages: reportResponse.images,
+            });
+
+            if (reportImagesPayload) {
+                reportResponse = await retryReportImageUpload(() =>
+                    uploadReportImage(reportId, reportImagesPayload)
                 );
-                const reportCommentPayload = buildReportCommentPayload(values);
-                const upsertRequest = buildReportUpsertRequest({
-                    reportPayload,
-                    existingReport,
-                });
-
-                let reportResponse =
-                    upsertRequest.operation === 'update'
-                        ? await updateReport(
-                              upsertRequest.reportId,
-                              upsertRequest.payload
-                          )
-                        : await createReport(upsertRequest.payload);
-                const reportId = reportResponse?.id;
-
-                if (!reportId) {
-                    throw new Error('Не удалось получить идентификатор отчета');
-                }
-
                 setUpdatedReports([reportResponse]);
+            }
 
-                const reportImagesPayload = buildReportImagesPayload(
-                    values,
-                    reportResponse.images,
-                    photoMetadata
-                );
-                const removedImageIds = getRemovedReportImageIds({
-                    photos: values.photos,
-                    photoMetadata,
-                    removedPhotoIds,
-                    existingImages: reportResponse.images,
-                });
-
-                if (reportImagesPayload) {
-                    reportResponse = await retryReportImageUpload(() =>
-                        uploadReportImage(reportId, reportImagesPayload)
-                    );
-                    setUpdatedReports([reportResponse]);
-                }
-
-                for (const clientImageId of removedImageIds) {
-                    await deleteReportImage(reportId, clientImageId);
-                    reportResponse = {
-                        ...reportResponse,
-                        images: (reportResponse.images ?? []).filter(
-                            (image) =>
-                                image['client_image_id'] !== clientImageId
-                        ),
-                    };
-                    setUpdatedReports([reportResponse]);
-                }
-
-                if (reportCommentPayload) {
-                    await addReportComment(reportId, reportCommentPayload);
-                }
-
-                return {
-                    reportId,
-                    reportResponse,
-                    operation: upsertRequest.operation,
+            for (const clientImageId of removedImageIds) {
+                await deleteReportImage(reportId, clientImageId);
+                reportResponse = {
+                    ...reportResponse,
+                    images: (reportResponse.images ?? []).filter(
+                        (image) => image['client_image_id'] !== clientImageId
+                    ),
                 };
-            }),
+                setUpdatedReports([reportResponse]);
+            }
+
+            if (reportCommentPayload) {
+                await addReportComment(reportId, reportCommentPayload);
+            }
+
+            return {
+                reportId,
+                reportResponse,
+                operation: upsertRequest.operation,
+            };
+        },
         onSuccess: async (_data, variables) => {
             queryClient.setQueryData(
                 ['report', _data.reportId],
@@ -139,36 +145,53 @@ const useSubmitReport = () => {
         },
     });
 
-    const submitTaskReport = async ({ taskId, values }) => {
-        const draftId = String(taskId);
-        const picturesState = useStorePictures.getState();
-        const photoMetadata = prepareReportPhotoMetadata({
-            photos: values.photos,
-            photoMetadata: picturesState.photoMetadata.report?.[draftId] ?? {},
-            createId: createClientId,
-        });
-        picturesState.setEntityPhotoMetadata({
-            entity: 'report',
-            entityId: draftId,
-            photoMetadata,
-        });
-        const removedPhotoIds =
-            picturesState.removedPhotoIds.report?.[draftId] ?? [];
-
-        if (!isOnline && isChecked) {
-            setDraft({
-                draftId,
-                values: { ...values, reportState: 'pending' },
+    const submitTaskReport = ({ taskId, values, expectedDraft }) =>
+        enqueueReportSubmission(taskId, async () => {
+            if (
+                !isCurrentReportDraft(
+                    expectedDraft,
+                    useReportDraftStore.getState().getDraft(String(taskId))
+                )
+            ) {
+                return { skipped: true };
+            }
+            const draftId = String(taskId);
+            const picturesState = useStorePictures.getState();
+            const photoMetadata = prepareReportPhotoMetadata({
+                photos: values.photos,
+                photoMetadata:
+                    picturesState.photoMetadata.report?.[draftId] ?? {},
+                createId: createClientId,
             });
-            return { offline: true };
-        }
-        return await mutateAsync({
-            taskId,
-            values,
-            photoMetadata,
-            removedPhotoIds,
+            picturesState.setEntityPhotoMetadata({
+                entity: 'report',
+                entityId: draftId,
+                photoMetadata,
+            });
+            const removedPhotoIds =
+                picturesState.removedPhotoIds.report?.[draftId] ?? [];
+
+            if (!isOnline && isChecked) {
+                setDraft({
+                    draftId,
+                    values: { ...values, reportState: 'pending' },
+                });
+                return { offline: true };
+            }
+            const result = await mutateAsync({
+                taskId,
+                values,
+                photoMetadata,
+                removedPhotoIds,
+            });
+            if (
+                expectedDraft &&
+                useReportDraftStore.getState().getDraft(draftId) === values
+            ) {
+                useReportDraftStore.getState().clearDraft(draftId);
+            }
+            return result;
         });
-    };
 
     return {
         submitTaskReport,

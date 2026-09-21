@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { enqueueReportSubmission } from './reportSubmissionQueue.js';
+import {
+    enqueueReportSubmission,
+    isCurrentReportDraft,
+} from './reportSubmissionQueue.js';
 
 test('serializes concurrent submissions for the same task', async () => {
     const callOrder = [];
@@ -42,4 +45,32 @@ test('does not block submissions for different tasks', async () => {
     ]);
 
     assert.deepEqual(new Set(completedTasks), new Set([12, 20]));
+});
+
+test('a replacement invalidates an offline snapshot waiting in the same queue', async () => {
+    const oldDraft = { reportState: 'pending', comment: 'old' };
+    let currentDraft = oldDraft;
+    let sends = 0;
+    const replacement = enqueueReportSubmission(50, async () => {
+        currentDraft = { comment: '' };
+    });
+    const offlineSend = enqueueReportSubmission(50, async () => {
+        if (isCurrentReportDraft(oldDraft, currentDraft)) sends++;
+    });
+    await Promise.all([replacement, offlineSend]);
+    assert.equal(sends, 0);
+});
+
+test('failed replacement keeps the pending draft eligible for offline sending', async () => {
+    const draft = { reportState: 'pending' };
+    const replacement = enqueueReportSubmission(51, async () => {
+        throw new Error('network');
+    });
+    const send = enqueueReportSubmission(51, async () =>
+        isCurrentReportDraft(draft, draft)
+    );
+    await assert.rejects(replacement, /network/);
+    assert.equal(await send, true);
+    assert.equal(isCurrentReportDraft(draft, null), false);
+    assert.equal(isCurrentReportDraft(undefined, null), true);
 });
