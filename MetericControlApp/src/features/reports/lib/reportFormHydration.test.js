@@ -2,6 +2,7 @@ import assert from 'node:assert/strict';
 import test from 'node:test';
 
 import {
+    buildReportReplacement,
     mapReportImagesToForm,
     mapReportToFormValues,
 } from './reportFormHydration.js';
@@ -46,4 +47,50 @@ test('hydrates existing images and report fields for editing', () => {
         ]).photoMetadata.seal,
         [{ uri: 'https://example.test/seal.jpg', clientImageId: 'image-id' }]
     );
+});
+
+test('replacement clears absent server fields, flags and photo slots', () => {
+    const defaults = {
+        clientReportId: 'new',
+        comment: '',
+        meterBefore: { number: '1', type: 'meter' },
+        metering: {},
+        photos: { seal: [], oldMeter: [] },
+    };
+    const { values, photoMetadata } = buildReportReplacement(
+        { id: 10, images: [] },
+        defaults
+    );
+    assert.equal(values.comment, '');
+    assert.equal(values.metering.newMeterNumber, '');
+    assert.equal(values.metering.dismantlingCompleted, false);
+    assert.equal(values.consumerContact.fullName, '');
+    assert.equal(values.consumerContact.isRefusedContact, false);
+    assert.equal(values.admission.rejectionComment, '');
+    assert.deepEqual(values.photos, { seal: [], oldMeter: [] });
+    assert.deepEqual(photoMetadata, {});
+    assert.equal('reportState' in values, false);
+});
+
+test('replacement preserves zero readings and remote photo identifiers', () => {
+    const report = {
+        metering: { ['removal_reading']: '0.000' },
+        images: [
+            {
+                kind: 'SEAL',
+                url: 'https://example.test/photo',
+                ['client_image_id']: 'remote-id',
+            },
+        ],
+    };
+    const { values, photoMetadata } = buildReportReplacement(report, {
+        meterBefore: {},
+        metering: {},
+        photos: { seal: [], oldMeter: [] },
+    });
+    assert.equal(values.metering.oldReading, '0.000');
+    assert.deepEqual(values.photos.oldMeter, []);
+    assert.deepEqual(photoMetadata.seal, [
+        { uri: 'https://example.test/photo', clientImageId: 'remote-id' },
+    ]);
 });
