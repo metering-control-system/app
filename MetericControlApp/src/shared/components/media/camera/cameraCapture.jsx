@@ -13,6 +13,27 @@ import * as Linking from 'expo-linking';
 
 const flashModes = ['off', 'on', 'auto'];
 
+/**
+ * Shared full-screen camera UI.
+ *
+ * This component owns camera permissions, camera facing, flash, torch, capture
+ * state, and image compression. It does not know anything about tasks, reports,
+ * or store paths. Feature wrappers pass `setUri` to decide where the captured
+ * image should be saved.
+ *
+ * Typical flow:
+ * 1. A feature screen opens `/(authorized)/camera` with route params.
+ * 2. The shared camera route chooses the matching feature wrapper.
+ * 3. The feature wrapper renders `CameraCapture` with a feature-bound `setUri`.
+ * 4. `CameraCapture` captures/compresses an image and calls `setUri(uri)`.
+ *
+ * @param {Object} props
+ * @param {import('react').RefObject<import('expo-camera').CameraView>} props.cameraRef
+ * Camera ref created by a feature wrapper.
+ * @param {(uri: string) => void} props.setUri Stores the captured image URI.
+ * @param {Function} [props.onHandlePhoto] Called after a photo is saved.
+ * @param {Function} props.onClose Called when the user closes the camera.
+ */
 export default function CameraCapture({
     cameraRef,
     setUri,

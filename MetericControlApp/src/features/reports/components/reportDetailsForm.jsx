@@ -174,6 +174,7 @@ const ReportDetailsForm = ({ report }) => {
                     uri={currentPressedImageUrl}
                     modalVisible={modalVisible}
                     setModalVisible={setModalVisible}
+                    editable={false}
                 />
             </View>
         </Card>

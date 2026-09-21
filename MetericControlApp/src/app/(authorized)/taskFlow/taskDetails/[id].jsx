@@ -1,13 +1,22 @@
-import { useLocalSearchParams } from 'expo-router';
+import { useEffect } from 'react';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import TaskDetailsForm from '@/features/tasks/components/taskDetailsForm';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { KeyboardAvoidingView, ScrollView, Platform } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
+import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 
-const TaskDescription = () => {
+const TaskDetailsScreen = () => {
     const { id } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
+    const router = useRouter();
+
+    useEffect(() => {
+        if (task?.status === 'IN_PROGRESS') {
+            router.replace(`/(authorized)/taskFlow/reportSubmit/${id}`);
+        }
+    }, [task?.status]);
 
     return (
         <ScreenLayout safe>
@@ -16,12 +25,10 @@ const TaskDescription = () => {
             ) : (
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
-                    behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
+                    behavior={'translate-with-padding'}
+                    keyboardVerticalOffset={100}>
                     <ScrollView
-                        contentContainerStyle={{
-                            flexGrow: 1,
-                            justifyContent: 'center',
-                        }}
+                        contentContainerStyle={styles.content}
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
                         <TaskDetailsForm task={task} id={id} />
@@ -32,4 +39,8 @@ const TaskDescription = () => {
     );
 };
 
-export default TaskDescription;
+const styles = StyleSheet.create({
+    content: { flexGrow: 1, justifyContent: 'center' },
+});
+
+export default TaskDetailsScreen;

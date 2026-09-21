@@ -5,6 +5,7 @@ import { loginSchema } from '@/features/auth/validation/loginSchema';
 import { useLogin } from '@/features/auth/hooks/useLogin';
 import { zodResolver } from '@hookform/resolvers/zod';
 import FormButton from '@/shared/components/button/formButton';
+import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 
 const LoginForm = ({ setError }) => {
     const { handleSubmit, control } = useForm({
@@ -24,7 +25,7 @@ const LoginForm = ({ setError }) => {
                 password: data.password,
             });
         } catch (error) {
-            setError(error.message);
+            setError(getApiErrorMessage(error, 'Не удалось выполнить вход'));
         }
     };
 

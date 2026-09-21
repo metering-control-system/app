@@ -12,7 +12,14 @@ import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 
-const TasksList = ({ setError, filtering, sorting, search }) => {
+const TasksList = ({
+    setError,
+    filtering,
+    sorting,
+    search,
+    sync,
+    syncingRecords,
+}) => {
     const tasks = useTasksStore((state) => state.tasks);
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
@@ -95,12 +102,25 @@ const TasksList = ({ setError, filtering, sorting, search }) => {
             <FlatList
                 data={displayedTasks}
                 style={styles.list}
-                renderItem={({ item: task }) => <Task task={task} />}
+                renderItem={({ item: task }) => (
+                    <Task
+                        task={task}
+                        hasPendingTaskReport={!!syncingRecords[task.id]}
+                    />
+                )}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>No tasks found.</Text>}
                 refreshing={isRefrehsing}
-                onRefresh={updateTasks}
+                onRefresh={async () => {
+                    updateTasks();
+                    const unsynchronizedCount = await sync();
+                    if (unsynchronizedCount) {
+                        setError(
+                            `Не синхронизировано отчетов: ${unsynchronizedCount}. Попробуйте синхронизировать самостоятельно.`
+                        );
+                    }
+                }}
                 onContentSizeChange={(_, height) => {
                     setContentHeight(height);
                 }}

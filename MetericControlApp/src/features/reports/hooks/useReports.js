@@ -1,15 +1,17 @@
 import { getReports } from '@/features/reports/api/getReportsApi';
 import { useInfiniteQuery } from '@tanstack/react-query';
 import useReportsSyncStore from '@/features/reports/store/useReportsSyncStore';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import useReportsStore from '@/features/reports/store/useReportsStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
+import { concatenateFields } from '@/shared/lib/collections/concatenateFields';
 
 const useReports = () => {
     const { isChecked, isOnline } = useNetwork();
     const setListSnapshotAt = useReportsSyncStore(
         (state) => state.setListSnapshotAt
     );
+    const [error, setError] = useState(null);
     const setLastSyncAt = useReportsSyncStore((state) => state.setLastSyncAt);
     const setUpdatedReports = useReportsStore(
         (state) => state.setUpdatedReports
@@ -22,7 +24,6 @@ const useReports = () => {
         isFetching,
         isFetchingNextPage,
         hasNextPage,
-        error,
     } = useInfiniteQuery({
         queryKey: ['reports'],
         queryFn: async ({ pageParam }) => {
@@ -62,7 +63,16 @@ const useReports = () => {
             return;
         }
 
-        void useReportsStore.persist.rehydrate();
+        void useReportsStore.persist
+            .rehydrate()
+            .then(() => {
+                const reports = useReportsStore.getState().reports ?? [];
+                for (const report of reports) {
+                    report.search = concatenateFields(reports);
+                }
+                setError(useReportsStore.persist.hasHydrated());
+            })
+            .catch((error) => setError(`ERROR${error.message}`));
     }, [isChecked, isOnline]);
 
     return {

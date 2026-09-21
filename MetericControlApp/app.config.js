@@ -42,7 +42,7 @@ export default ({ config }) => ({
             'expo-build-properties',
             {
                 android: {
-                    usesCleartextTraffic: IS_PREVIEW || IS_DEV,
+                    usesCleartextTraffic: !IS_PREVIEW || IS_DEV,
                 },
             },
         ],

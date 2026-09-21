@@ -12,12 +12,24 @@ export const useOfflineTasksSync = () => {
         (state) => state.tasksStatuses
     );
 
+    const syncTasksStatuses = async () => {
+        if (isSyncing.current || !isChecked || !isOnline) return;
+        isSyncing.current = true;
+        const latestTasksStatuses =
+            useTaskOfflineMutationStore.getState().tasksStatuses;
+        if (!latestTasksStatuses) return;
+        const failedSyncCount = await syncOfflineTaskStatuses(
+            latestTasksStatuses,
+            changeStatus
+        ).finally(() => (isSyncing.current = false));
+        return failedSyncCount;
+    };
+
     useEffect(() => {
         if (!isChecked || !isOnline || !tasksStatuses || isSyncing.current)
             return;
-        isSyncing.current = true;
-        syncOfflineTaskStatuses(tasksStatuses, changeStatus).finally(
-            () => (isSyncing.current = false)
-        );
+        void syncTasksStatuses();
     }, [changeStatus, isChecked, isOnline, tasksStatuses]);
+
+    return syncTasksStatuses;
 };

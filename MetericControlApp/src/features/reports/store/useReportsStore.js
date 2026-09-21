@@ -40,10 +40,15 @@ const useReportsStore = create(
             storage: createJSONStorage(() =>
                 createPersistStorage(reportOfflineStorage)
             ),
-            partialize: (state) => ({
-                //eslint-disable-next-line no-unused-vars
-                reports: state.reports?.map(({ search, ...report }) => report),
-            }),
+            partialize: (state) => {
+                if (!state.reports) return { reports: null };
+                return {
+                    reports: state.reports.map(
+                        //eslint-disable-next-line
+                        ({ search, ...report }) => report
+                    ),
+                };
+            },
             skipHydration: true,
         }
     )

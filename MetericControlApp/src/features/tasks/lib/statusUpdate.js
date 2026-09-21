@@ -1,6 +1,6 @@
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 
-export const optimisticStatusUpdate = ({ previousStoreTasks, id, status }) => {
+export const statusUpdate = ({ previousStoreTasks, id, status }) => {
     const replaceTasks = useTasksStore.getState().replaceTasks;
 
     const optimisticTasks =
