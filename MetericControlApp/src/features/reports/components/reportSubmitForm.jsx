@@ -90,6 +90,7 @@ const ReportSubmitForm = ({
     stepIndex,
     setStepIndex,
     highlightedField,
+    defaultActTemplate,
 }) => {
     const router = useRouter();
     const hydratedDraftIdRef = useRef(null);
@@ -171,11 +172,11 @@ const ReportSubmitForm = ({
         [existingReport?.images]
     );
 
-    const [template, setTemplate] = useState(actTemplates[0].id);
+    const [template, setTemplate] = useState(defaultActTemplate);
     const [templatesPickerVisible, setTemplatesPickerVisible] = useState(false);
     const htmlTemplates = actTemplates.map((template) => [
         template.id,
-        template.id,
+        template.name,
     ]);
 
     const {
@@ -1010,7 +1011,9 @@ const ReportSubmitForm = ({
                     label='Выберите шаблон'
                     visible={templatesPickerVisible}
                     onClose={() => setTemplatesPickerVisible(false)}>
-                    <Text style={{ fontWeight: 'bold' }}>{template}</Text>
+                    <Text style={{ fontWeight: 'bold' }}>
+                        {htmlTemplates.find((tmp) => tmp[0] === template)?.[1]}
+                    </Text>
                 </ModalPicker>
             </View>
         );
