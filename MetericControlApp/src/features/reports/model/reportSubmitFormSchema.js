@@ -120,8 +120,11 @@ export const reportSubmitFormSchema = z
             ),
         }),
 
-        actPdfUri: z.string().trim().optional(),
-        actId: z.string().trim().optional(),
+        actPdf: z.object({
+            uri: z.string().trim().optional(),
+            id: z.string().trim().optional(),
+            isRefused: z.boolean(),
+        }),
     })
     .superRefine((values, ctx) => {
         if (

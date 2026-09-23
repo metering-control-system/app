@@ -163,7 +163,10 @@ const useSubmitReport = () => {
         });
         const removedPhotoIds =
             picturesState.removedPhotoIds.report?.[draftId] ?? [];
-
+        const { uri: actPdfUri, isRefused } = values.actPdf;
+        if (!isRefused && !actPdfUri) {
+            throw new Error('Отсутствует цифровой акт');
+        }
         if (!isOnline && isChecked) {
             const { actPdfUri } = values;
             const newUri = await savePdfToDocuments({
@@ -174,7 +177,7 @@ const useSubmitReport = () => {
                 draftId,
                 values: {
                     ...values,
-                    actPdfUri: newUri,
+                    actPdf: { ...values.actPdf, uri: newUri },
                     reportState: 'pending',
                 },
             });
