@@ -29,7 +29,6 @@ const OverlayPdfViewer = ({ visible, onClose, source }) => {
 
 const PdfViewer = ({ source }) => {
     const [visible, setVisible] = useState(false);
-
     return (
         <Pressable
             style={({ pressed }) => [
@@ -38,19 +37,22 @@ const PdfViewer = ({ source }) => {
                     minHeight: 300,
                     backgroundColor: '#6c6c6c0f',
                     borderWidth: 1,
-                    borderColor: '#6c6c6c',
+                    borderColor: '#cecece',
                     borderStyle: 'solid',
                     opacity: pressed ? 0.9 : 1,
                     marginBottom: 20,
                 },
             ]}
-            onPress={() => setVisible(true)}>
-            <PdfView
-                page={0}
-                style={{ flex: 1 }}
-                source={source ?? ''}
-                shrinkToFit='never'
-            />
+            onPress={() => setVisible(true)}
+            disabled={!source}>
+            {source && (
+                <PdfView
+                    page={0}
+                    style={{ flex: 1 }}
+                    source={source ?? ''}
+                    shrinkToFit='never'
+                />
+            )}
             <OverlayPdfViewer
                 visible={visible}
                 onClose={() => setVisible(false)}

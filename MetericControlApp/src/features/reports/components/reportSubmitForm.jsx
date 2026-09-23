@@ -162,8 +162,7 @@ const ReportSubmitForm = ({
                 ...taskDefaults.consumerContact,
                 ...draftFormValues?.consumerContact,
             },
-            actPdfUri: draftValues?.actPdfUri,
-            actId: draftValues?.actId,
+            actPdf: { ...draftValues?.actPdf, isRefused: false },
         };
     }, [draftValues, existingReport, task]);
 
@@ -898,7 +897,6 @@ const ReportSubmitForm = ({
             })}
         </View>
     );
-
     const renderPdfStep = () => {
         const selectedHtmlTemplate = actTemplates.find(
             (temp) => temp?.id === template
@@ -925,14 +923,34 @@ const ReportSubmitForm = ({
             const { uri } = await Print.printToFileAsync({ html }).catch(
                 (err) => console.error('PRINT_TO_FILE', err)
             );
-            setValue('actPdfUri', uri);
-            setValue('actId', 'pdf-' + nanoid());
+            setValue('actPdf.uri', uri);
+            setValue('actPdf.id', 'pdf-' + nanoid());
             void shareFile(uri);
         };
 
         return (
             <View style={{ flex: 1, paddingVertical: 20 }}>
-                <PdfViewer page={0} source={getValues('actPdfUri')} />
+                <Controller
+                    control={control}
+                    name='actPdf.isRefused'
+                    render={({ field: { onChange, value } }) =>
+                        renderToggleRow({
+                            name: 'actPdf.isRefused',
+                            label: 'Пропустить генерацию цифрового акта',
+                            value,
+                            onChange: (nextValue) => {
+                                onChange(nextValue);
+                                if (nextValue) {
+                                    setValue(
+                                        'actPdf.uri',
+                                        reportSubmitFormDefaultValues.actPdf.uri
+                                    );
+                                }
+                            },
+                        })
+                    }
+                />
+                <PdfViewer page={0} source={getValues('actPdf.uri')} />
                 <View style={styles.navigationRow}>
                     <Pressable
                         onPress={() => setTemplatesPickerVisible(true)}
@@ -953,20 +971,37 @@ const ReportSubmitForm = ({
                             color='#555'
                         />
                     </Pressable>
-                    <FormButton
-                        onPress={printToFile}
-                        message='Сгенерировать акт допуска/замены'
-                        style={styles.primaryButton}
-                    />
-                    <FormButton
-                        onPress={requestActTemplates}
-                        disabled={isUpToDated || isPending}
-                        message={
-                            isPending ? 'Загрузка...' : 'Загрузить шаблоны акта'
-                        }
-                        style={styles.secondaryButton}
-                        textStyle={styles.secondaryButtonText}
-                    />
+                    <View style={{ flex: 1, gap: 10 }}>
+                        <FormButton
+                            onPress={printToFile}
+                            message='Сгенерировать акт допуска/замены'
+                            style={styles.pdfButton}
+                            disabled={getValues('actPdf.isRefused')}
+                        />
+                        <FormButton
+                            onPress={requestActTemplates}
+                            disabled={isUpToDated || isPending}
+                            message={
+                                isPending
+                                    ? 'Загрузка...'
+                                    : 'Загрузить шаблоны акта'
+                            }
+                            style={{
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: '#0080ff',
+                                backgroundColor: 'white',
+                                borderStyle: 'dashed',
+                                gap: 15,
+                                flexDirection: 'row',
+                                paddingHorizontal: 10,
+                                paddingVertical: 15,
+                            }}
+                            textStyle={styles.secondaryButtonText}
+                        />
+                    </View>
                 </View>
                 <ModalPicker
                     variants={htmlTemplates}
@@ -1140,6 +1175,15 @@ const styles = StyleSheet.create({
     },
     secondaryButtonText: { color: '#278cff' },
     buttonSpacer: { flex: 1 },
+    pdfButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
+        gap: 15,
+        flexDirection: 'row',
+        paddingHorizontal: 10,
+        paddingVertical: 15,
+    },
 });
 
 export default ReportSubmitForm;
