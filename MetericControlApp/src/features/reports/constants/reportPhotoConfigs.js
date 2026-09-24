@@ -34,6 +34,11 @@ export const REPORT_PHOTO_CONFIGS = [
 
 export const REPORT_PHOTO_SLOTS = REPORT_PHOTO_CONFIGS.map(({ name }) => name);
 
+export const createReportPhotoSlotRecord = (createValue) =>
+    Object.fromEntries(
+        REPORT_PHOTO_SLOTS.map((slot) => [slot, createValue(slot)])
+    );
+
 export const REPORT_PHOTO_SLOT_BY_KIND = Object.fromEntries(
     REPORT_PHOTO_CONFIGS.map(({ kind, name }) => [kind, name])
 );
