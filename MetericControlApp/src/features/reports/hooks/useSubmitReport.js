@@ -155,8 +155,6 @@ const useSubmitReport = () => {
         const removedPhotoIds =
             picturesState.removedPhotoIds.report?.[draftId] ?? [];
 
-        setDraft({ draftId, values });
-
         if (!isOnline && isChecked) {
             setDraft({
                 draftId,
