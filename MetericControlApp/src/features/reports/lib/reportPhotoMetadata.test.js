@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { prepareReportPhotoMetadata } from './reportPhotoMetadata.js';
+import {
+    mergeReportPhotoMetadata,
+    prepareReportPhotoMetadata,
+} from './reportPhotoMetadata.js';
 
 const createSequentialId = () => {
     let value = 0;
@@ -43,5 +46,32 @@ test('adds metadata only for new photos and removes deleted photos', () => {
     assert.deepEqual(nextMetadata.seal, [
         { uri: 'file://old.jpg', clientImageId: 'image-1' },
         { uri: 'file://new.jpg', clientImageId: 'image-3' },
+    ]);
+});
+
+test('keeps server metadata and appends metadata for local photos', () => {
+    const metadata = mergeReportPhotoMetadata({
+        serverMetadata: {
+            seal: [
+                {
+                    uri: 'https://example.test/seal.jpg',
+                    clientImageId: 'server-id',
+                },
+            ],
+        },
+        localMetadata: {
+            seal: [
+                {
+                    uri: 'https://example.test/seal.jpg',
+                    clientImageId: 'stale-local-id',
+                },
+                { uri: 'file://new.jpg', clientImageId: 'local-id' },
+            ],
+        },
+    });
+
+    assert.deepEqual(metadata.seal, [
+        { uri: 'https://example.test/seal.jpg', clientImageId: 'server-id' },
+        { uri: 'file://new.jpg', clientImageId: 'local-id' },
     ]);
 });

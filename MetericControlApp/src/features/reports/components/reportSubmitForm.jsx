@@ -28,6 +28,7 @@ import {
     mapReportImagesToForm,
     mapReportToFormValues,
 } from '@/features/reports/lib/reportFormHydration';
+import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const FORM_STEPS = [
@@ -211,7 +212,10 @@ const ReportSubmitForm = ({
         setEntityPhotoMetadata({
             entity: 'report',
             entityId: id,
-            photoMetadata: { ...initialPhotoMetadata, ...reportPhotoMetadata },
+            photoMetadata: mergeReportPhotoMetadata({
+                serverMetadata: initialPhotoMetadata,
+                localMetadata: reportPhotoMetadata,
+            }),
         });
         hydratedPhotosIdRef.current = draftId;
     }, [

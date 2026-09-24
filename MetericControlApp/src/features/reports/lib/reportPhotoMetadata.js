@@ -10,6 +10,31 @@ const normalizeUris = (value) => {
     return value ? [value] : [];
 };
 
+const normalizeMetadataEntries = (value) =>
+    Array.isArray(value) ? value.filter((entry) => entry?.uri) : [];
+
+export const mergeReportPhotoMetadata = ({ serverMetadata, localMetadata }) =>
+    REPORT_PHOTO_SLOTS.reduce((result, slot) => {
+        const serverEntries = normalizeMetadataEntries(serverMetadata?.[slot]);
+        const localEntries = normalizeMetadataEntries(localMetadata?.[slot]);
+        const entriesByUri = new Map(
+            localEntries.map((entry) => [entry.uri, entry])
+        );
+
+        serverEntries.forEach((entry) => entriesByUri.set(entry.uri, entry));
+
+        const orderedUris = [
+            ...serverEntries.map((entry) => entry.uri),
+            ...localEntries.map((entry) => entry.uri),
+        ];
+
+        result[slot] = [...new Set(orderedUris)].map((uri) =>
+            entriesByUri.get(uri)
+        );
+
+        return result;
+    }, {});
+
 export const prepareReportPhotoMetadata = ({
     photos,
     photoMetadata,
