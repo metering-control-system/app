@@ -42,7 +42,7 @@ const ReportSubmitScreen = () => {
             });
             setHighlightedField(FORM_FIELDS_MAP[reference]?.field ?? null);
         }
-    }, [reference]);
+    }, [reference, navigateToElement]);
 
     return (
         <ScreenLayout safe>
