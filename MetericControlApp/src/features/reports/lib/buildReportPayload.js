@@ -1,3 +1,5 @@
+import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
+
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
         return value ?? null;
@@ -59,16 +61,10 @@ const normalizePhotoUris = (value) => {
     return [value];
 };
 
-const createClientImageId = () => {
-    return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (char) => {
-        const random = Math.floor(Math.random() * 16);
-        const value = char === 'x' ? random : (random & 0x3) | 0x8;
-
-        return value.toString(16);
-    });
-};
-
-export const buildReportPayload = (formValues) => {
+export const buildReportPayload = (
+    formValues,
+    { includeEmptyOptionalFields = false } = {}
+) => {
     const contactNameParts = splitFullName(formValues.consumerContact.fullName);
     const rejectionReason = toNullableValue(
         formValues.admission.rejectionReason
@@ -124,15 +120,22 @@ export const buildReportPayload = (formValues) => {
         },
     };
 
-    if (!payload.consumer_contact.phone_number_2) {
+    if (
+        !includeEmptyOptionalFields &&
+        !payload.consumer_contact.phone_number_2
+    ) {
         delete payload.consumer_contact.phone_number_2;
     }
 
-    if (!payload.admission.rejection_reason) {
+    if (includeEmptyOptionalFields && !payload.admission['rejection_reason']) {
+        payload.admission['rejection_reason'] = '';
+    } else if (!payload.admission['rejection_reason']) {
         delete payload.admission.rejection_reason;
     }
 
-    if (!payload.admission.rejection_comment) {
+    if (includeEmptyOptionalFields && !payload.admission['rejection_comment']) {
+        payload.admission['rejection_comment'] = '';
+    } else if (!payload.admission['rejection_comment']) {
         delete payload.admission.rejection_comment;
     }
 
@@ -149,44 +152,45 @@ export const buildReportCommentPayload = (formValues) => {
     return { content: comment };
 };
 
-export const buildReportImagesPayload = (formValues) => {
-    const photoConfigs = [
-        { kind: 'OLD_METER', slot: 'oldMeter', fileName: 'old_meter' },
-        { kind: 'SEAL', slot: 'seal', fileName: 'seal' },
-        { kind: 'FRONT_PANEL', slot: 'frontPanel', fileName: 'front_panel' },
-        { kind: 'GENERAL_VIEW', slot: 'generalView', fileName: 'general_view' },
-        { kind: 'ACT_PAPER', slot: 'actPaper', fileName: 'act_paper' },
-        {
-            kind: 'REFUSAL_PROOF',
-            slot: 'refusalProof',
-            fileName: 'refusal_proof',
-        },
-    ];
+export const buildReportImagesPayload = (
+    formValues,
+    existingImages = [],
+    photoMetadata = {}
+) => {
+    const existingImageIds = new Set(
+        existingImages
+            .map((image) => image?.['client_image_id'])
+            .filter(Boolean)
+    );
+    const files = REPORT_PHOTO_CONFIGS.flatMap(({ kind, name, fileName }) =>
+        normalizePhotoUris(formValues.photos?.[name]).map((uri, index) => {
+            const file = buildReactNativeFile(uri, fileName);
+            const metadata = photoMetadata[name]?.[index];
+            const clientImageId =
+                metadata?.uri === uri ? metadata.clientImageId : null;
 
-    const files = photoConfigs
-        .flatMap(({ kind, slot, fileName }) =>
-            normalizePhotoUris(formValues.photos?.[slot]).map((uri, index) => {
-                const file = buildReactNativeFile(uri, fileName);
+            if (
+                !file ||
+                !clientImageId ||
+                existingImageIds.has(clientImageId)
+            ) {
+                return null;
+            }
 
-                if (!file) {
-                    return null;
-                }
+            const fileKey = `${fileName}_${index + 1}`;
 
-                const fileKey = `${fileName}_${index + 1}`;
-
-                return {
-                    fileKey,
-                    file,
-                    image: {
-                        ['file_key']: fileKey,
-                        kind,
-                        ['file_name']: file.name,
-                        ['client_image_id']: createClientImageId(),
-                    },
-                };
-            })
-        )
-        .filter(Boolean);
+            return {
+                fileKey,
+                file,
+                image: {
+                    ['file_key']: fileKey,
+                    kind,
+                    ['file_name']: file.name,
+                    ['client_image_id']: clientImageId,
+                },
+            };
+        })
+    ).filter(Boolean);
 
     if (!files.length) {
         return null;
@@ -196,4 +200,32 @@ export const buildReportImagesPayload = (formValues) => {
         images: files.map(({ image }) => image),
         files: files.map(({ fileKey, file }) => ({ fileKey, file })),
     };
+};
+
+export const getRemovedReportImageIds = ({
+    photos = {},
+    photoMetadata = {},
+    removedPhotoIds = [],
+    existingImages = [],
+}) => {
+    const existingIds = new Set(
+        existingImages
+            .map((image) => image?.['client_image_id'])
+            .filter(Boolean)
+    );
+    const retainedIds = new Set(
+        Object.entries(photos).flatMap(([slot, uris]) =>
+            normalizePhotoUris(uris)
+                .map(
+                    (uri) =>
+                        photoMetadata[slot]?.find((entry) => entry.uri === uri)
+                            ?.clientImageId
+                )
+                .filter(Boolean)
+        )
+    );
+
+    return [...new Set(removedPhotoIds)].filter(
+        (id) => existingIds.has(id) && !retainedIds.has(id)
+    );
 };

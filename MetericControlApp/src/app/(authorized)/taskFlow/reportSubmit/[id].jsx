@@ -1,18 +1,28 @@
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
+import { getReportByTaskId } from '@/features/reports/api/submitReportApi';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ShrinkedChat } from '@/features/comments/components/shrinkedChat';
 import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
 import { useEffect, useRef, useState } from 'react';
 import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
+import { useQuery } from '@tanstack/react-query';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const ReportSubmitScreen = () => {
     const { id, reference } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
+    const { isOnline } = useNetwork();
+    const reportQuery = useQuery({
+        queryKey: ['report', 'task', Number(id)],
+        queryFn: () => getReportByTaskId(id),
+        enabled: Boolean(task?.id) && isOnline,
+        retry: false,
+    });
     const [highlightedField, setHighlightedField] = useState(null);
     const router = useRouter();
 
@@ -36,8 +46,15 @@ const ReportSubmitScreen = () => {
 
     return (
         <ScreenLayout safe>
-            {isPending ? (
-                <ScreenLoader loading={isPending} />
+            {isPending || (isOnline && reportQuery.isPending) ? (
+                <ScreenLoader loading />
+            ) : isOnline && reportQuery.isError ? (
+                <View style={styles.lookupError}>
+                    <Text>Не удалось проверить, есть ли отчёт по задаче.</Text>
+                    <Pressable onPress={() => reportQuery.refetch()}>
+                        <Text>Повторить</Text>
+                    </Pressable>
+                </View>
             ) : (
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -50,6 +67,7 @@ const ReportSubmitScreen = () => {
                         showsVerticalScrollIndicator={false}>
                         <ReportSubmitForm
                             task={task}
+                            existingReport={reportQuery.data}
                             id={id}
                             fillPositions={fillPositions}
                             stepIndex={step}
@@ -73,6 +91,12 @@ const ReportSubmitScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    lookupError: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 12,
+    },
     chatDivider: {
         marginBlock: 15,
         height: 1,

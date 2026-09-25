@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { createReportPhotoSlotRecord } from '@/features/reports/constants/reportPhotoConfigs';
 
 const optionalTrimmedString = (max, message) =>
     z.string().trim().max(max, message);
@@ -30,6 +31,7 @@ const optionalEmailField = z
     );
 
 const photoArrayField = z.array(z.string().trim()).default([]);
+const reportPhotoFields = createReportPhotoSlotRecord(() => photoArrayField);
 
 export const reportSubmitFormSchema = z
     .object({
@@ -97,14 +99,7 @@ export const reportSubmitFormSchema = z
             ),
             installationReading: meterReadingField('показания при установке'),
         }),
-        photos: z.object({
-            oldMeter: photoArrayField,
-            seal: photoArrayField,
-            frontPanel: photoArrayField,
-            generalView: photoArrayField,
-            actPaper: photoArrayField,
-            refusalProof: photoArrayField,
-        }),
+        photos: z.object(reportPhotoFields),
         admission: z.object({
             status: z.string().trim().min(1, 'Выберите статус допуска'),
             rejectionReason: z.string().trim(),

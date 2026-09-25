@@ -1,3 +1,5 @@
+import { createReportPhotoSlotRecord } from './reportPhotoConfigs';
+
 export const reportSubmitFormDefaultValues = {
     clientReportId: '',
     customerName: '',
@@ -19,14 +21,7 @@ export const reportSubmitFormDefaultValues = {
         sealNumber: '',
         installationReading: '',
     },
-    photos: {
-        oldMeter: [],
-        seal: [],
-        frontPanel: [],
-        generalView: [],
-        actPaper: [],
-        refusalProof: [],
-    },
+    photos: createReportPhotoSlotRecord(() => []),
     admission: { status: '', rejectionReason: '', rejectionComment: '' },
     consumerContact: {
         isRefusedContact: false,

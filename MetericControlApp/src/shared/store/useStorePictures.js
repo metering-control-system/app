@@ -14,6 +14,8 @@ const useStorePictures = create(
     persist(
         (set, get) => ({
             photos: { task: {}, report: {} },
+            photoMetadata: { task: {}, report: {} },
+            removedPhotoIds: { task: {}, report: {} },
 
             /**
              * Sets a single photo URI for a given entity, entity ID and slot.
@@ -69,6 +71,49 @@ const useStorePictures = create(
 
                 return normalizePhotos(value);
             },
+
+            /**
+             * Replaces all photo metadata for an entity instance.
+             *
+             * @param {{ entity: string, entityId: string | number, photoMetadata: object }} params
+             * @returns {void}
+             */
+            setEntityPhotoMetadata: ({ entity, entityId, photoMetadata }) =>
+                set((state) => ({
+                    photoMetadata: {
+                        ...state.photoMetadata,
+                        [entity]: {
+                            ...state.photoMetadata[entity],
+                            [entityId]: photoMetadata,
+                        },
+                    },
+                })),
+
+            /**
+             * Marks a remote photo for deletion without adding duplicate IDs.
+             *
+             * @param {{ entity: string, entityId: string | number, clientImageId: string }} params
+             * @returns {void}
+             */
+            addRemovedPhotoId: ({ entity, entityId, clientImageId }) =>
+                set((state) => {
+                    const currentIds =
+                        state.removedPhotoIds[entity]?.[entityId] ?? [];
+
+                    if (currentIds.includes(clientImageId)) {
+                        return state;
+                    }
+
+                    return {
+                        removedPhotoIds: {
+                            ...state.removedPhotoIds,
+                            [entity]: {
+                                ...state.removedPhotoIds[entity],
+                                [entityId]: [...currentIds, clientImageId],
+                            },
+                        },
+                    };
+                }),
 
             /**
              * Appends a photo URI to the list of photos for the given slot.
@@ -232,10 +277,26 @@ const useStorePictures = create(
                     const nextEntityPhotos = {
                         ...(state.photos[entity] ?? {}),
                     };
+                    const nextEntityMetadata = {
+                        ...(state.photoMetadata[entity] ?? {}),
+                    };
+                    const nextRemovedPhotoIds = {
+                        ...(state.removedPhotoIds[entity] ?? {}),
+                    };
                     delete nextEntityPhotos[entityId];
+                    delete nextEntityMetadata[entityId];
+                    delete nextRemovedPhotoIds[entityId];
 
                     return {
                         photos: { ...state.photos, [entity]: nextEntityPhotos },
+                        photoMetadata: {
+                            ...state.photoMetadata,
+                            [entity]: nextEntityMetadata,
+                        },
+                        removedPhotoIds: {
+                            ...state.removedPhotoIds,
+                            [entity]: nextRemovedPhotoIds,
+                        },
                     };
                 }),
 
@@ -244,14 +305,23 @@ const useStorePictures = create(
              *
              * @returns {void}
              */
-            resetPhotos: () => set({ photos: { task: {}, report: {} } }),
+            resetPhotos: () =>
+                set({
+                    photos: { task: {}, report: {} },
+                    photoMetadata: { task: {}, report: {} },
+                    removedPhotoIds: { task: {}, report: {} },
+                }),
         }),
         {
             name: 'pictures-store',
             storage: createJSONStorage(() =>
                 createPersistStorage(picturesStorage)
             ),
-            partialize: (state) => ({ photos: state.photos }),
+            partialize: (state) => ({
+                photos: state.photos,
+                photoMetadata: state.photoMetadata,
+                removedPhotoIds: state.removedPhotoIds,
+            }),
         }
     )
 );
