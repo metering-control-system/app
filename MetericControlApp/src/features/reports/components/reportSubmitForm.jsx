@@ -342,6 +342,9 @@ const ReportSubmitForm = ({
                 taskId: task?.id ?? id,
                 values,
             });
+            if (res.skipped) {
+                return;
+            }
             if (res.offline) {
                 Alert.alert(
                     'Успешно',
