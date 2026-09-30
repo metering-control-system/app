@@ -1,6 +1,6 @@
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef } from 'react';
-import { Controller, useForm, useWatch } from 'react-hook-form';
+import { Controller, useForm } from 'react-hook-form';
 import {
     Alert,
     Keyboard,
@@ -181,7 +181,6 @@ const ReportSubmitForm = ({
         shouldUnregister: false,
         defaultValues: initialValues,
     });
-    const formValues = useWatch({ control });
 
     useEffect(() => {
         if (hydratedDraftIdRef.current === draftId) {
@@ -296,21 +295,6 @@ const ReportSubmitForm = ({
         });
     }, [reportPhotos, setValue]);
 
-    const prevSavedDraftRef = useRef(null);
-
-    useEffect(() => {
-        if (!formValues) {
-            return;
-        }
-
-        const snapshot = JSON.stringify(formValues);
-        if (snapshot === prevSavedDraftRef.current) {
-            return;
-        }
-
-        prevSavedDraftRef.current = snapshot;
-    }, [draftId, formValues, setDraft]);
-
     const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
         taskId: task?.id ?? id,
         onLoaded: (report) => {
@@ -320,7 +304,6 @@ const ReportSubmitForm = ({
             );
             hydratedDraftIdRef.current = draftId;
             hydratedPhotosIdRef.current = draftId;
-            prevSavedDraftRef.current = JSON.stringify(values);
             replaceEntityPhotos({
                 entity: 'report',
                 entityId: id,
@@ -375,7 +358,6 @@ const ReportSubmitForm = ({
                     res.reportResponse.images
                 ).photoMetadata;
                 reset(nextValues);
-                prevSavedDraftRef.current = JSON.stringify(nextValues);
                 hydratedDraftIdRef.current = draftId;
                 hydratedPhotosIdRef.current = draftId;
                 Object.entries(nextValues.photos).forEach(([slot, uris]) => {
