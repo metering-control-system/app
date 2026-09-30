@@ -1,3 +1,5 @@
+import { useMutationState } from '@tanstack/react-query';
+import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef } from 'react';
 import { Controller, useForm } from 'react-hook-form';
@@ -89,6 +91,10 @@ const ReportSubmitForm = ({
     const hydratedDraftIdRef = useRef(null);
     const hydratedPhotosIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
+    const pendingOperations = useMutationState({
+        filters: getReportOperationFilters(draftId),
+    });
+    const isReportBusy = pendingOperations.length > 0;
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
     );
@@ -317,7 +323,7 @@ const ReportSubmitForm = ({
     });
 
     const confirmLoadReport = () => {
-        if (!isOnline || isSubmitting || isLoadingReport) return;
+        if (!isOnline || isReportBusy) return;
         Alert.alert(
             'Заменить ваш отчёт?',
             'Все заполненные поля и фотографии будут заменены последним отправленным отчётом бригады, включая пустые поля. Ожидающая отправка вашего старого черновика будет отменена. Отменить замену нельзя.',
@@ -336,7 +342,7 @@ const ReportSubmitForm = ({
     };
 
     const onSubmit = async (values) => {
-        if (isLoadingReport) return;
+        if (isReportBusy) return;
         try {
             const res = await submitTaskReport({
                 taskId: task?.id ?? id,
@@ -426,7 +432,7 @@ const ReportSubmitForm = ({
                                 multiline={multiline}
                                 numberOfLines={numberOfLines}
                                 textAlignVertical={multiline ? 'top' : 'center'}
-                                editable={editable && !isLoadingReport}
+                                editable={editable && !isReportBusy}
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                             />
@@ -777,7 +783,7 @@ const ReportSubmitForm = ({
                                     { shouldDirty: true, shouldValidate: true }
                                 );
                             }}
-                            disabled={isSubmitting || isLoadingReport}
+                            disabled={isReportBusy}
                         />
                     </View>
                 </HighlightWrap>
@@ -944,7 +950,7 @@ const ReportSubmitForm = ({
                         message='Загрузить отправленный отчёт'
                         onPress={confirmLoadReport}
                         isPending={isLoadingReport}
-                        disabled={!isOnline || isSubmitting || isLoadingReport}
+                        disabled={!isOnline || isReportBusy}
                     />
                     <Text style={styles.description}>
                         {isLoadingReport
@@ -956,7 +962,7 @@ const ReportSubmitForm = ({
                 </View>
             )}
             <View
-                pointerEvents={isLoadingReport ? 'none' : 'auto'}
+                pointerEvents={isReportBusy ? 'none' : 'auto'}
                 style={styles.formBody}>
                 {renderStepIndicators()}
 
@@ -987,7 +993,7 @@ const ReportSubmitForm = ({
                             message='Сохранить отчет'
                             onPress={handleSubmit(onSubmit)}
                             isPending={isSubmitting}
-                            disabled={isSubmitting || isLoadingReport}
+                            disabled={isReportBusy}
                             style={styles.primaryButton}
                         />
                     ) : (

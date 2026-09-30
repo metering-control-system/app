@@ -1,3 +1,4 @@
+import { useCallback } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     addReportComment,
@@ -21,9 +22,9 @@ import {
     resolveReportForSubmission,
 } from '@/features/reports/lib/reportUpsert';
 import {
-    enqueueReportSubmission,
-    isCurrentReportDraft,
-} from '@/features/reports/lib/reportSubmissionQueue';
+    REPORT_OPERATION_KEY,
+    startReportOperation,
+} from '@/features/reports/lib/reportOperation';
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
@@ -38,12 +39,39 @@ const useSubmitReport = () => {
     );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: async ({
-            taskId,
-            values,
-            photoMetadata,
-            removedPhotoIds,
-        }) => {
+        mutationKey: [...REPORT_OPERATION_KEY, 'submit'],
+        networkMode: 'always',
+        retry: false,
+        mutationFn: async ({ taskId, values, expectedDraft }) => {
+            const draftId = String(taskId);
+            if (
+                expectedDraft &&
+                useReportDraftStore.getState().getDraft(draftId) !==
+                    expectedDraft
+            ) {
+                return { skipped: true };
+            }
+            const picturesState = useStorePictures.getState();
+            const photoMetadata = prepareReportPhotoMetadata({
+                photos: values.photos,
+                photoMetadata:
+                    picturesState.photoMetadata.report?.[draftId] ?? {},
+                createId: createClientId,
+            });
+            picturesState.setEntityPhotoMetadata({
+                entity: 'report',
+                entityId: draftId,
+                photoMetadata,
+            });
+            const removedPhotoIds =
+                picturesState.removedPhotoIds.report?.[draftId] ?? [];
+            if (!isOnline && isChecked) {
+                setDraft({
+                    draftId,
+                    values: { ...values, reportState: 'pending' },
+                });
+                return { offline: true };
+            }
             const existingReport = await resolveReportForSubmission({
                 taskId,
                 cachedReport: queryClient.getQueryData([
@@ -119,6 +147,18 @@ const useSubmitReport = () => {
             };
         },
         onSuccess: async (_data, variables) => {
+            if (_data.skipped || _data.offline) return;
+            if (
+                variables.expectedDraft &&
+                useReportDraftStore
+                    .getState()
+                    .getDraft(String(variables.taskId)) ===
+                    variables.expectedDraft
+            ) {
+                useReportDraftStore
+                    .getState()
+                    .clearDraft(String(variables.taskId));
+            }
             queryClient.setQueryData(
                 ['report', _data.reportId],
                 _data.reportResponse
@@ -145,53 +185,13 @@ const useSubmitReport = () => {
         },
     });
 
-    const submitTaskReport = ({ taskId, values, expectedDraft }) =>
-        enqueueReportSubmission(taskId, async () => {
-            if (
-                !isCurrentReportDraft(
-                    expectedDraft,
-                    useReportDraftStore.getState().getDraft(String(taskId))
-                )
-            ) {
-                return { skipped: true };
-            }
-            const draftId = String(taskId);
-            const picturesState = useStorePictures.getState();
-            const photoMetadata = prepareReportPhotoMetadata({
-                photos: values.photos,
-                photoMetadata:
-                    picturesState.photoMetadata.report?.[draftId] ?? {},
-                createId: createClientId,
-            });
-            picturesState.setEntityPhotoMetadata({
-                entity: 'report',
-                entityId: draftId,
-                photoMetadata,
-            });
-            const removedPhotoIds =
-                picturesState.removedPhotoIds.report?.[draftId] ?? [];
-
-            if (!isOnline && isChecked) {
-                setDraft({
-                    draftId,
-                    values: { ...values, reportState: 'pending' },
-                });
-                return { offline: true };
-            }
-            const result = await mutateAsync({
-                taskId,
-                values,
-                photoMetadata,
-                removedPhotoIds,
-            });
-            if (
-                expectedDraft &&
-                useReportDraftStore.getState().getDraft(draftId) === values
-            ) {
-                useReportDraftStore.getState().clearDraft(draftId);
-            }
-            return result;
-        });
+    const submitTaskReport = useCallback(
+        ({ taskId, values, expectedDraft }) =>
+            startReportOperation(queryClient, taskId, () =>
+                mutateAsync({ taskId, values, expectedDraft })
+            ),
+        [queryClient, mutateAsync]
+    );
 
     return {
         submitTaskReport,

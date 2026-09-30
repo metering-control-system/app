@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { loadReportReplacement } from './loadReportReplacement.js';
-import { enqueueReportSubmission } from './reportSubmissionQueue.js';
 
 const report = { id: 8, ['task_id']: 17, images: [] };
 
@@ -65,28 +64,4 @@ test('does not apply a response to a closed form or a different task', async () 
         /другой задачи/
     );
     assert.equal(writes, 0);
-});
-
-test('waits for an active submission before fetching the server report', async () => {
-    const order = [];
-    let release;
-    const gate = new Promise((resolve) => {
-        release = resolve;
-    });
-    const submission = enqueueReportSubmission(17, async () => {
-        await gate;
-        order.push('saved');
-    });
-    const loading = loadReportReplacement({
-        taskId: 17,
-        fetchReport: async () => {
-            order.push('fetched');
-            return report;
-        },
-        applyReport: () => order.push('applied'),
-    });
-    assert.deepEqual(order, []);
-    release();
-    await Promise.all([submission, loading]);
-    assert.deepEqual(order, ['saved', 'fetched', 'applied']);
 });
