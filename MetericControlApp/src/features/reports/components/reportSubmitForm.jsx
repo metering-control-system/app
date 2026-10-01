@@ -1,3 +1,4 @@
+import { FontAwesome } from '@expo/vector-icons';
 import { useMutationState } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -939,6 +940,14 @@ const ReportSubmitForm = ({
 
     return (
         <Card title='Отчет по задаче' style={styles.card}>
+            {task?.is_team_task && (
+                <View style={styles.brigadeBadge}>
+                    <FontAwesome name='users' size={16} color='#245ca6' />
+                    <Text style={styles.brigadeBadgeText}>
+                        Работа в бригаде
+                    </Text>
+                </View>
+            )}
             <Text style={styles.description}>
                 Заполните отчет по выполненным работам и отправьте его на
                 проверку.
@@ -1014,6 +1023,17 @@ const ReportSubmitForm = ({
 const styles = StyleSheet.create({
     card: { gap: 16, marginTop: 16 },
     brigadeActions: { gap: 10 },
+    brigadeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        backgroundColor: '#edf4ff',
+    },
+    brigadeBadgeText: { color: '#245ca6', fontSize: 14, fontWeight: '600' },
     formBody: { gap: 16 },
     description: { fontSize: 14, lineHeight: 20, color: '#62758f' },
     stepsWrap: {
