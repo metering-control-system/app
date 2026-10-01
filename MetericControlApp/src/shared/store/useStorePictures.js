@@ -22,6 +22,7 @@ const useStorePictures = create(
                 entityId,
                 photos,
                 photoMetadata,
+                removedPhotoIds = [],
             }) =>
                 set((state) => ({
                     photos: {
@@ -42,7 +43,7 @@ const useStorePictures = create(
                         ...state.removedPhotoIds,
                         [entity]: {
                             ...state.removedPhotoIds[entity],
-                            [entityId]: [],
+                            [entityId]: removedPhotoIds,
                         },
                     },
                 })),

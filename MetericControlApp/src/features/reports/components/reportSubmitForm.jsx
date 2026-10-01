@@ -1,3 +1,4 @@
+import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { FontAwesome } from '@expo/vector-icons';
 import { useMutationState } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
@@ -178,6 +179,7 @@ const ReportSubmitForm = ({
     const {
         control,
         handleSubmit,
+        getValues,
         watch,
         setValue,
         reset,
@@ -304,11 +306,29 @@ const ReportSubmitForm = ({
 
     const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
         taskId: task?.id ?? id,
-        onLoaded: (report) => {
-            const { values, photoMetadata } = buildReportReplacement(
+        onLoaded: (report, mode) => {
+            const replacement = buildReportReplacement(
                 report,
                 mapTaskToReportDefaults(task)
             );
+            const pictures = useStorePictures.getState();
+            const {
+                values,
+                photoMetadata,
+                removedPhotoIds = [],
+            } = mode === 'empty'
+                ? fillEmptyReportFields({
+                      currentValues: {
+                          ...getValues(),
+                          photos:
+                              pictures.photos.report?.[id] ??
+                              getValues('photos'),
+                      },
+                      replacement,
+                      localPhotoMetadata: pictures.photoMetadata.report?.[id],
+                      removedPhotoIds: pictures.removedPhotoIds.report?.[id],
+                  })
+                : replacement;
             hydratedDraftIdRef.current = draftId;
             hydratedPhotosIdRef.current = draftId;
             replaceEntityPhotos({
@@ -316,6 +336,7 @@ const ReportSubmitForm = ({
                 entityId: id,
                 photos: values.photos,
                 photoMetadata,
+                removedPhotoIds,
             });
             reset(values);
             setDraft({ draftId, values });
@@ -325,18 +346,32 @@ const ReportSubmitForm = ({
 
     const confirmLoadReport = () => {
         if (!isOnline || isReportBusy) return;
+        const load = (mode) => {
+            Keyboard.dismiss();
+            void loadReport(mode);
+        };
         Alert.alert(
-            'Заменить ваш отчёт?',
-            'Все заполненные поля и фотографии будут заменены последним отправленным отчётом бригады, включая пустые поля. Ожидающая отправка вашего старого черновика будет отменена. Отменить замену нельзя.',
+            'Загрузить отчёт бригады',
+            'Заменить весь отчёт или заполнить только пустые поля? Во втором случае ваши заполненные значения и фото-разделы сохранятся. Выключенные галочки включатся, если они включены на сервере; уже включённые останутся включёнными. После загрузки отчёт нужно отправить вручную.',
             [
                 { text: 'Отмена', style: 'cancel' },
+                { text: 'Только пустые поля', onPress: () => load('empty') },
                 {
-                    text: 'Заменить отчёт',
+                    text: 'Заменить всё',
                     style: 'destructive',
-                    onPress: () => {
-                        Keyboard.dismiss();
-                        void loadReport();
-                    },
+                    onPress: () =>
+                        Alert.alert(
+                            'Заменить ваш отчёт?',
+                            'Все поля и фотографии будут заменены данными с сервера, включая пустые поля. Ожидающая отправка старого черновика будет отменена. Отменить замену нельзя.',
+                            [
+                                { text: 'Отмена', style: 'cancel' },
+                                {
+                                    text: 'Заменить',
+                                    style: 'destructive',
+                                    onPress: () => load('replace'),
+                                },
+                            ]
+                        ),
                 },
             ]
         );

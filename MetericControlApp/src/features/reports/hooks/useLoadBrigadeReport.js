@@ -25,13 +25,13 @@ const useLoadBrigadeReport = ({ taskId, onLoaded }) => {
         mutationKey: [...REPORT_OPERATION_KEY, 'load'],
         networkMode: 'always',
         retry: false,
-        mutationFn: ({ taskId: requestedTaskId }) =>
+        mutationFn: ({ taskId: requestedTaskId, mode }) =>
             loadReportReplacement({
                 taskId: requestedTaskId,
                 fetchReport: getReportByTaskId,
                 shouldApply: () => mounted.current,
                 applyReport: (report) => {
-                    onLoaded(report);
+                    onLoaded(report, mode);
                     queryClient.setQueryData(['report', report.id], report);
                     queryClient.setQueryData(
                         ['report', 'task', Number(requestedTaskId)],
@@ -40,12 +40,14 @@ const useLoadBrigadeReport = ({ taskId, onLoaded }) => {
                     useReportsStore.getState().setUpdatedReports([report]);
                 },
             }),
-        onSuccess: (report) => {
+        onSuccess: (report, { mode }) => {
             if (!mounted.current) return;
             Alert.alert(
                 report ? 'Отчёт загружен' : 'Отчёт пока не отправлен',
                 report
-                    ? 'Локальный отчёт заменён данными с сервера. Загрузка не отправляет отчёт на проверку.'
+                    ? mode === 'empty'
+                        ? 'Пустые поля заполнены данными с сервера. Проверьте отчёт и отправьте его вручную.'
+                        : 'Локальный отчёт заменён данными с сервера. Загрузка не отправляет отчёт на проверку.'
                     : 'По этой задаче пока нет отправленного отчёта. Ваши данные сохранены.'
             );
         },
@@ -62,10 +64,10 @@ const useLoadBrigadeReport = ({ taskId, onLoaded }) => {
         },
     });
 
-    const loadReport = () => {
+    const loadReport = (mode = 'replace') => {
         if (!mounted.current) return;
         return startReportOperation(queryClient, taskId, () =>
-            mutateAsync({ taskId })
+            mutateAsync({ taskId, mode })
         ).catch(() => undefined);
     };
 
