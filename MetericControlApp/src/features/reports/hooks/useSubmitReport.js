@@ -168,19 +168,25 @@ const useSubmitReport = () => {
             throw new Error('Отсутствует цифровой акт');
         }
         if (!isOnline && isChecked) {
-            const { actPdfUri } = values;
-            const newUri = await savePdfToDocuments({
-                fileName: taskId.toString(),
-                sourceUri: actPdfUri,
-            });
-            setDraft({
-                draftId,
-                values: {
-                    ...values,
-                    actPdf: { ...values.actPdf, uri: newUri },
-                    reportState: 'pending',
-                },
-            });
+            if (!isRefused) {
+                const newUri = await savePdfToDocuments({
+                    fileName: taskId.toString(),
+                    sourceUri: actPdfUri,
+                });
+                setDraft({
+                    draftId,
+                    values: {
+                        ...values,
+                        actPdf: { ...values.actPdf, uri: newUri },
+                        reportState: 'pending',
+                    },
+                });
+            } else {
+                setDraft({
+                    draftId: String(taskId),
+                    values: { ...values, reportState: 'pending' },
+                });
+            }
             return { offline: true };
         }
         return await mutateAsync({

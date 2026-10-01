@@ -6,7 +6,7 @@ export const syncOfflineReportsRecords = async (records, sendReport) => {
         if (records[id]?.reportState === 'pending') {
             try {
                 await sendReport({ taskId: id, values: records[id] });
-                deleteAct(records[id]?.actPdfUri);
+                deleteAct(records[id]?.actPdf?.uri);
             } catch {
                 unsynchronizedReports++;
             }

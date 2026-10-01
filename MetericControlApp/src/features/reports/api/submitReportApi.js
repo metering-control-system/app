@@ -43,10 +43,13 @@ export const uploadReportImage = (reportId, payload) => {
 
 export const uploadReportPdfAct = (reportId, payload) => {
     const formData = new FormData();
+    const { ['client_act_id']: id, ...other } = payload;
 
-    formData.append('pdfAct', payload);
+    formData.append('client_act_id', String(id));
+    formData.append('file', other);
+
     return baseApi
-        .post(`/reports/${reportId}/act/`, formData, {
+        .post(`/report/${reportId}/act`, formData, {
             headers: { 'Content-Type': 'multipart/form-data' },
         })
         .then((response) => response.data);

@@ -39,7 +39,6 @@ import { FontAwesome6 } from '@expo/vector-icons';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import useActTemplates from '@/features/reports/hooks/useActTemplates';
 import PdfViewer from '@/features/reports/components/pdfViewer';
-import { nanoid } from 'nanoid/non-secure';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -921,11 +920,11 @@ const ReportSubmitForm = ({
                 formValues ?? {}
             );
 
-            const { uri } = await Print.printToFileAsync({ html }).catch(
-                (err) => console.error('PRINT_TO_FILE', err)
+            const { uri } = await Print.printToFileAsync({ html }).catch(() =>
+                Promise.reject('ERR_PRINT_TO_FILE')
             );
             setValue('actPdf.uri', uri);
-            setValue('actPdf.id', 'pdf-' + nanoid());
+            setValue('actPdf.id', createClientReportId());
             void shareFile(uri);
         };
 

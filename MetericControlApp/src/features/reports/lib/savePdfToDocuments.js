@@ -6,12 +6,15 @@ const getActsFolder = () => {
         'meteric-control-app-acts'
     );
     if (!actsFolder.exists) {
-        return actsFolder.create({ intermediates: true });
+        actsFolder.create({ intermediates: true });
     }
     return actsFolder;
 };
 
 export const deleteAct = (uri) => {
+    if (!uri) {
+        return;
+    }
     const file = new File(uri);
     if (file.exists) {
         file.delete();
@@ -21,6 +24,7 @@ export const deleteAct = (uri) => {
 export const savePdfToDocuments = async ({ fileName, sourceUri }) => {
     const actsFolder = getActsFolder();
     const target = new File(actsFolder, `${fileName}.pdf`);
-    await new File(sourceUri).copy(target, { overwrite: true });
+    deleteAct(target.uri);
+    new File(sourceUri).copy(target);
     return target.uri;
 };

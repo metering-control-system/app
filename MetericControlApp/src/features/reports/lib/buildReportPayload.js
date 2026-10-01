@@ -231,8 +231,8 @@ export const getRemovedReportImageIds = ({
 };
 
 export const buildReportPdfActPayload = (formValues) => {
-    const uri = formValues.actPdfUri;
-    const uniqueFileId = formValues.actId;
+    const uri = formValues.actPdf?.uri;
+    const uniqueFileId = formValues.actPdf?.id;
     if (!uri) {
         return null;
     }
@@ -241,6 +241,6 @@ export const buildReportPdfActPayload = (formValues) => {
         uri: uri,
         name: 'act.pdf',
         type: 'application/pdf',
-        ['client_file_id']: uniqueFileId,
+        ['client_act_id']: uniqueFileId,
     };
 };
