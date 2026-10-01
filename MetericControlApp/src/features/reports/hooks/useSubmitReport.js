@@ -1,4 +1,5 @@
 import { useCallback } from 'react';
+import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     addReportComment,
@@ -46,8 +47,10 @@ const useSubmitReport = () => {
             const draftId = String(taskId);
             if (
                 expectedDraft &&
-                useReportDraftStore.getState().getDraft(draftId) !==
-                    expectedDraft
+                !areReportDraftsEqual(
+                    expectedDraft,
+                    useReportDraftStore.getState().getDraft(draftId)
+                )
             ) {
                 return { skipped: true };
             }
@@ -150,10 +153,12 @@ const useSubmitReport = () => {
             if (_data.skipped || _data.offline) return;
             if (
                 variables.expectedDraft &&
-                useReportDraftStore
-                    .getState()
-                    .getDraft(String(variables.taskId)) ===
-                    variables.expectedDraft
+                areReportDraftsEqual(
+                    variables.expectedDraft,
+                    useReportDraftStore
+                        .getState()
+                        .getDraft(String(variables.taskId))
+                )
             ) {
                 useReportDraftStore
                     .getState()

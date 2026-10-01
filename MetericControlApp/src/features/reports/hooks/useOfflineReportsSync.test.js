@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict';
+import { areReportDraftsEqual } from '../lib/areReportDraftsEqual.js';
 import { registerHooks } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
@@ -63,14 +64,23 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
         mutationKey: [...REPORT_OPERATION_KEY, 'submit'],
         mutationFn: async ({ taskId, expectedDraft }) => {
             if (
-                useReportDraftStore.getState().getDraft(taskId) !==
-                expectedDraft
+                !areReportDraftsEqual(
+                    expectedDraft,
+                    useReportDraftStore.getState().getDraft(taskId)
+                )
             ) {
                 return { skipped: true };
             }
             sent.push(taskId);
             await beforeFinish(taskId);
-            useReportDraftStore.getState().clearDraft(taskId);
+            if (
+                areReportDraftsEqual(
+                    expectedDraft,
+                    useReportDraftStore.getState().getDraft(taskId)
+                )
+            ) {
+                useReportDraftStore.getState().clearDraft(taskId);
+            }
             return {};
         },
     });
