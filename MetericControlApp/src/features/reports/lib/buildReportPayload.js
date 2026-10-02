@@ -1,4 +1,5 @@
-import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
+import { createClientReportId } from '@/features/reports/lib/createClientReportId';
+import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
@@ -230,9 +231,9 @@ export const getRemovedReportImageIds = ({
     );
 };
 
-export const buildReportPdfActPayload = (formValues) => {
+export const buildReportPdfActPayload = (formValues, serverClientActId) => {
     const uri = formValues.actPdf?.uri;
-    const uniqueFileId = formValues.actPdf?.id;
+    const uniqueFileId = serverClientActId || createClientReportId();
     if (!uri) {
         return null;
     }

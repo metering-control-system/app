@@ -924,7 +924,6 @@ const ReportSubmitForm = ({
                 Promise.reject('ERR_PRINT_TO_FILE')
             );
             setValue('actPdf.uri', uri);
-            setValue('actPdf.id', createClientReportId());
             void shareFile(uri);
         };
 

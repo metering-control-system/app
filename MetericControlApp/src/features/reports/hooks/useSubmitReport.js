@@ -5,6 +5,7 @@ import {
     deleteReportImage,
     getReportByTaskId,
     updateReport,
+    updateReportPdfAct,
     uploadReportImage,
     uploadReportPdfAct,
 } from '@/features/reports/api/submitReportApi';
@@ -38,7 +39,13 @@ const useSubmitReport = () => {
     );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: ({ taskId, values, photoMetadata, removedPhotoIds }) =>
+        mutationFn: ({
+            taskId,
+            values,
+            photoMetadata,
+            removedPhotoIds,
+            actPdfUri,
+        }) =>
             enqueueReportSubmission(taskId, async () => {
                 const existingReport = await resolveReportForSubmission({
                     taskId,
@@ -58,8 +65,6 @@ const useSubmitReport = () => {
                     reportPayload,
                     existingReport,
                 });
-                const reportPdfActPayload = buildReportPdfActPayload(values);
-
 
                 let reportResponse =
                     upsertRequest.operation === 'update'
@@ -95,6 +100,24 @@ const useSubmitReport = () => {
                     setUpdatedReports([reportResponse]);
                 }
 
+                const serverActId = reportResponse?.act?.client_act_id;
+                const reportPdfActPayload = buildReportPdfActPayload(
+                    values,
+                    serverActId
+                );
+
+                if (actPdfUri && reportPdfActPayload) {
+                    if (serverActId) {
+                        await updateReportPdfAct(
+                            reportId,
+                            reportPdfActPayload,
+                            serverActId
+                        );
+                    } else {
+                        await uploadReportPdfAct(reportId, reportPdfActPayload);
+                    }
+                }
+
                 for (const clientImageId of removedImageIds) {
                     await deleteReportImage(reportId, clientImageId);
                     reportResponse = {
@@ -109,10 +132,6 @@ const useSubmitReport = () => {
 
                 if (reportCommentPayload) {
                     await addReportComment(reportId, reportCommentPayload);
-                }
-
-                if (reportPdfActPayload) {
-                    await uploadReportPdfAct(reportId, reportPdfActPayload);
                 }
 
                 return {
@@ -164,6 +183,7 @@ const useSubmitReport = () => {
         const removedPhotoIds =
             picturesState.removedPhotoIds.report?.[draftId] ?? [];
         const { uri: actPdfUri, isRefused } = values.actPdf;
+
         if (!isRefused && !actPdfUri) {
             throw new Error('Отсутствует цифровой акт');
         }
@@ -194,6 +214,7 @@ const useSubmitReport = () => {
             values,
             photoMetadata,
             removedPhotoIds,
+            actPdfUri,
         });
     };
 

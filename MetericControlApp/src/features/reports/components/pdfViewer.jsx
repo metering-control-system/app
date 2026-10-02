@@ -29,30 +29,25 @@ const OverlayPdfViewer = ({ visible, onClose, source }) => {
 
 const PdfViewer = ({ source }) => {
     const [visible, setVisible] = useState(false);
+
+    if (!source) {
+        return null;
+    }
     return (
         <Pressable
             style={({ pressed }) => [
-                {
-                    flex: 1,
-                    minHeight: 300,
-                    backgroundColor: '#6c6c6c0f',
-                    borderWidth: 1,
-                    borderColor: '#cecece',
-                    borderStyle: 'solid',
-                    opacity: pressed ? 0.9 : 1,
-                    marginBottom: 20,
-                },
+                styles.overlayButton,
+                { opacity: pressed ? 0.9 : 1 },
             ]}
             onPress={() => setVisible(true)}
             disabled={!source}>
-            {source && (
-                <PdfView
-                    page={0}
-                    style={{ flex: 1 }}
-                    source={source ?? ''}
-                    shrinkToFit='never'
-                />
-            )}
+            <PdfView
+                page={0}
+                style={{ flex: 1 }}
+                source={source}
+                onError={(event) => console.error(event.message)}
+                resizeMode='contain'
+            />
             <OverlayPdfViewer
                 visible={visible}
                 onClose={() => setVisible(false)}
@@ -71,4 +66,13 @@ const styles = StyleSheet.create({
         alignItems: 'center',
     },
     menu: { aspectRatio: '3/4', width: '90%' },
+    overlayButton: {
+        flex: 1,
+        minHeight: 300,
+        backgroundColor: '#6c6c6c0f',
+        borderWidth: 1,
+        borderColor: '#cecece',
+        borderStyle: 'solid',
+        marginBottom: 20,
+    },
 });
