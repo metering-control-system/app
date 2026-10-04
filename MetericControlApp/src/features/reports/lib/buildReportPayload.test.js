@@ -57,6 +57,66 @@ test('keeps empty optional fields when updating a report', () => {
     assert.equal(payload.admission['rejection_comment'], '');
 });
 
+test('sends empty name strings when contacts are refused on create and update', () => {
+    const values = createFormValues();
+    values.consumerContact = {
+        fullName: '',
+        phoneNumber: '',
+        phoneNumber2: '',
+        email: '',
+        isRefusedContact: true,
+    };
+
+    for (const includeEmptyOptionalFields of [false, true]) {
+        const contact = buildReportPayload(values, {
+            includeEmptyOptionalFields,
+        }).consumer_contact;
+
+        assert.equal(contact.is_refused_contact, true);
+        assert.equal(contact.first_name, '');
+        assert.equal(contact.middle_name, '');
+        assert.equal(contact.last_name, '');
+        assert.equal(contact.phone_number_1, null);
+        assert.equal(contact.email, null);
+        if (includeEmptyOptionalFields) {
+            assert.equal(contact.phone_number_2, null);
+        } else {
+            assert.equal('phone_number_2' in contact, false);
+        }
+    }
+});
+
+test('allows a phone contact without a contact name', () => {
+    const values = createFormValues();
+    values.consumerContact.fullName = '   ';
+    values.consumerContact.email = '';
+    const contact = buildReportPayload(values).consumer_contact;
+
+    assert.equal(contact.is_refused_contact, false);
+    assert.equal(contact.phone_number_1, '+78005553535');
+    assert.equal(contact.first_name, '');
+    assert.equal(contact.middle_name, '');
+    assert.equal(contact.last_name, '');
+});
+
+test('sends an empty middle name for a contact name without a patronymic', () => {
+    const values = createFormValues();
+    values.consumerContact.fullName = '  Иванов   Иван  ';
+    const contact = buildReportPayload(values).consumer_contact;
+
+    assert.equal(contact.first_name, 'Иван');
+    assert.equal(contact.middle_name, '');
+    assert.equal(contact.last_name, 'Иванов');
+});
+
+test('preserves all parts of a complete contact name', () => {
+    const contact = buildReportPayload(createFormValues()).consumer_contact;
+
+    assert.equal(contact.first_name, 'Иван');
+    assert.equal(contact.middle_name, 'Иванович');
+    assert.equal(contact.last_name, 'Иванов');
+});
+
 test('uploads only new photos with their stable client ids', () => {
     const formValues = {
         photos: { seal: ['file://existing.jpg', 'file://new.jpg'] },

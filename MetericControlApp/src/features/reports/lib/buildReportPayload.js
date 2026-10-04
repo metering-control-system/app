@@ -25,10 +25,10 @@ const splitFullName = (fullName) => {
     const normalizedFullName = toNullableValue(fullName);
 
     if (!normalizedFullName) {
-        return { firstName: null, middleName: null, lastName: null };
+        return { firstName: '', middleName: '', lastName: '' };
     }
 
-    const [lastName = null, firstName = null, middleName = null] =
+    const [lastName = '', firstName = '', middleName = ''] =
         normalizedFullName.split(/\s+/);
 
     return { firstName, middleName, lastName };
