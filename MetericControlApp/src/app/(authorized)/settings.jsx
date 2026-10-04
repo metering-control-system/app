@@ -1,25 +1,21 @@
-import { StyleSheet, Text } from 'react-native';
 import { Stack } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import PhotoQualityPicker from '@/features/settings/components/photoQualityPicker';
+import { DefaultActTemplatePicker } from '@/features/settings/components/defaultActTemplatePicker';
+import { StyleSheet } from 'react-native';
+import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 
 const SettingsScreen = () => {
+    const templates = useActTemplatesStore((state) => state.templates);
+
     return (
-        <ScreenLayout safe>
+        <ScreenLayout safe style={styles.container}>
             <Stack.Screen options={{ headerShown: true, title: 'Настройки' }} />
-            <Text style={styles.sectionTitle}>Качество фото в задачах</Text>
             <PhotoQualityPicker />
+            <DefaultActTemplatePicker templates={templates} />
         </ScreenLayout>
     );
 };
 
-const styles = StyleSheet.create({
-    sectionTitle: {
-        fontSize: 14,
-        fontWeight: '600',
-        color: '#727272',
-        marginBottom: 15,
-    },
-});
-
+const styles = StyleSheet.create({ container: { flex: 1, gap: 50 } });
 export default SettingsScreen;

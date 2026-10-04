@@ -10,6 +10,7 @@ import { ShrinkedChat } from '@/features/comments/components/shrinkedChat';
 import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
 import { useEffect, useRef, useState } from 'react';
 import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
+import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import { useQuery } from '@tanstack/react-query';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 
@@ -24,6 +25,9 @@ const ReportSubmitScreen = () => {
         retry: false,
     });
     const [highlightedField, setHighlightedField] = useState(null);
+    const defaultActTemplate = useSettingsStore(
+        (state) => state.defaultActTemplate
+    );
     const router = useRouter();
 
     const scrollRef = useRef();
@@ -75,6 +79,7 @@ const ReportSubmitScreen = () => {
                             stepIndex={step}
                             setStepIndex={setStep}
                             highlightedField={highlightedField}
+                            defaultActTemplate={defaultActTemplate}
                         />
                     </ScrollView>
                     <View style={styles.chatDivider} />

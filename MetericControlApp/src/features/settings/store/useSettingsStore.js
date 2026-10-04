@@ -11,14 +11,20 @@ const useSettingsStore = create(
     persist(
         (set) => ({
             photoQuality: DEFAULT_PHOTO_QUALITY,
+            defaultActTemplate: null,
             setPhotoQuality: (photoQuality) => set({ photoQuality }),
+            setDefaultActTemplate: (template) =>
+                set({ defaultActTemplate: template }),
         }),
         {
             name: 'settings-store',
             storage: createJSONStorage(() =>
                 createPersistStorage(settingsOfflineStorage)
             ),
-            partialize: (state) => ({ photoQuality: state.photoQuality }),
+            partialize: (state) => ({
+                photoQuality: state.photoQuality,
+                defaultActTemplate: state.defaultActTemplate,
+            }),
             skipHydration: false,
         }
     )

@@ -1,3 +1,4 @@
+import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 import { useCallback } from 'react';
 import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -7,12 +8,15 @@ import {
     deleteReportImage,
     getReportByTaskId,
     updateReport,
+    updateReportPdfAct,
     uploadReportImage,
+    uploadReportPdfAct,
 } from '@/features/reports/api/submitReportApi';
 import {
     buildReportCommentPayload,
     buildReportImagesPayload,
     buildReportPayload,
+    buildReportPdfActPayload,
     getRemovedReportImageIds,
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
@@ -68,10 +72,26 @@ const useSubmitReport = () => {
             });
             const removedPhotoIds =
                 picturesState.removedPhotoIds.report?.[draftId] ?? [];
+            const { uri: actPdfUri, isRefused } = values.actPdf;
+            if (!isRefused && !actPdfUri) {
+                throw new Error('Отсутствует цифровой акт');
+            }
             if (!isOnline && isChecked) {
+                const offlineValues = !isRefused
+                    ? {
+                          ...values,
+                          actPdf: {
+                              ...values.actPdf,
+                              uri: await savePdfToDocuments({
+                                  fileName: taskId.toString(),
+                                  sourceUri: actPdfUri,
+                              }),
+                          },
+                      }
+                    : values;
                 setDraft({
                     draftId,
-                    values: { ...values, reportState: 'pending' },
+                    values: { ...offlineValues, reportState: 'pending' },
                 });
                 return { offline: true };
             }
@@ -126,6 +146,23 @@ const useSubmitReport = () => {
                     uploadReportImage(reportId, reportImagesPayload)
                 );
                 setUpdatedReports([reportResponse]);
+            }
+
+            const serverActId = reportResponse?.act?.client_act_id;
+            const reportPdfActPayload = buildReportPdfActPayload(
+                values,
+                serverActId
+            );
+            if (actPdfUri && reportPdfActPayload) {
+                if (serverActId) {
+                    await updateReportPdfAct(
+                        reportId,
+                        reportPdfActPayload,
+                        serverActId
+                    );
+                } else {
+                    await uploadReportPdfAct(reportId, reportPdfActPayload);
+                }
             }
 
             for (const clientImageId of removedImageIds) {
