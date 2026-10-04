@@ -1,12 +1,4 @@
-const unavailableFields = [
-    'photos',
-    'admission',
-    'comment',
-    'isRefusedContact',
-    'isActualDifferent',
-];
-
-export const fillActTemplate = (html, data) => {
+export const fillActTemplate = (html, data, requiredFields = []) => {
     let result = html;
 
     const regex = /\{\{([^}]+)}}/g;
@@ -14,14 +6,17 @@ export const fillActTemplate = (html, data) => {
     let match;
 
     while ((match = regex.exec(html)) !== null) {
-        const path = match[1];
-        const value = path.split('.').reduce((acc, part) => acc?.[part], data);
+        const placeholder = `{{${match[1]}}}`;
+        const value = match[1]
+            .split('.')
+            .reduce((acc, part) => acc?.[part], data);
 
-        if (!value || unavailableFields.includes(path.split('.').at(-1))) {
-            result = result.replace(`{{${path}}}`, '');
+        if (!value || !requiredFields.includes(match[1])) {
+            result = result.replace(placeholder, '');
+            continue;
         }
 
-        result = result.replace(`{{${path}}}`, value);
+        result = result.replace(placeholder, () => value);
     }
 
     return result;
