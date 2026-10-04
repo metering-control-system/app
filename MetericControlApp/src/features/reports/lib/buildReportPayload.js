@@ -1,5 +1,5 @@
-import { createClientReportId } from '@/features/reports/lib/createClientReportId';
-import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
+import { createClientReportId } from './createClientReportId.js';
+import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
 
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
@@ -25,10 +25,10 @@ const splitFullName = (fullName) => {
     const normalizedFullName = toNullableValue(fullName);
 
     if (!normalizedFullName) {
-        return { firstName: null, middleName: null, lastName: null };
+        return { firstName: '', middleName: '', lastName: '' };
     }
 
-    const [lastName = null, firstName = null, middleName = null] =
+    const [lastName = '', firstName = '', middleName = ''] =
         normalizedFullName.split(/\s+/);
 
     return { firstName, middleName, lastName };

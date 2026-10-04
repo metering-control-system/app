@@ -10,14 +10,21 @@ export const useScrollToPosition = (scrollRef) => {
         };
     };
 
-    const scrollToElement = useCallback((scrollableEl) => {
-        if (scrollableEl && scrollRef.current && elementsPositionsRef.current) {
-            scrollRef.current.scrollTo({
-                y: elementsPositionsRef.current[scrollableEl?.field],
-                animated: true,
-            });
-        }
-    }, []);
+    const scrollToElement = useCallback(
+        (scrollableEl) => {
+            if (
+                scrollableEl &&
+                scrollRef.current &&
+                elementsPositionsRef.current
+            ) {
+                scrollRef.current.scrollTo({
+                    y: elementsPositionsRef.current[scrollableEl?.field],
+                    animated: true,
+                });
+            }
+        },
+        [scrollRef]
+    );
 
     return [fillPositions, scrollToElement];
 };
@@ -25,15 +32,18 @@ export const useScrollToPosition = (scrollRef) => {
 export const useNavigateToElement = (scrollRef, setCurrentStep) => {
     const [fillPositions, scrollToElement] = useScrollToPosition(scrollRef);
 
-    const navigateToElement = ({ elements, scrollableEl }) => {
-        const element = elements[scrollableEl];
-        if (element) {
-            setCurrentStep(element?.step ?? 0);
-            setTimeout(() => {
-                scrollToElement(element);
-            }, 50);
-        }
-    };
+    const navigateToElement = useCallback(
+        ({ elements, scrollableEl }) => {
+            const element = elements[scrollableEl];
+            if (element) {
+                setCurrentStep(element?.step ?? 0);
+                setTimeout(() => {
+                    scrollToElement(element);
+                }, 50);
+            }
+        },
+        [setCurrentStep, scrollToElement]
+    );
 
     return [navigateToElement, fillPositions];
 };

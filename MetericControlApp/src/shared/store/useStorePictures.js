@@ -17,6 +17,37 @@ const useStorePictures = create(
             photoMetadata: { task: {}, report: {} },
             removedPhotoIds: { task: {}, report: {} },
 
+            replaceEntityPhotos: ({
+                entity,
+                entityId,
+                photos,
+                photoMetadata,
+                removedPhotoIds = [],
+            }) =>
+                set((state) => ({
+                    photos: {
+                        ...state.photos,
+                        [entity]: {
+                            ...state.photos[entity],
+                            [entityId]: photos,
+                        },
+                    },
+                    photoMetadata: {
+                        ...state.photoMetadata,
+                        [entity]: {
+                            ...state.photoMetadata[entity],
+                            [entityId]: photoMetadata,
+                        },
+                    },
+                    removedPhotoIds: {
+                        ...state.removedPhotoIds,
+                        [entity]: {
+                            ...state.removedPhotoIds[entity],
+                            [entityId]: removedPhotoIds,
+                        },
+                    },
+                })),
+
             /**
              * Sets a single photo URI for a given entity, entity ID and slot.
              *

@@ -1,37 +1,60 @@
+import useStorePictures from '@/shared/store/useStorePictures';
+import { deleteAct } from '@/features/reports/lib/savePdfToDocuments';
+import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { useMutationState } from '@tanstack/react-query';
+import { REPORT_OPERATION_KEY } from '@/features/reports/lib/reportOperation';
 import { syncOfflineReportsRecords } from '@/features/reports/lib/syncOfflineReportsRecords';
-import useStorePictures from '@/shared/store/useStorePictures';
 
 export const useOfflineReportsSync = () => {
     const { submitTaskReport } = useSubmitReport();
     const { isChecked, isOnline } = useNetwork();
-    const isSyncing = useRef(false);
+    const syncingRef = useRef(false);
+    const [isSyncing, setIsSyncing] = useState(false);
+    const drafts = useReportDraftStore((state) => state.drafts);
+    const pendingOperations = useMutationState({
+        filters: { mutationKey: REPORT_OPERATION_KEY, status: 'pending' },
+        select: (mutation) => String(mutation.state.variables?.taskId),
+    });
+    const hasReadyDraft = Object.entries(drafts ?? {}).some(
+        ([taskId, draft]) =>
+            draft?.reportState === 'pending' &&
+            !pendingOperations.includes(taskId)
+    );
 
-    const syncReportsRecords = async () => {
-        if (isSyncing.current || !isChecked || !isOnline) return;
-        isSyncing.current = true;
-        const reportDraftStore = useReportDraftStore.getState();
+    const syncReportsRecords = useCallback(async () => {
+        if (syncingRef.current || !isChecked || !isOnline) return;
+        syncingRef.current = true;
+        setIsSyncing(true);
+        const drafts = useReportDraftStore.getState().drafts ?? {};
         const failedSyncCount = await syncOfflineReportsRecords(
-            reportDraftStore.drafts ?? {},
+            drafts,
             submitTaskReport,
-            (id) => {
-                reportDraftStore.clearDraft(id);
+            (id, expectedDraft) => {
+                const store = useReportDraftStore.getState();
+                if (!areReportDraftsEqual(expectedDraft, store.getDraft(id)))
+                    return;
+                store.clearDraft(id);
                 useStorePictures
                     .getState()
                     .clearEntityPhotos({ entity: 'report', entityId: id });
+                deleteAct(expectedDraft.actPdf?.uri);
             }
-        ).finally(() => (isSyncing.current = false));
+        ).finally(() => {
+            syncingRef.current = false;
+            setIsSyncing(false);
+        });
 
         return failedSyncCount;
-    };
+    }, [isChecked, isOnline, submitTaskReport]);
 
     useEffect(() => {
-        if (!isChecked || !isOnline || isSyncing.current) return;
+        if (!isChecked || !isOnline || !hasReadyDraft || isSyncing) return;
         void syncReportsRecords();
-    }, [isChecked, isOnline]);
+    }, [isChecked, isOnline, hasReadyDraft, isSyncing, syncReportsRecords]);
 
     return syncReportsRecords;
 };

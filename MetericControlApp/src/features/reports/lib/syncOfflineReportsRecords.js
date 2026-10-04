@@ -1,5 +1,3 @@
-import { deleteAct } from '@/features/reports/lib/savePdfToDocuments';
-
 export const syncOfflineReportsRecords = async (
     records,
     sendReport,
@@ -9,9 +7,16 @@ export const syncOfflineReportsRecords = async (
     for (const id in records) {
         if (records[id]?.reportState === 'pending') {
             try {
-                await sendReport({ taskId: id, values: records[id] });
-                onSynced(id);
-                deleteAct(records[id]?.actPdf?.uri);
+                const result = await sendReport({
+                    taskId: id,
+                    values: records[id],
+                    expectedDraft: records[id],
+                });
+                if (result?.reason === 'busy' || result?.offline) {
+                    unsynchronizedReports++;
+                }
+                if (result?.skipped || result?.offline) continue;
+                await onSynced?.(id, records[id]);
             } catch {
                 unsynchronizedReports++;
             }

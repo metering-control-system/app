@@ -1,8 +1,13 @@
+import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
+import { FontAwesome, FontAwesome6 } from '@expo/vector-icons';
+import { useMutationState } from '@tanstack/react-query';
+import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
+    Keyboard,
     Pressable,
     StyleSheet,
     Switch,
@@ -25,16 +30,18 @@ import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoCo
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
+    buildReportReplacement,
     mapReportImagesToForm,
     mapReportToFormValues,
 } from '@/features/reports/lib/reportFormHydration';
 import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useLoadBrigadeReport from '@/features/reports/hooks/useLoadBrigadeReport';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
 import * as Print from 'expo-print';
 import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
 import * as Sharing from 'expo-sharing';
 import ModalPicker from '@/shared/components/picker/modalPicker';
-import { FontAwesome6 } from '@expo/vector-icons';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import useActTemplates from '@/features/reports/hooks/useActTemplates';
 import PdfViewer from '@/features/reports/components/pdfViewer';
@@ -91,9 +98,14 @@ const ReportSubmitForm = ({
     defaultActTemplate,
 }) => {
     const router = useRouter();
+    const { isOnline } = useNetwork();
     const hydratedDraftIdRef = useRef(null);
     const hydratedPhotosIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
+    const pendingOperations = useMutationState({
+        filters: getReportOperationFilters(draftId),
+    });
+    const isReportBusy = pendingOperations.length > 0;
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
     );
@@ -107,6 +119,9 @@ const ReportSubmitForm = ({
     const reportPhotoMetadata = useMemo(
         () => reportPhotoMetadataRaw ?? {},
         [reportPhotoMetadataRaw]
+    );
+    const replaceEntityPhotos = useStorePictures(
+        (state) => state.replaceEntityPhotos
     );
     const appendPhoto = useStorePictures((state) => state.appendPhoto);
     const setPhoto = useStorePictures((state) => state.setPhoto);
@@ -131,7 +146,7 @@ const ReportSubmitForm = ({
     const { requestActTemplates, isPending, isUpToDated } = useActTemplates();
     const initialValues = useMemo(() => {
         const taskDefaults = mapReportToFormValues(
-            existingReport,
+            task?.is_team_task ? null : existingReport,
             mapTaskToReportDefaults(task)
         );
         const draftFormValues = draftValues ? { ...draftValues } : null;
@@ -165,8 +180,11 @@ const ReportSubmitForm = ({
     }, [draftValues, existingReport, task]);
 
     const initialPhotoMetadata = useMemo(
-        () => mapReportImagesToForm(existingReport?.images).photoMetadata,
-        [existingReport?.images]
+        () =>
+            mapReportImagesToForm(
+                task?.is_team_task ? [] : existingReport?.images
+            ).photoMetadata,
+        [existingReport?.images, task?.is_team_task]
     );
 
     const [template, setTemplate] = useState(defaultActTemplate);
@@ -179,9 +197,9 @@ const ReportSubmitForm = ({
     const {
         control,
         handleSubmit,
+        getValues,
         watch,
         setValue,
-        getValues,
         reset,
         formState: { errors },
     } = useForm({
@@ -305,27 +323,89 @@ const ReportSubmitForm = ({
         });
     }, [reportPhotos, setValue]);
 
-    const prevSavedDraftRef = useRef(null);
+    const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
+        taskId: task?.id ?? id,
+        onLoaded: (report, mode) => {
+            const replacement = buildReportReplacement(
+                report,
+                mapTaskToReportDefaults(task)
+            );
+            const pictures = useStorePictures.getState();
+            const {
+                values,
+                photoMetadata,
+                removedPhotoIds = [],
+            } = mode === 'empty'
+                ? fillEmptyReportFields({
+                      currentValues: {
+                          ...getValues(),
+                          photos:
+                              pictures.photos.report?.[id] ??
+                              getValues('photos'),
+                      },
+                      replacement,
+                      localPhotoMetadata: pictures.photoMetadata.report?.[id],
+                      removedPhotoIds: pictures.removedPhotoIds.report?.[id],
+                  })
+                : replacement;
+            hydratedDraftIdRef.current = draftId;
+            hydratedPhotosIdRef.current = draftId;
+            replaceEntityPhotos({
+                entity: 'report',
+                entityId: id,
+                photos: values.photos,
+                photoMetadata,
+                removedPhotoIds,
+            });
+            reset(values);
+            setDraft({ draftId, values });
+            setStepIndex(0);
+        },
+    });
 
-    useEffect(() => {
-        if (!formValues) {
-            return;
-        }
-
-        const snapshot = JSON.stringify(formValues);
-        if (snapshot === prevSavedDraftRef.current) {
-            return;
-        }
-
-        prevSavedDraftRef.current = snapshot;
-    }, [draftId, formValues, setDraft]);
+    const confirmLoadReport = () => {
+        if (!isOnline || isReportBusy) return;
+        const load = (mode) => {
+            Keyboard.dismiss();
+            void loadReport(mode);
+        };
+        Alert.alert(
+            'Загрузить отчёт бригады',
+            'Заменить весь отчёт или заполнить только пустые поля? Во втором случае ваши заполненные значения и фото-разделы сохранятся. Выключенные галочки включатся, если они включены на сервере; уже включённые останутся включёнными. После загрузки отчёт нужно отправить вручную.',
+            [
+                { text: 'Отмена', style: 'cancel' },
+                { text: 'Только пустые поля', onPress: () => load('empty') },
+                {
+                    text: 'Заменить всё',
+                    style: 'destructive',
+                    onPress: () =>
+                        Alert.alert(
+                            'Заменить ваш отчёт?',
+                            'Все поля и фотографии будут заменены данными с сервера, включая пустые поля. Ожидающая отправка старого черновика будет отменена. Отменить замену нельзя.',
+                            [
+                                { text: 'Отмена', style: 'cancel' },
+                                {
+                                    text: 'Заменить',
+                                    style: 'destructive',
+                                    onPress: () => load('replace'),
+                                },
+                            ]
+                        ),
+                },
+            ]
+        );
+    };
 
     const onSubmit = async (values) => {
+        if (isReportBusy) return;
         try {
             const res = await submitTaskReport({
                 taskId: task?.id ?? id,
                 values,
             });
+            if (res.skipped) {
+                return;
+            }
             if (res.offline) {
                 Alert.alert(
                     'Успешно',
@@ -342,7 +422,6 @@ const ReportSubmitForm = ({
                     res.reportResponse.images
                 ).photoMetadata;
                 reset(nextValues);
-                prevSavedDraftRef.current = JSON.stringify(nextValues);
                 hydratedDraftIdRef.current = draftId;
                 hydratedPhotosIdRef.current = draftId;
                 Object.entries(nextValues.photos).forEach(([slot, uris]) => {
@@ -408,7 +487,7 @@ const ReportSubmitForm = ({
                                 multiline={multiline}
                                 numberOfLines={numberOfLines}
                                 textAlignVertical={multiline ? 'top' : 'center'}
-                                editable={editable}
+                                editable={editable && !isReportBusy}
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                             />
@@ -769,7 +848,7 @@ const ReportSubmitForm = ({
                                     { shouldDirty: true, shouldValidate: true }
                                 );
                             }}
-                            disabled={isSubmitting}
+                            disabled={isReportBusy}
                         />
                     </View>
                 </HighlightWrap>
@@ -1073,52 +1152,81 @@ const ReportSubmitForm = ({
 
     return (
         <Card title='Отчет по задаче' style={styles.card}>
+            {task?.is_team_task && (
+                <View style={styles.brigadeBadge}>
+                    <FontAwesome name='users' size={16} color='#245ca6' />
+                    <Text style={styles.brigadeBadgeText}>
+                        Работа в бригаде
+                    </Text>
+                </View>
+            )}
             <Text style={styles.description}>
                 Заполните отчет по выполненным работам и отправьте его на
                 проверку.
             </Text>
 
-            {renderStepIndicators()}
-
-            <View style={styles.stepTitleWrap}>
-                <Text style={styles.stepTitle}>
-                    {FORM_STEPS[stepIndex].title}
-                </Text>
-            </View>
-
-            {renderCurrentStep()}
-
-            <View style={styles.navigationRow}>
-                {!isFirstStep ? (
+            {task?.is_team_task && (
+                <View style={styles.brigadeActions}>
                     <FormButton
-                        message='Назад'
-                        onPress={() =>
-                            setStepIndex((currentStep) => currentStep - 1)
-                        }
-                        style={styles.secondaryButton}
-                        textStyle={styles.secondaryButtonText}
+                        message='Загрузить отправленный отчёт'
+                        onPress={confirmLoadReport}
+                        isPending={isLoadingReport}
+                        disabled={!isOnline || isReportBusy}
                     />
-                ) : (
-                    <View style={styles.buttonSpacer} />
-                )}
+                    <Text style={styles.description}>
+                        {isLoadingReport
+                            ? 'Загружаем отчёт. Дождитесь завершения.'
+                            : !isOnline
+                              ? 'Для загрузки отчёта бригады нужен интернет.'
+                              : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}
+                    </Text>
+                </View>
+            )}
+            <View
+                pointerEvents={isReportBusy ? 'none' : 'auto'}
+                style={styles.formBody}>
+                {renderStepIndicators()}
 
-                {isLastStep ? (
-                    <FormButton
-                        message='Сохранить отчет'
-                        onPress={handleSubmit(onSubmit)}
-                        isPending={isSubmitting}
-                        disabled={isSubmitting}
-                        style={styles.primaryButton}
-                    />
-                ) : (
-                    <FormButton
-                        message='Далее'
-                        onPress={() =>
-                            setStepIndex((currentStep) => currentStep + 1)
-                        }
-                        style={styles.primaryButton}
-                    />
-                )}
+                <View style={styles.stepTitleWrap}>
+                    <Text style={styles.stepTitle}>
+                        {FORM_STEPS[stepIndex].title}
+                    </Text>
+                </View>
+
+                {renderCurrentStep()}
+
+                <View style={styles.navigationRow}>
+                    {!isFirstStep ? (
+                        <FormButton
+                            message='Назад'
+                            onPress={() =>
+                                setStepIndex((currentStep) => currentStep - 1)
+                            }
+                            style={styles.secondaryButton}
+                            textStyle={styles.secondaryButtonText}
+                        />
+                    ) : (
+                        <View style={styles.buttonSpacer} />
+                    )}
+
+                    {isLastStep ? (
+                        <FormButton
+                            message='Сохранить отчет'
+                            onPress={handleSubmit(onSubmit)}
+                            isPending={isSubmitting}
+                            disabled={isReportBusy}
+                            style={styles.primaryButton}
+                        />
+                    ) : (
+                        <FormButton
+                            message='Далее'
+                            onPress={() =>
+                                setStepIndex((currentStep) => currentStep + 1)
+                            }
+                            style={styles.primaryButton}
+                        />
+                    )}
+                </View>
             </View>
         </Card>
     );
@@ -1126,6 +1234,19 @@ const ReportSubmitForm = ({
 
 const styles = StyleSheet.create({
     card: { gap: 16, marginTop: 16 },
+    brigadeActions: { gap: 10 },
+    brigadeBadge: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        alignSelf: 'flex-start',
+        gap: 8,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        borderRadius: 12,
+        backgroundColor: '#edf4ff',
+    },
+    brigadeBadgeText: { color: '#245ca6', fontSize: 14, fontWeight: '600' },
+    formBody: { gap: 16 },
     description: { fontSize: 14, lineHeight: 20, color: '#62758f' },
     stepsWrap: {
         flexDirection: 'row',

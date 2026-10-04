@@ -72,3 +72,8 @@ export const mapReportToFormValues = (report, taskDefaults) => {
         },
     };
 };
+
+export const buildReportReplacement = (report, taskDefaults) => ({
+    values: mapReportToFormValues(report, taskDefaults),
+    photoMetadata: mapReportImagesToForm(report.images ?? []).photoMetadata,
+});
