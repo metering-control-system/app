@@ -1,9 +1,8 @@
 import { StyleSheet, Text, View } from 'react-native';
 import Picker from '@/shared/components/picker/picker';
-import { actTemplates } from '@/features/reports/constants/actTemplates';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
 
-export const DefaultActTemplatePicker = () => {
+export const DefaultActTemplatePicker = ({ templates }) => {
     const defaultTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
     );
@@ -11,7 +10,7 @@ export const DefaultActTemplatePicker = () => {
         (state) => state.setDefaultActTemplate
     );
 
-    const templatesVariants = actTemplates.map((template) => [
+    const templatesVariants = templates?.map((template) => [
         template.id,
         template.name,
     ]);

@@ -32,7 +32,6 @@ import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMeta
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import * as Print from 'expo-print';
 import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
-import { actTemplates } from '@/features/reports/constants/actTemplates';
 import * as Sharing from 'expo-sharing';
 import ModalPicker from '@/shared/components/picker/modalPicker';
 import { FontAwesome6 } from '@expo/vector-icons';
@@ -128,7 +127,6 @@ const ReportSubmitForm = ({
     );
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
-    //eslint-disable-next-line no-unused-vars
     const templates = useActTemplatesStore((state) => state.templates);
     const { requestActTemplates, isPending, isUpToDated } = useActTemplates();
     const initialValues = useMemo(() => {
@@ -173,7 +171,7 @@ const ReportSubmitForm = ({
 
     const [template, setTemplate] = useState(defaultActTemplate);
     const [templatesPickerVisible, setTemplatesPickerVisible] = useState(false);
-    const htmlTemplates = actTemplates.map((template) => [
+    const htmlTemplates = templates?.map((template) => [
         template.id,
         template.name,
     ]);
@@ -467,7 +465,13 @@ const ReportSubmitForm = ({
         </View>
     );
 
-    const renderToggleRow = ({ label, value, onChange, name }) => (
+    const renderToggleRow = ({
+        label,
+        value,
+        onChange,
+        name,
+        disabled = false,
+    }) => (
         <View
             onLayout={(e) => {
                 fillPositions({ e, name });
@@ -477,10 +481,14 @@ const ReportSubmitForm = ({
                     onPress={() => onChange(!value)}
                     style={({ pressed }) => [
                         styles.switchRow,
-                        pressed && styles.switchRowPressed,
+                        pressed && !disabled && styles.switchRowPressed,
                     ]}>
                     <Text style={styles.switchLabel}>{label}</Text>
-                    <Switch value={value} onValueChange={onChange} />
+                    <Switch
+                        value={value}
+                        onValueChange={onChange}
+                        disabled={disabled}
+                    />
                 </Pressable>
             </HighlightWrap>
         </View>
@@ -897,10 +905,26 @@ const ReportSubmitForm = ({
             })}
         </View>
     );
+
+    const hasTemplates = (templates?.length ?? 0) > 0;
+
+    useEffect(() => {
+        if (!hasTemplates) {
+            setValue('actPdf.isRefused', true, {
+                shouldDirty: true,
+                shouldValidate: false,
+            });
+            setValue('actPdf.uri', '', {
+                shouldDirty: true,
+                shouldValidate: false,
+            });
+        }
+    }, [hasTemplates, setValue]);
+
     const renderPdfStep = () => {
-        const selectedHtmlTemplate = actTemplates.find(
+        const selectedTemplate = templates.find(
             (temp) => temp?.id === template
-        )?.html;
+        );
 
         const shareFile = async (uri) => {
             const isAvailable = await Sharing.isAvailableAsync();
@@ -910,14 +934,15 @@ const ReportSubmitForm = ({
         };
 
         const printToFile = async () => {
-            if (!selectedHtmlTemplate) {
+            if (!selectedTemplate) {
                 Alert.alert('Предупреждение', 'Не выбран не один шаблон акта.');
                 return;
             }
 
             const html = fillActTemplate(
-                selectedHtmlTemplate,
-                formValues ?? {}
+                selectedTemplate?.html,
+                formValues ?? {},
+                selectedTemplate?.requiredFields ?? []
             );
 
             const { uri } = await Print.printToFileAsync({ html }).catch(() =>
@@ -932,17 +957,24 @@ const ReportSubmitForm = ({
                 <Controller
                     control={control}
                     name='actPdf.isRefused'
+                    disabled={templates?.length === 0}
                     render={({ field: { onChange, value } }) =>
                         renderToggleRow({
                             name: 'actPdf.isRefused',
                             label: 'Пропустить генерацию цифрового акта',
                             value,
+                            disabled: !hasTemplates,
                             onChange: (nextValue) => {
                                 onChange(nextValue);
                                 if (nextValue) {
                                     setValue(
                                         'actPdf.uri',
-                                        reportSubmitFormDefaultValues.actPdf.uri
+                                        reportSubmitFormDefaultValues.actPdf
+                                            .uri,
+                                        {
+                                            shouldDirty: true,
+                                            shouldValidate: false,
+                                        }
                                     );
                                 }
                             },
@@ -975,7 +1007,10 @@ const ReportSubmitForm = ({
                             onPress={printToFile}
                             message='Сгенерировать акт допуска/замены'
                             style={styles.pdfButton}
-                            disabled={getValues('actPdf.isRefused')}
+                            disabled={
+                                getValues('actPdf.isRefused') ||
+                                templates?.length === 0
+                            }
                         />
                         <FormButton
                             onPress={requestActTemplates}
