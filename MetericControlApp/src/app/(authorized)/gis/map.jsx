@@ -10,18 +10,21 @@ import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { useMemo, useState } from 'react';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
+import { MapModeSwitch } from '@/features/gis/components/mapModeSwitch';
+import { modes } from '@/features/gis/constants/mapModes';
 
 const MapScreen = () => {
     const tasks = useTasksStore((state) => state.tasks);
     const [filtering, setFiltering] = useState(new Set());
     const [search, setSearch] = useState('');
+    const [currentMode, setCurrentMode] = useState(modes[0][0]);
     const router = useRouter();
 
     const goToTask = (taskId) => {
         if (!tasks?.some((task) => task.id === taskId)) {
             return;
         }
-        router.push(`/(authorized)/taskDetails/${taskId}`);
+        router.push(`/(authorized)/taskFlow/taskDetails/${taskId}`);
     };
 
     const taskFilteringVariants = Object.entries(taskStatus).concat(
@@ -46,12 +49,20 @@ const MapScreen = () => {
                 filtering={filtering}
                 setFiltering={setFiltering}
                 search={search}
-                setSearch={setSearch}
-            />
+                setSearch={setSearch}>
+                <MapModeSwitch
+                    currentMode={currentMode}
+                    setCurrentMode={setCurrentMode}
+                />
+            </ControlPanel>
             <GestureHandlerRootView style={{ flex: 1 }}>
-                <InteractiveMap tasks={selectedTasks} goToTask={goToTask} />
+                <InteractiveMap
+                    tasks={selectedTasks}
+                    goToTask={goToTask}
+                    mode={currentMode}
+                />
             </GestureHandlerRootView>
-            <MapLegend />
+            <MapLegend tasks={tasks} mode={currentMode} />
         </ScreenLayout>
     );
 };
