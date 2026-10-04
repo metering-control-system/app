@@ -1,6 +1,6 @@
 import { WebMercator } from '@/features/gis/lib/webMercator';
 
-const findContainingTile = (districts, x, y, size) => {
+export const findContainingTile = (districts, x, y, size) => {
     for (const district in districts) {
         const tiles = Object.entries(districts[district]).filter(
             ([key]) => key !== 'center'
@@ -31,14 +31,14 @@ export const arrangeTasksByDistrict = ({ tasks, polygon }) => {
         let tileAddress;
         let tileDistrict;
         try {
-            const coordinates = task.address.coordinates;
+            const coordinates = task.coordinates;
             if (
-                coordinates?.lat !== undefined &&
-                coordinates?.lng !== undefined
+                coordinates?.latitude !== undefined &&
+                coordinates?.longitude !== undefined
             ) {
                 let { x, y } = WebMercator.translateFromDegreesToMeters({
-                    lat: coordinates.lat,
-                    lng: coordinates.lng,
+                    lat: coordinates.latitude,
+                    lng: coordinates.longitude,
                 });
 
                 if (isNaN(x) || isNaN(y)) {
@@ -73,6 +73,5 @@ export const arrangeTasksByDistrict = ({ tasks, polygon }) => {
             ? { ...tasksByDistrict[district], [task.id]: taskByTile }
             : { [task.id]: taskByTile };
     }
-
     return tasksByDistrict;
 };
