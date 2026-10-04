@@ -1,4 +1,8 @@
-export const syncOfflineReportsRecords = async (records, sendReport) => {
+export const syncOfflineReportsRecords = async (
+    records,
+    sendReport,
+    onSynced
+) => {
     let unsynchronizedReports = 0;
     for (const id in records) {
         if (records[id]?.reportState === 'pending') {
@@ -11,6 +15,8 @@ export const syncOfflineReportsRecords = async (records, sendReport) => {
                 if (result?.reason === 'busy' || result?.offline) {
                     unsynchronizedReports++;
                 }
+                if (result?.skipped || result?.offline) continue;
+                await onSynced?.(id, records[id]);
             } catch {
                 unsynchronizedReports++;
             }

@@ -188,19 +188,6 @@ const useSubmitReport = () => {
         },
         onSuccess: async (_data, variables) => {
             if (_data.skipped || _data.offline) return;
-            if (
-                variables.expectedDraft &&
-                areReportDraftsEqual(
-                    variables.expectedDraft,
-                    useReportDraftStore
-                        .getState()
-                        .getDraft(String(variables.taskId))
-                )
-            ) {
-                useReportDraftStore
-                    .getState()
-                    .clearDraft(String(variables.taskId));
-            }
             queryClient.setQueryData(
                 ['report', _data.reportId],
                 _data.reportResponse

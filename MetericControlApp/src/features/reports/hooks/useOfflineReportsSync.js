@@ -1,3 +1,6 @@
+import useStorePictures from '@/shared/store/useStorePictures';
+import { deleteAct } from '@/features/reports/lib/savePdfToDocuments';
+import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
@@ -29,7 +32,17 @@ export const useOfflineReportsSync = () => {
         const drafts = useReportDraftStore.getState().drafts ?? {};
         const failedSyncCount = await syncOfflineReportsRecords(
             drafts,
-            submitTaskReport
+            submitTaskReport,
+            (id, expectedDraft) => {
+                const store = useReportDraftStore.getState();
+                if (!areReportDraftsEqual(expectedDraft, store.getDraft(id)))
+                    return;
+                store.clearDraft(id);
+                useStorePictures
+                    .getState()
+                    .clearEntityPhotos({ entity: 'report', entityId: id });
+                deleteAct(expectedDraft.actPdf?.uri);
+            }
         ).finally(() => {
             syncingRef.current = false;
             setIsSyncing(false);

@@ -11,6 +11,7 @@ import {
     QueryClientProvider,
 } from '@tanstack/react-query';
 import {
+    cleanup,
     submission,
     useNetwork,
     useReportDraftStore,
@@ -27,10 +28,15 @@ const replacements = new Map(
         ['@/features/reports/hooks/useSubmitReport', 'useSubmitReport'],
         ['@/shared/hooks/offline/useNetwork', 'useNetwork'],
         ['@/features/reports/store/useReportDraftStore', 'useReportDraftStore'],
+        ['@/shared/store/useStorePictures', 'useStorePictures'],
     ].map(([specifier, name]) => [
         specifier,
         `data:text/javascript,${encodeURIComponent(`export { ${name} as default } from '${fixturesUrl}';`)}`,
     ])
+);
+replacements.set(
+    '@/features/reports/lib/savePdfToDocuments',
+    `data:text/javascript,${encodeURIComponent(`export { deleteAct } from '${fixturesUrl}';`)}`
 );
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -54,6 +60,8 @@ loader.deregister();
 
 const setup = (t, drafts, beforeFinish = async () => {}) => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
+    cleanup.photos.length = 0;
+    cleanup.pdfs.length = 0;
     useNetwork.setState({ isChecked: true, isOnline: true });
     useReportDraftStore.setState({ drafts });
     const client = new QueryClient({
@@ -73,14 +81,6 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
             }
             sent.push(taskId);
             await beforeFinish(taskId);
-            if (
-                areReportDraftsEqual(
-                    expectedDraft,
-                    useReportDraftStore.getState().getDraft(taskId)
-                )
-            ) {
-                useReportDraftStore.getState().clearDraft(taskId);
-            }
             return {};
         },
     });
@@ -226,4 +226,43 @@ test('rechecks a released task after the current synchronization pass finishes',
     });
     await flush();
     assert.deepEqual(sent, ['2', '1']);
+});
+
+test('cleans the successfully sent draft, photos and PDF in the synchronization callback', async (t) => {
+    const { mount, sent } = setup(t, {
+        1: { reportState: 'pending', actPdf: { uri: 'file://sent.pdf' } },
+    });
+    await mount();
+    await flush();
+    assert.deepEqual(sent, ['1']);
+    assert.equal(useReportDraftStore.getState().getDraft('1'), undefined);
+    assert.deepEqual(cleanup.photos, [{ entity: 'report', entityId: '1' }]);
+    assert.deepEqual(cleanup.pdfs, ['file://sent.pdf']);
+});
+
+test('preserves a changed draft, photos and PDF when an earlier submission finishes', async (t) => {
+    const gate = Promise.withResolvers();
+    const { mount, sent } = setup(
+        t,
+        {
+            1: {
+                reportState: 'pending',
+                comment: 'old',
+                actPdf: { uri: 'file://act.pdf' },
+            },
+        },
+        () => gate.promise
+    );
+    await mount();
+    await flush();
+    assert.deepEqual(sent, ['1']);
+    const edited = { comment: 'edited', actPdf: { uri: 'file://act.pdf' } };
+    await act(async () => {
+        useReportDraftStore.setState({ drafts: { 1: edited } });
+        gate.resolve();
+    });
+    await flush();
+    assert.equal(useReportDraftStore.getState().getDraft('1'), edited);
+    assert.deepEqual(cleanup.photos, []);
+    assert.deepEqual(cleanup.pdfs, []);
 });
