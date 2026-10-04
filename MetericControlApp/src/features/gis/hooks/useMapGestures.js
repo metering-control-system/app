@@ -102,6 +102,7 @@ const useMapGestures = ({ canvasWidth, closeList, handlePointTap }) => {
 
     const singleTap = Gesture.Tap()
         .maxDuration(250)
+        .numberOfTaps(1)
         .onEnd((event) => {
             const cx = canvasWidth.value / 2;
             const nx =
@@ -120,12 +121,85 @@ const useMapGestures = ({ canvasWidth, closeList, handlePointTap }) => {
             });
         });
 
-    const composedGestures = Gesture.Simultaneous(
-        Gesture.Race(pan, singleTap),
-        pinchGesture
+    const doubleTap = Gesture.Tap()
+        .numberOfTaps(2)
+        .maxDuration(300)
+        .onEnd((event) => {
+            const s1 = scale.value;
+            const s2 = Math.min(s1 * 1.5, MAX_SCALE);
+
+            const cx = canvasWidth.value / 2;
+            const cy = cx;
+
+            const newTranslateX =
+                event.x - cx - (s2 / s1) * (event.x - cx - translateX.value);
+
+            const newTranslateY =
+                event.y - cy - (s2 / s1) * (event.y - cy - translateY.value);
+
+            const bound = ((s2 - 1) * canvasWidth.value) / 2;
+
+            translateX.value = withTiming(clamp(newTranslateX, -bound, bound), {
+                duration: 250,
+                easing: Easing.inOut(Easing.ease),
+            });
+
+            translateY.value = withTiming(clamp(newTranslateY, -bound, bound), {
+                duration: 250,
+                easing: Easing.inOut(Easing.ease),
+            });
+
+            scale.value = withTiming(s2, {
+                duration: 250,
+                easing: Easing.inOut(Easing.ease),
+            });
+
+            scheduleOnRN(closeList);
+        });
+
+    const composedGestures = Gesture.Race(
+        pan,
+        pinchGesture,
+        Gesture.Exclusive(doubleTap, singleTap)
     );
 
-    return { composedGestures, animatedStyles, scale };
+    const bringCloserRelativePoint = ({ point, sc }) => {
+        const s1 = scale.value;
+        const s2 = Math.min(s1 * sc, MAX_SCALE);
+
+        const cx = canvasWidth.value / 2;
+        const cy = cx;
+
+        const newTranslateX =
+            point.x - cx - (s2 / s1) * (point.x - cx - translateX.value);
+
+        const newTranslateY =
+            point.y - cy - (s2 / s1) * (point.y - cy - translateY.value);
+
+        const bound = ((s2 - 1) * canvasWidth.value) / 2;
+
+        translateX.value = withTiming(clamp(newTranslateX, -bound, bound), {
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+        });
+
+        translateY.value = withTiming(clamp(newTranslateY, -bound, bound), {
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+        });
+
+        scale.value = withTiming(s2, {
+            duration: 250,
+            easing: Easing.inOut(Easing.ease),
+        });
+    };
+
+    return {
+        composedGestures,
+        animatedStyles,
+        scale,
+        bringCloserRelativePoint,
+    };
 };
 
 export default useMapGestures;
