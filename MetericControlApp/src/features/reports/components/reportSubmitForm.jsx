@@ -1,5 +1,5 @@
 import { zodResolver } from '@hookform/resolvers/zod';
-import { useEffect, useMemo, useRef } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Controller, useForm, useWatch } from 'react-hook-form';
 import {
     Alert,
@@ -30,6 +30,14 @@ import {
 } from '@/features/reports/lib/reportFormHydration';
 import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import * as Print from 'expo-print';
+import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
+import * as Sharing from 'expo-sharing';
+import ModalPicker from '@/shared/components/picker/modalPicker';
+import { FontAwesome6 } from '@expo/vector-icons';
+import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
+import useActTemplates from '@/features/reports/hooks/useActTemplates';
+import PdfViewer from '@/features/reports/components/pdfViewer';
 
 const FORM_STEPS = [
     { key: 'beforeWork', title: 'До начала работ' },
@@ -37,6 +45,7 @@ const FORM_STEPS = [
     { key: 'photos', title: 'Фотофиксация' },
     { key: 'admission', title: 'Итог и допуск' },
     { key: 'contacts', title: 'Контактные данные' },
+    { key: 'act', title: 'Акт допуска/замены' },
 ];
 
 const SEAL_LOCATION_OPTIONS = [
@@ -79,6 +88,7 @@ const ReportSubmitForm = ({
     stepIndex,
     setStepIndex,
     highlightedField,
+    defaultActTemplate,
 }) => {
     const router = useRouter();
     const hydratedDraftIdRef = useRef(null);
@@ -117,7 +127,8 @@ const ReportSubmitForm = ({
     );
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
-
+    const templates = useActTemplatesStore((state) => state.templates);
+    const { requestActTemplates, isPending, isUpToDated } = useActTemplates();
     const initialValues = useMemo(() => {
         const taskDefaults = mapReportToFormValues(
             existingReport,
@@ -149,6 +160,7 @@ const ReportSubmitForm = ({
                 ...taskDefaults.consumerContact,
                 ...draftFormValues?.consumerContact,
             },
+            actPdf: { ...draftValues?.actPdf, isRefused: false },
         };
     }, [draftValues, existingReport, task]);
 
@@ -157,11 +169,19 @@ const ReportSubmitForm = ({
         [existingReport?.images]
     );
 
+    const [template, setTemplate] = useState(defaultActTemplate);
+    const [templatesPickerVisible, setTemplatesPickerVisible] = useState(false);
+    const htmlTemplates = templates?.map((template) => [
+        template.id,
+        template.name,
+    ]);
+
     const {
         control,
         handleSubmit,
         watch,
         setValue,
+        getValues,
         reset,
         formState: { errors },
     } = useForm({
@@ -445,7 +465,13 @@ const ReportSubmitForm = ({
         </View>
     );
 
-    const renderToggleRow = ({ label, value, onChange, name }) => (
+    const renderToggleRow = ({
+        label,
+        value,
+        onChange,
+        name,
+        disabled = false,
+    }) => (
         <View
             onLayout={(e) => {
                 fillPositions({ e, name });
@@ -455,10 +481,14 @@ const ReportSubmitForm = ({
                     onPress={() => onChange(!value)}
                     style={({ pressed }) => [
                         styles.switchRow,
-                        pressed && styles.switchRowPressed,
+                        pressed && !disabled && styles.switchRowPressed,
                     ]}>
                     <Text style={styles.switchLabel}>{label}</Text>
-                    <Switch value={value} onValueChange={onChange} />
+                    <Switch
+                        value={value}
+                        onValueChange={onChange}
+                        disabled={disabled}
+                    />
                 </Pressable>
             </HighlightWrap>
         </View>
@@ -876,6 +906,152 @@ const ReportSubmitForm = ({
         </View>
     );
 
+    const hasTemplates = (templates?.length ?? 0) > 0;
+
+    useEffect(() => {
+        if (!hasTemplates) {
+            setValue('actPdf.isRefused', true, {
+                shouldDirty: true,
+                shouldValidate: false,
+            });
+            setValue('actPdf.uri', '', {
+                shouldDirty: true,
+                shouldValidate: false,
+            });
+        }
+    }, [hasTemplates, setValue]);
+
+    const renderPdfStep = () => {
+        const selectedTemplate = templates.find(
+            (temp) => temp?.id === template
+        );
+
+        const shareFile = async (uri) => {
+            const isAvailable = await Sharing.isAvailableAsync();
+            if (isAvailable) {
+                await Sharing.shareAsync(uri);
+            }
+        };
+
+        const printToFile = async () => {
+            if (!selectedTemplate) {
+                Alert.alert('Предупреждение', 'Не выбран не один шаблон акта.');
+                return;
+            }
+
+            const html = fillActTemplate(
+                selectedTemplate?.html,
+                formValues ?? {},
+                selectedTemplate?.requiredFields ?? []
+            );
+
+            const { uri } = await Print.printToFileAsync({ html }).catch(() =>
+                Promise.reject('ERR_PRINT_TO_FILE')
+            );
+            setValue('actPdf.uri', uri);
+            void shareFile(uri);
+        };
+
+        return (
+            <View style={{ flex: 1, paddingVertical: 20 }}>
+                <Controller
+                    control={control}
+                    name='actPdf.isRefused'
+                    disabled={templates?.length === 0}
+                    render={({ field: { onChange, value } }) =>
+                        renderToggleRow({
+                            name: 'actPdf.isRefused',
+                            label: 'Пропустить генерацию цифрового акта',
+                            value,
+                            disabled: !hasTemplates,
+                            onChange: (nextValue) => {
+                                onChange(nextValue);
+                                if (nextValue) {
+                                    setValue(
+                                        'actPdf.uri',
+                                        reportSubmitFormDefaultValues.actPdf
+                                            .uri,
+                                        {
+                                            shouldDirty: true,
+                                            shouldValidate: false,
+                                        }
+                                    );
+                                }
+                            },
+                        })
+                    }
+                />
+                <PdfViewer page={0} source={getValues('actPdf.uri')} />
+                <View style={styles.navigationRow}>
+                    <Pressable
+                        onPress={() => setTemplatesPickerVisible(true)}
+                        style={{
+                            alignSelf: 'center',
+                            paddingVertical: 5,
+                            paddingHorizontal: 8,
+                            borderRadius: '50%',
+                            outlineStyle: 'solid',
+                            outlineOffset: -3,
+                            outlineColor: 'rgba(73,73,73,0.2)',
+                            outlineWidth: 1,
+                            backgroundColor: 'rgb(176,176,176)',
+                        }}>
+                        <FontAwesome6
+                            name='sticky-note'
+                            size={20}
+                            color='#555'
+                        />
+                    </Pressable>
+                    <View style={{ flex: 1, gap: 10 }}>
+                        <FormButton
+                            onPress={printToFile}
+                            message='Сгенерировать акт допуска/замены'
+                            style={styles.pdfButton}
+                            disabled={
+                                getValues('actPdf.isRefused') ||
+                                templates?.length === 0
+                            }
+                        />
+                        <FormButton
+                            onPress={requestActTemplates}
+                            disabled={isUpToDated || isPending}
+                            message={
+                                isPending
+                                    ? 'Загрузка...'
+                                    : 'Загрузить шаблоны акта'
+                            }
+                            style={{
+                                justifyContent: 'center',
+                                alignItems: 'center',
+                                borderRadius: 12,
+                                borderWidth: 1,
+                                borderColor: '#0080ff',
+                                backgroundColor: 'white',
+                                borderStyle: 'dashed',
+                                gap: 15,
+                                flexDirection: 'row',
+                                paddingHorizontal: 10,
+                                paddingVertical: 15,
+                            }}
+                            textStyle={styles.secondaryButtonText}
+                        />
+                    </View>
+                </View>
+                <ModalPicker
+                    variants={htmlTemplates}
+                    state={template}
+                    setState={setTemplate}
+                    label='Выберите шаблон'
+                    visible={templatesPickerVisible}
+                    onClose={() => setTemplatesPickerVisible(false)}>
+                    <Text style={{ fontWeight: 'bold' }}>
+                        {htmlTemplates.find((tmp) => tmp[0] === template)?.[1]}
+                    </Text>
+                </ModalPicker>
+            </View>
+        );
+    };
+
     const renderCurrentStep = () => {
         switch (FORM_STEPS[stepIndex].key) {
             case 'beforeWork':
@@ -888,6 +1064,8 @@ const ReportSubmitForm = ({
                 return renderAdmissionStep();
             case 'contacts':
                 return renderContactsStep();
+            case 'act':
+                return renderPdfStep();
             default:
                 return null;
         }
@@ -1033,6 +1211,15 @@ const styles = StyleSheet.create({
     },
     secondaryButtonText: { color: '#278cff' },
     buttonSpacer: { flex: 1 },
+    pdfButton: {
+        justifyContent: 'center',
+        alignItems: 'center',
+        borderRadius: 12,
+        gap: 15,
+        flexDirection: 'row',
+        paddingHorizontal: 10,
+        paddingVertical: 15,
+    },
 });
 
 export default ReportSubmitForm;

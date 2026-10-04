@@ -10,6 +10,7 @@ const PhotoQualityPicker = () => {
 
     return (
         <View style={styles.container}>
+            <Text style={styles.sectionTitle}>Качество фото в задачах</Text>
             {Object.entries(PHOTO_QUALITY_PRESETS).map(([key, preset]) => {
                 const isSelected = key === photoQuality;
 

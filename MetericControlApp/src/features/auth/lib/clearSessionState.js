@@ -7,6 +7,7 @@ import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMu
 import useReportsStore from '@/features/reports/store/useReportsStore';
 import useProfileStore from '@/features/settings/store/useProfileStore';
 import useCommentsStore from '@/features/comments/store/useCommentsStore';
+import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 
 const clearSessionState = async (queryClient) => {
     await tokenStorage.clearTokens();
@@ -25,6 +26,8 @@ const clearSessionState = async (queryClient) => {
     useProfileStore.persist.clearStorage();
     useCommentsStore.getState().clearComments();
     useCommentsStore.persist.clearStorage();
+    useActTemplatesStore.getState().clearTemplates();
+    useActTemplatesStore.persist.clearStorage();
 };
 
 export default clearSessionState;

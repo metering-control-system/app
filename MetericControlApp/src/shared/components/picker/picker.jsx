@@ -1,6 +1,5 @@
 import {
     Animated,
-    FlatList,
     Keyboard,
     Pressable,
     StyleSheet,
@@ -10,6 +9,7 @@ import {
 } from 'react-native';
 import { useEffect, useRef, useState } from 'react';
 import { FontAwesome5, Ionicons } from '@expo/vector-icons';
+import OptionsList from '@/shared/components/details/optionsList';
 
 const Picker = ({
     variants,
@@ -37,6 +37,17 @@ const Picker = ({
     }, [opened, canBeOpened, animValue]);
 
     const selectedCount = multiSelect && state instanceof Set ? state.size : 0;
+
+    const onSelect = (item) => {
+        if (!multiSelect) {
+            setOpened(false);
+            setState((prev) => (prev === item[0] ? null : item[0]));
+        } else {
+            const newSet = new Set(state);
+            state.has(item[0]) ? newSet.delete(item[0]) : newSet.add(item[0]);
+            setState(newSet);
+        }
+    };
 
     return (
         <View style={styles.picker}>
@@ -85,47 +96,11 @@ const Picker = ({
                                 ],
                             },
                         ]}>
-                        <FlatList
-                            data={variants}
-                            keyExtractor={(variant) => variant[0]}
-                            renderItem={({ item }) => (
-                                <Pressable
-                                    style={styles.option}
-                                    onPress={(event) => {
-                                        event.stopPropagation();
-
-                                        if (!multiSelect) {
-                                            setOpened(false);
-                                            setState((prev) =>
-                                                prev === item[0]
-                                                    ? null
-                                                    : item[0]
-                                            );
-                                        } else {
-                                            const newSet = new Set(state);
-                                            state.has(item[0])
-                                                ? newSet.delete(item[0])
-                                                : newSet.add(item[0]);
-                                            setState(newSet);
-                                        }
-                                    }}>
-                                    <Ionicons
-                                        name={
-                                            multiSelect && state.has(item[0])
-                                                ? 'checkmark-circle'
-                                                : !multiSelect &&
-                                                    state === item[0]
-                                                  ? 'checkmark-circle'
-                                                  : null
-                                        }
-                                        size={15}
-                                        color={'blue'}
-                                    />
-                                    <Text style={styles.optionText}>
-                                        {item[1]}
-                                    </Text>
-                                </Pressable>
-                            )}
+                        <OptionsList
+                            multiSelect={multiSelect}
+                            onSelect={onSelect}
+                            state={state}
+                            variants={variants}
                         />
                     </Animated.View>
                 </>

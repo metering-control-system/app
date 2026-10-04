@@ -5,13 +5,16 @@ import {
     deleteReportImage,
     getReportByTaskId,
     updateReport,
+    updateReportPdfAct,
     uploadReportImage,
+    uploadReportPdfAct,
 } from '@/features/reports/api/submitReportApi';
 import {
     buildReportCommentPayload,
     buildReportImagesPayload,
     buildReportPayload,
     getRemovedReportImageIds,
+    buildReportPdfActPayload,
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
@@ -25,6 +28,7 @@ import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
 import useStorePictures from '@/shared/store/useStorePictures';
+import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -35,7 +39,13 @@ const useSubmitReport = () => {
     );
 
     const { mutateAsync, error, isPending } = useMutation({
-        mutationFn: ({ taskId, values, photoMetadata, removedPhotoIds }) =>
+        mutationFn: ({
+            taskId,
+            values,
+            photoMetadata,
+            removedPhotoIds,
+            actPdfUri,
+        }) =>
             enqueueReportSubmission(taskId, async () => {
                 const existingReport = await resolveReportForSubmission({
                     taskId,
@@ -88,6 +98,24 @@ const useSubmitReport = () => {
                         uploadReportImage(reportId, reportImagesPayload)
                     );
                     setUpdatedReports([reportResponse]);
+                }
+
+                const serverActId = reportResponse?.act?.client_act_id;
+                const reportPdfActPayload = buildReportPdfActPayload(
+                    values,
+                    serverActId
+                );
+
+                if (actPdfUri && reportPdfActPayload) {
+                    if (serverActId) {
+                        await updateReportPdfAct(
+                            reportId,
+                            reportPdfActPayload,
+                            serverActId
+                        );
+                    } else {
+                        await uploadReportPdfAct(reportId, reportPdfActPayload);
+                    }
                 }
 
                 for (const clientImageId of removedImageIds) {
@@ -154,12 +182,31 @@ const useSubmitReport = () => {
         });
         const removedPhotoIds =
             picturesState.removedPhotoIds.report?.[draftId] ?? [];
+        const { uri: actPdfUri, isRefused } = values.actPdf;
 
+        if (!isRefused && !actPdfUri) {
+            throw new Error('Отсутствует цифровой акт');
+        }
         if (!isOnline && isChecked) {
-            setDraft({
-                draftId,
-                values: { ...values, reportState: 'pending' },
-            });
+            if (!isRefused) {
+                const newUri = await savePdfToDocuments({
+                    fileName: taskId.toString(),
+                    sourceUri: actPdfUri,
+                });
+                setDraft({
+                    draftId,
+                    values: {
+                        ...values,
+                        actPdf: { ...values.actPdf, uri: newUri },
+                        reportState: 'pending',
+                    },
+                });
+            } else {
+                setDraft({
+                    draftId: String(taskId),
+                    values: { ...values, reportState: 'pending' },
+                });
+            }
             return { offline: true };
         }
         return await mutateAsync({
@@ -167,6 +214,7 @@ const useSubmitReport = () => {
             values,
             photoMetadata,
             removedPhotoIds,
+            actPdfUri,
         });
     };
 
