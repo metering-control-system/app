@@ -23,7 +23,7 @@ const getScale = (screenWidth, mapWidth) => {
 
 const counterFontSize = 8;
 
-const InteractiveMap = ({ tasks, goToTask }) => {
+const InteractiveMap = ({ tasks, goToTask, mode }) => {
     const [width, setWidth] = useState(0);
     const [isTiledMap, setIsTiledMap] = useState(false);
     const [districtPressed, setDistrictPressed] = useState(null);
@@ -149,6 +149,7 @@ const InteractiveMap = ({ tasks, goToTask }) => {
                             baseScale={baseScale}
                             districtsTasks={tasksByDistrict}
                             tilesTasks={tasksByTile}
+                            mode={mode}
                         />
                         {isTiledMap ? (
                             <MapTilesLabels
