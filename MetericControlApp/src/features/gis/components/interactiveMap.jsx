@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { View } from 'react-native';
 import polygon from '@/features/gis/constants/tiles.json';
 import Animated, {
@@ -8,7 +8,10 @@ import Animated, {
 import { GestureDetector } from 'react-native-gesture-handler';
 import { scheduleOnRN } from 'react-native-worklets';
 import CanvasMap from '@/features/gis/components/canvasMap';
-import { TILED_MIN_ZOOM } from '@/features/gis/constants/mapScale';
+import {
+    TILED_MIN_ZOOM,
+    USER_TILE_ZOOM,
+} from '@/features/gis/constants/mapScale';
 import { useMapTaskIndex } from '@/features/gis/hooks/useMapTaskIndex';
 import useMapGestures from '@/features/gis/hooks/useMapGestures';
 import {
@@ -16,6 +19,7 @@ import {
     MapTilesLabels,
 } from '@/features/gis/components/mapLabels';
 import { MapTaskList } from '@/features/gis/components/mapTaskList';
+import MapUserGeolocation from '@/features/gis/components/mapUserGeolocation';
 
 const getScale = (screenWidth, mapWidth) => {
     return screenWidth / mapWidth;
@@ -23,7 +27,7 @@ const getScale = (screenWidth, mapWidth) => {
 
 const counterFontSize = 8;
 
-const InteractiveMap = ({ tasks, goToTask, mode }) => {
+const InteractiveMap = ({ tasks, goToTask, mode, userTile, focusRequest }) => {
     const [width, setWidth] = useState(0);
     const [isTiledMap, setIsTiledMap] = useState(false);
     const [districtPressed, setDistrictPressed] = useState(null);
@@ -42,14 +46,10 @@ const InteractiveMap = ({ tasks, goToTask, mode }) => {
 
     const canvasWidth = useSharedValue(0);
 
-    const closeList = () => {
-        if (districtPressed) {
-            setDistrictPressed(null);
-        }
-        if (tilePressed) {
-            setTilePressed(null);
-        }
-    };
+    const closeList = useCallback(() => {
+        setDistrictPressed(null);
+        setTilePressed(null);
+    }, []);
 
     const handlePointTap = (point) => {
         if (!isTiledMap) {
@@ -97,7 +97,29 @@ const InteractiveMap = ({ tasks, goToTask, mode }) => {
         composedGestures: mapGestures,
         animatedStyles,
         scale,
+        bringCloserRelativePoint,
     } = useMapGestures({ canvasWidth, closeList, handlePointTap });
+
+    useEffect(() => {
+        if (!focusRequest || !userTile || !baseScale) {
+            return;
+        }
+
+        closeList();
+        bringCloserRelativePoint({
+            point: {
+                x: (userTile.x + polygon.size / 2) * baseScale,
+                y: (userTile.y + polygon.size / 2) * baseScale,
+            },
+            targetScale: USER_TILE_ZOOM,
+        });
+    }, [
+        baseScale,
+        bringCloserRelativePoint,
+        closeList,
+        focusRequest,
+        userTile,
+    ]);
 
     useAnimatedReaction(
         () => scale.value >= TILED_MIN_ZOOM,
@@ -150,6 +172,11 @@ const InteractiveMap = ({ tasks, goToTask, mode }) => {
                             districtsTasks={tasksByDistrict}
                             tilesTasks={tasksByTile}
                             mode={mode}
+                        />
+                        <MapUserGeolocation
+                            tile={userTile}
+                            baseScale={baseScale}
+                            scale={scale}
                         />
                         {isTiledMap ? (
                             <MapTilesLabels
