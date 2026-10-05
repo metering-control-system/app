@@ -1,4 +1,4 @@
-import { WebMercator } from '@/features/gis/lib/webMercator';
+import { projectToTileUnits } from '@/features/gis/lib/projectToTileUnits';
 
 export const findContainingTile = (districts, x, y, size) => {
     for (const district in districts) {
@@ -21,7 +21,7 @@ export const findContainingTile = (districts, x, y, size) => {
 export const arrangeTasksByDistrict = ({ tasks, polygon }) => {
     const tasksByDistrict = {};
     const districts = polygon.coordinates;
-    const { startX, startY, size, normalizeCoefficient } = polygon;
+    const { size } = polygon;
 
     if (!Array.isArray(tasks)) {
         return;
@@ -36,19 +36,18 @@ export const arrangeTasksByDistrict = ({ tasks, polygon }) => {
                 coordinates?.latitude !== undefined &&
                 coordinates?.longitude !== undefined
             ) {
-                let { x, y } = WebMercator.translateFromDegreesToMeters({
-                    lat: coordinates.latitude,
-                    lng: coordinates.longitude,
-                });
+                const point = projectToTileUnits(coordinates);
 
-                if (isNaN(x) || isNaN(y)) {
+                if (!point) {
                     continue;
                 }
 
-                x = (x - startX) / normalizeCoefficient;
-                y = (startY - y) / normalizeCoefficient;
-
-                const found = findContainingTile(districts, x, y, size);
+                const found = findContainingTile(
+                    districts,
+                    point.x,
+                    point.y,
+                    size
+                );
                 if (found) {
                     tileAddress = { x: found.x, y: found.y };
                     tileDistrict = found.district;

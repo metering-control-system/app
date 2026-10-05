@@ -7,6 +7,7 @@ import {
 } from 'react-native-reanimated';
 import { Gesture } from 'react-native-gesture-handler';
 import { scheduleOnRN } from 'react-native-worklets';
+import { useCallback } from 'react';
 import { MAX_SCALE } from '@/features/gis/constants/mapScale';
 import polygon from '@/features/gis/constants/tiles.json';
 
@@ -163,36 +164,32 @@ const useMapGestures = ({ canvasWidth, closeList, handlePointTap }) => {
         Gesture.Exclusive(doubleTap, singleTap)
     );
 
-    const bringCloserRelativePoint = ({ point, sc }) => {
-        const s1 = scale.value;
-        const s2 = Math.min(s1 * sc, MAX_SCALE);
+    const bringCloserRelativePoint = useCallback(
+        ({ point, targetScale }) => {
+            const s2 = clamp(targetScale, 1, MAX_SCALE);
 
-        const cx = canvasWidth.value / 2;
-        const cy = cx;
+            const cx = canvasWidth.value / 2;
+            const cy = cx;
 
-        const newTranslateX =
-            point.x - cx - (s2 / s1) * (point.x - cx - translateX.value);
+            const bound = ((s2 - 1) * canvasWidth.value) / 2;
 
-        const newTranslateY =
-            point.y - cy - (s2 / s1) * (point.y - cy - translateY.value);
+            translateX.value = withTiming(
+                clamp(-s2 * (point.x - cx), -bound, bound),
+                { duration: 250, easing: Easing.inOut(Easing.ease) }
+            );
 
-        const bound = ((s2 - 1) * canvasWidth.value) / 2;
+            translateY.value = withTiming(
+                clamp(-s2 * (point.y - cy), -bound, bound),
+                { duration: 250, easing: Easing.inOut(Easing.ease) }
+            );
 
-        translateX.value = withTiming(clamp(newTranslateX, -bound, bound), {
-            duration: 250,
-            easing: Easing.inOut(Easing.ease),
-        });
-
-        translateY.value = withTiming(clamp(newTranslateY, -bound, bound), {
-            duration: 250,
-            easing: Easing.inOut(Easing.ease),
-        });
-
-        scale.value = withTiming(s2, {
-            duration: 250,
-            easing: Easing.inOut(Easing.ease),
-        });
-    };
+            scale.value = withTiming(s2, {
+                duration: 250,
+                easing: Easing.inOut(Easing.ease),
+            });
+        },
+        [canvasWidth, scale, translateX, translateY]
+    );
 
     return {
         composedGestures,
