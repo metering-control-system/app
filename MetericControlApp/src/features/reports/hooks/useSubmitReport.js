@@ -36,6 +36,7 @@ import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageU
 import useStorePictures from '@/shared/store/useStorePictures';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -97,28 +98,43 @@ const useSubmitReport = () => {
                 });
                 return { offline: true };
             }
+            const task =
+                useTasksStore
+                    .getState()
+                    .tasks?.find(
+                        (task) => Number(task.id) === Number(taskId)
+                    ) ?? (await getTaskById(taskId));
             const existingReport = await resolveReportForSubmission({
                 taskId,
-                cachedReport: queryClient.getQueryData([
-                    'report',
-                    'task',
-                    Number(taskId),
-                ]),
+                cachedReport: task.is_team_task
+                    ? queryClient.getQueryData([
+                          'report',
+                          'task',
+                          Number(taskId),
+                      ])
+                    : null,
                 lookupReport: getReportByTaskId,
             });
+            if (
+                isTaskReportReadOnly(
+                    task,
+                    existingReport,
+                    useReportDraftStore.getState().getDraft(draftId)
+                )
+            ) {
+                setUpdatedReports([existingReport]);
+                throw Object.assign(
+                    new Error(
+                        'Отчёт уже отправлен и недоступен для редактирования.'
+                    ),
+                    { code: 'REPORT_READ_ONLY' }
+                );
+            }
             const reportPayload = buildReportPayload(
                 { ...values, taskId },
                 { includeEmptyOptionalFields: Boolean(existingReport) }
             );
             const reportCommentPayload = buildReportCommentPayload(values);
-            const task =
-                existingReport?.status === 'REJECTED'
-                    ? (useTasksStore
-                          .getState()
-                          .tasks?.find(
-                              (task) => Number(task.id) === Number(taskId)
-                          ) ?? (await getTaskById(taskId)))
-                    : null;
             const upsertRequest = buildReportUpsertRequest({
                 reportPayload,
                 existingReport,
@@ -138,7 +154,7 @@ const useSubmitReport = () => {
                 throw new Error('Не удалось получить идентификатор отчета');
             }
 
-            setUpdatedReports([reportResponse]);
+            if (task.is_team_task) setUpdatedReports([reportResponse]);
 
             const reportImagesPayload = buildReportImagesPayload(
                 values,
@@ -156,7 +172,7 @@ const useSubmitReport = () => {
                 reportResponse = await retryReportImageUpload(() =>
                     uploadReportImage(reportId, reportImagesPayload)
                 );
-                setUpdatedReports([reportResponse]);
+                if (task.is_team_task) setUpdatedReports([reportResponse]);
             }
 
             const serverActId = reportResponse?.act?.client_act_id;
@@ -184,7 +200,7 @@ const useSubmitReport = () => {
                         (image) => image['client_image_id'] !== clientImageId
                     ),
                 };
-                setUpdatedReports([reportResponse]);
+                if (task.is_team_task) setUpdatedReports([reportResponse]);
             }
 
             if (reportCommentPayload) {
@@ -199,6 +215,7 @@ const useSubmitReport = () => {
         },
         onSuccess: async (_data, variables) => {
             if (_data.skipped || _data.offline) return;
+            setUpdatedReports([_data.reportResponse]);
             queryClient.setQueryData(
                 ['report', _data.reportId],
                 _data.reportResponse
@@ -215,7 +232,15 @@ const useSubmitReport = () => {
                 queryClient.invalidateQueries({ queryKey: ['tasks'] }),
             ]);
         },
-        onError: (_data, variables) => {
+        onError: (error, variables) => {
+            if (
+                error.code === 'REPORT_READ_ONLY' &&
+                useReportDraftStore
+                    .getState()
+                    .getDraft(String(variables.taskId))?.reportState !==
+                    'pending'
+            )
+                return;
             if (isOnline) {
                 setDraft({
                     draftId: String(variables.taskId),

@@ -1,0 +1,44 @@
+import { useQuery } from '@tanstack/react-query';
+import { getReportByTaskId } from '@/features/reports/api/submitReportApi';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
+import { mergeReportUpdates } from '@/features/reports/lib/mergeReportUpdates';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
+
+const useTaskReport = (task) => {
+    const reports = useReportsStore((state) => state.reports);
+    const draft = useReportDraftStore((state) => state.drafts?.[task?.id]);
+    const { isChecked, isOnline } = useNetwork();
+    const enabled =
+        Boolean(task?.id) && !task.is_team_task && isChecked && isOnline;
+    const query = useQuery({
+        queryKey: ['report', 'task', Number(task?.id)],
+        queryFn: async () => {
+            const report = await getReportByTaskId(task.id);
+            if (report) useReportsStore.getState().setUpdatedReports([report]);
+            return report;
+        },
+        enabled,
+        retry: false,
+    });
+    const report = task?.is_team_task
+        ? null
+        : selectReportForTask(
+              mergeReportUpdates(reports, query.data ? [query.data] : []),
+              task?.id
+          );
+
+    return {
+        report,
+        data: report,
+        isReadOnly: isTaskReportReadOnly(task, report, draft),
+        isPending: enabled && query.isPending,
+        isError: enabled && query.isError,
+        error: enabled && query.error,
+        refetch: query.refetch,
+    };
+};
+
+export default useTaskReport;

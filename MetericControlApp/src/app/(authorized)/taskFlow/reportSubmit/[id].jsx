@@ -1,9 +1,8 @@
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
-import { getReportByTaskId } from '@/features/reports/api/submitReportApi';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { ScrollView, StyleSheet, View } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import { ShrinkedChat } from '@/features/comments/components/shrinkedChat';
@@ -11,19 +10,13 @@ import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
 import { useEffect, useRef, useState } from 'react';
 import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
-import { useQuery } from '@tanstack/react-query';
-import useNetwork from '@/shared/hooks/offline/useNetwork';
+import useTaskReport from '@/features/reports/hooks/useTaskReport';
+import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
 
 const ReportSubmitScreen = () => {
     const { id, reference } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
-    const { isOnline } = useNetwork();
-    const reportQuery = useQuery({
-        queryKey: ['report', 'task', Number(id)],
-        queryFn: () => getReportByTaskId(id),
-        enabled: Boolean(task?.id) && !task?.is_team_task && isOnline,
-        retry: false,
-    });
+    const reportQuery = useTaskReport(task);
     const [highlightedField, setHighlightedField] = useState(null);
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
@@ -48,18 +41,20 @@ const ReportSubmitScreen = () => {
         }
     }, [reference, navigateToElement]);
 
+    if (reportQuery.isReadOnly && !reportQuery.isPending) {
+        return (
+            <Redirect
+                href={`/(authorized)/reportDetails/${reportQuery.report.id}`}
+            />
+        );
+    }
+
     return (
         <ScreenLayout safe>
-            {isPending ||
-            (!task?.is_team_task && isOnline && reportQuery.isPending) ? (
+            {isPending || reportQuery.isPending ? (
                 <ScreenLoader loading />
-            ) : !task?.is_team_task && isOnline && reportQuery.isError ? (
-                <View style={styles.lookupError}>
-                    <Text>Не удалось проверить, есть ли отчёт по задаче.</Text>
-                    <Pressable onPress={() => reportQuery.refetch()}>
-                        <Text>Повторить</Text>
-                    </Pressable>
-                </View>
+            ) : reportQuery.isError ? (
+                <TaskReportLookupError onRetry={reportQuery.refetch} />
             ) : (
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -98,12 +93,6 @@ const ReportSubmitScreen = () => {
 };
 
 const styles = StyleSheet.create({
-    lookupError: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 12,
-    },
     chatDivider: {
         marginBlock: 15,
         height: 1,
