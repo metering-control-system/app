@@ -1,6 +1,6 @@
 import { create } from 'zustand/react';
 import { createJSONStorage, persist } from 'zustand/middleware';
-import { mergeData } from '@/shared/lib/mergeData';
+import { mergeReportUpdates } from '@/features/reports/lib/mergeReportUpdates';
 import { reportOfflineStorage } from '@/features/reports/store/reportOfflineStorage';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
 import { sortingReports } from '@/features/reports/lib/sortingReports';
@@ -21,7 +21,10 @@ const useReportsStore = create(
             setUpdatedReports: (updatedReports) => {
                 if (updatedReports) {
                     const oldReports = get().reports ?? [];
-                    const mergedReports = mergeData(oldReports, updatedReports);
+                    const mergedReports = mergeReportUpdates(
+                        oldReports,
+                        updatedReports
+                    );
                     for (const report of mergedReports) {
                         report.search = concatenateFields(report);
                     }
@@ -49,7 +52,7 @@ const useReportsStore = create(
                     ),
                 };
             },
-            skipHydration: true,
+            skipHydration: false,
         }
     )
 );
