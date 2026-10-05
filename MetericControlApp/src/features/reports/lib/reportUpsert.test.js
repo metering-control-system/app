@@ -92,3 +92,37 @@ test('selects the newest matching report without mixing tasks', () => {
     assert.equal(selectReportForTask(reports, 20)?.id, 9);
     assert.equal(selectReportForTask(reports, 30), null);
 });
+
+test('resubmits a rejected report for review using the same report id', () => {
+    const request = buildReportUpsertRequest({
+        reportPayload: { ['task_id']: 12 },
+        existingReport: { id: 7, status: 'REJECTED' },
+        resubmitRejectedReport: true,
+    });
+
+    assert.equal(request.operation, 'update');
+    assert.equal(request.reportId, 7);
+    assert.equal(request.payload.status, 'ON_REVIEW');
+});
+
+test('does not reset review or acceptance when retrying an existing report', () => {
+    for (const status of ['ON_REVIEW', 'ON_ADMIN', 'ACCEPTED']) {
+        const request = buildReportUpsertRequest({
+            reportPayload: { ['task_id']: 12 },
+            existingReport: { id: 7, status },
+            resubmitRejectedReport: true,
+        });
+
+        assert.equal(Object.hasOwn(request.payload, 'status'), false);
+    }
+});
+
+test('leaves rejected brigade reports unchanged', () => {
+    const request = buildReportUpsertRequest({
+        reportPayload: { ['task_id']: 12 },
+        existingReport: { id: 7, status: 'REJECTED' },
+        resubmitRejectedReport: false,
+    });
+
+    assert.equal(Object.hasOwn(request.payload, 'status'), false);
+});

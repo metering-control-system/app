@@ -33,7 +33,11 @@ export const resolveReportForSubmission = ({
     return lookupReport(taskId);
 };
 
-export const buildReportUpsertRequest = ({ reportPayload, existingReport }) => {
+export const buildReportUpsertRequest = ({
+    reportPayload,
+    existingReport,
+    resubmitRejectedReport = false,
+}) => {
     if (!existingReport) {
         return { operation: 'create', reportId: null, payload: reportPayload };
     }
@@ -43,6 +47,9 @@ export const buildReportUpsertRequest = ({ reportPayload, existingReport }) => {
         reportId: existingReport.id,
         payload: {
             ...reportPayload,
+            ...(resubmitRejectedReport && existingReport.status === 'REJECTED'
+                ? { status: 'ON_REVIEW' }
+                : {}),
             ['client_report_id']:
                 existingReport['client_report_id'] ??
                 reportPayload['client_report_id'],

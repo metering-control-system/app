@@ -34,6 +34,8 @@ import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
 import useStorePictures from '@/shared/store/useStorePictures';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
+import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
 
 const useSubmitReport = () => {
     const queryClient = useQueryClient();
@@ -109,9 +111,18 @@ const useSubmitReport = () => {
                 { includeEmptyOptionalFields: Boolean(existingReport) }
             );
             const reportCommentPayload = buildReportCommentPayload(values);
+            const task =
+                existingReport?.status === 'REJECTED'
+                    ? (useTasksStore
+                          .getState()
+                          .tasks?.find(
+                              (task) => Number(task.id) === Number(taskId)
+                          ) ?? (await getTaskById(taskId)))
+                    : null;
             const upsertRequest = buildReportUpsertRequest({
                 reportPayload,
                 existingReport,
+                resubmitRejectedReport: task?.is_team_task === false,
             });
 
             let reportResponse =
