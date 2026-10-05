@@ -11,6 +11,10 @@ import { sortBy } from '@/features/tasks/lib/sortTasks';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useTaskReports from '@/features/reports/hooks/useTaskReports';
+import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
 
 const TasksList = ({
     setError,
@@ -21,6 +25,14 @@ const TasksList = ({
     syncingRecords,
 }) => {
     const tasks = useTasksStore((state) => state.tasks);
+    const reports = useReportsStore((state) => state.reports);
+    const drafts = useReportDraftStore((state) => state.drafts);
+    const {
+        isPending: isReportsPending,
+        isFetching: isReportsFetching,
+        error: reportsError,
+        refreshReports,
+    } = useTaskReports();
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const isAutoFetchingRef = useRef(false);
@@ -45,8 +57,10 @@ const TasksList = ({
             setError(error?.message);
         } else if (refreshError) {
             setError(refreshError?.message);
+        } else if (reportsError) {
+            setError('Не удалось обновить статусы отчётов.');
         }
-    }, [error, refreshError, setError]);
+    }, [error, refreshError, reportsError, setError]);
 
     useEffect(() => {
         if (
@@ -83,13 +97,13 @@ const TasksList = ({
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            tasks
+            filterSubmittedTasks(tasks, reports, drafts)
         );
         const sorted = sortBy(filtered, sorting);
         return filterBySearch({ query: sorted, input: search });
-    }, [tasks, filtering, sorting, search]);
+    }, [tasks, reports, drafts, filtering, sorting, search]);
 
-    if (isPending) {
+    if (isPending || isReportsPending) {
         return <ScreenLoader />;
     }
 
@@ -111,9 +125,10 @@ const TasksList = ({
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>No tasks found.</Text>}
-                refreshing={isRefrehsing}
+                refreshing={isRefrehsing || isReportsFetching}
                 onRefresh={async () => {
                     updateTasks();
+                    await refreshReports();
                     const unsynchronizedCount = await sync();
                     if (unsynchronizedCount) {
                         setError(
