@@ -7,6 +7,7 @@ import ImagePreview from '@/shared/components/media/imagePreview';
 import { dtLocale } from '@/shared/consts/datetimeOptions';
 import { FieldRow } from '@/shared/components/field/fieldRow';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
+import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 
 const ReportDetailsForm = ({ report }) => {
     const [modalVisible, setModalVisible] = useState(false);
@@ -152,7 +153,11 @@ const ReportDetailsForm = ({ report }) => {
                     <View
                         style={styles.control}
                         key={item.client_image_id ?? index}>
-                        <Text style={styles.label}>{item.kind}</Text>
+                        <Text style={styles.label}>
+                            {REPORT_PHOTO_CONFIGS.find(
+                                ({ kind }) => kind === item.kind
+                            )?.title ?? 'Фото'}
+                        </Text>
                         <TouchableOpacity
                             style={styles.imageTouchable}
                             onPress={() => {
