@@ -291,16 +291,117 @@ test('stops retrying an old pending draft after the admin accepts its report', a
     assert.deepEqual(fixtures.api.calls, []);
 });
 
-test('preserves brigade editing and leaves its rejected status unchanged', async (t) => {
-    const report = { id: 10, ['task_id']: 1, status: 'REJECTED', images: [] };
-    const { submit } = await setup(t, { brigade: true, report });
-    fixtures.api.onWrite = () => {
+for (const brigade of [false, true]) {
+    test(`resubmits a rejected ${brigade ? 'brigade' : 'single'} report using fresh status`, async (t) => {
+        const report = {
+            id: 10,
+            ['task_id']: 1,
+            status: 'REJECTED',
+            images: [],
+        };
+        const { client, submit } = await setup(t, { brigade, report });
+        client.setQueryData(['report', 'task', 1], {
+            ...report,
+            status: 'ON_REVIEW',
+        });
+        const result = await submit();
+        assert.equal(result.reportId, report.id);
+        assert.equal(result.reportResponse.status, 'ON_REVIEW');
+        assert.equal(fixtures.api.calls[0].operation, 'update');
+        assert.equal(fixtures.api.calls[0].payload.status, 'ON_REVIEW');
         assert.equal(
             fixtures.useReportDraftStore.getState().getDraft('1'),
             undefined
         );
+    });
+}
+
+test('prevents a brigade participant from overwriting an already submitted report, including from an old offline draft', async (t) => {
+    const report = {
+        id: 10,
+        ['task_id']: 1,
+        status: 'ON_REVIEW',
+        images: [],
+        ['updated_at']: '2026-10-06T12:00:00Z',
     };
-    const result = await submit();
-    assert.equal(result.reportResponse.status, 'REJECTED');
-    assert.equal(Object.hasOwn(fixtures.api.calls[0].payload, 'status'), false);
+    const { submit } = await setup(t, { brigade: true, report });
+    const draft = { ...fixtures.createValues(), reportState: 'pending' };
+    fixtures.useReportDraftStore.setState({ drafts: { 1: draft } });
+    await assert.rejects(submit(draft, draft), /недоступен/);
+    assert.deepEqual(fixtures.api.calls, []);
+    assert.equal(
+        isTaskReportReadOnly(
+            fixtures.useTasksStore.getState().tasks[0],
+            report,
+            fixtures.useReportDraftStore.getState().getDraft('1')
+        ),
+        true
+    );
+});
+
+test('keeps a failed brigade upload editable and resumes the same server report', async (t) => {
+    const { submit } = await setup(t, { brigade: true });
+    fixtures.api.commentError = new Error('network');
+    const values = {
+        ...fixtures.createValues(),
+        comment: 'unfinished comment',
+    };
+    await assert.rejects(submit(values), /network/);
+    const draft = JSON.parse(
+        JSON.stringify(fixtures.useReportDraftStore.getState().getDraft('1'))
+    );
+    assert.equal(draft.reportState, 'error');
+    assert.deepEqual(draft.submissionReport, {
+        id: 10,
+        updatedAt: fixtures.api.report.updated_at,
+    });
+    assert.equal(
+        isTaskReportReadOnly(
+            fixtures.useTasksStore.getState().tasks[0],
+            fixtures.api.report,
+            draft
+        ),
+        false
+    );
+    fixtures.useReportDraftStore.setState({ drafts: { 1: draft } });
+    fixtures.api.commentError = null;
+    const result = await submit(draft);
+    assert.equal(result.reportId, 10);
+    assert.deepEqual(
+        fixtures.api.calls.map((call) => call.operation),
+        ['create', 'update']
+    );
+    assert.equal(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        undefined
+    );
+});
+
+test('returns the persisted brigade submission revision for offline synchronization cleanup', async (t) => {
+    const { submit } = await setup(t, { brigade: true, online: false });
+    await submit();
+    const draft = fixtures.useReportDraftStore.getState().getDraft('1');
+    await act(async () => fixtures.useNetwork.setState({ isOnline: true }));
+    const result = await submit(draft, draft);
+    assert.deepEqual(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        result.submittedDraft
+    );
+    assert.equal(result.submittedDraft.submissionReport.id, result.reportId);
+});
+
+test('a failed brigade upload does not replace newer local edits with its old submission draft', async (t) => {
+    const { submit } = await setup(t, { brigade: true });
+    const edited = { ...fixtures.createValues(), comment: 'new edits' };
+    fixtures.api.onWrite = () =>
+        fixtures.useReportDraftStore.setState({ drafts: { 1: edited } });
+    fixtures.api.commentError = new Error('network');
+    await assert.rejects(
+        submit({ ...fixtures.createValues(), comment: 'old comment' }),
+        /network/
+    );
+    assert.deepEqual(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        edited
+    );
 });

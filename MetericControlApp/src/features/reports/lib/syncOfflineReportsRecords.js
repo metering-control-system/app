@@ -16,7 +16,7 @@ export const syncOfflineReportsRecords = async (
                     unsynchronizedReports++;
                 }
                 if (result?.skipped || result?.offline) continue;
-                await onSynced?.(id, records[id]);
+                await onSynced?.(id, result?.submittedDraft ?? records[id]);
             } catch {
                 unsynchronizedReports++;
             }

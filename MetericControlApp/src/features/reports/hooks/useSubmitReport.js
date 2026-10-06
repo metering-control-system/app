@@ -22,10 +22,7 @@ import {
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
-import {
-    buildReportUpsertRequest,
-    resolveReportForSubmission,
-} from '@/features/reports/lib/reportUpsert';
+import { buildReportUpsertRequest } from '@/features/reports/lib/reportUpsert';
 import {
     REPORT_OPERATION_KEY,
     startReportOperation,
@@ -104,17 +101,7 @@ const useSubmitReport = () => {
                     .tasks?.find(
                         (task) => Number(task.id) === Number(taskId)
                     ) ?? (await getTaskById(taskId));
-            const existingReport = await resolveReportForSubmission({
-                taskId,
-                cachedReport: task.is_team_task
-                    ? queryClient.getQueryData([
-                          'report',
-                          'task',
-                          Number(taskId),
-                      ])
-                    : null,
-                lookupReport: getReportByTaskId,
-            });
+            const existingReport = await getReportByTaskId(taskId);
             if (
                 isTaskReportReadOnly(
                     task,
@@ -138,94 +125,136 @@ const useSubmitReport = () => {
             const upsertRequest = buildReportUpsertRequest({
                 reportPayload,
                 existingReport,
-                resubmitRejectedReport: task?.is_team_task === false,
+                resubmitRejectedReport: true,
             });
-            const submittedDraft =
-                !task.is_team_task && !expectedDraft
-                    ? { ...values, reportState: 'pending' }
-                    : null;
-            if (submittedDraft) {
+            let submittedDraft = expectedDraft ?? {
+                ...values,
+                reportState: 'pending',
+            };
+            if (!expectedDraft) {
                 setDraft({ draftId, values: submittedDraft });
             }
 
-            let reportResponse =
-                upsertRequest.operation === 'update'
-                    ? await updateReport(
-                          upsertRequest.reportId,
-                          upsertRequest.payload
-                      )
-                    : await createReport(upsertRequest.payload);
-            const reportId = reportResponse?.id;
-
-            if (!reportId) {
-                throw new Error('Не удалось получить идентификатор отчета');
-            }
-
-            if (task.is_team_task) setUpdatedReports([reportResponse]);
-
-            const reportImagesPayload = buildReportImagesPayload(
-                values,
-                reportResponse.images,
-                photoMetadata
-            );
-            const removedImageIds = getRemovedReportImageIds({
-                photos: values.photos,
-                photoMetadata,
-                removedPhotoIds,
-                existingImages: reportResponse.images,
-            });
-
-            if (reportImagesPayload) {
-                reportResponse = await retryReportImageUpload(() =>
-                    uploadReportImage(reportId, reportImagesPayload)
-                );
-                if (task.is_team_task) setUpdatedReports([reportResponse]);
-            }
-
-            const serverActId = reportResponse?.act?.client_act_id;
-            const reportPdfActPayload = buildReportPdfActPayload(
-                values,
-                serverActId
-            );
-            if (actPdfUri && reportPdfActPayload) {
-                if (serverActId) {
-                    await updateReportPdfAct(
-                        reportId,
-                        reportPdfActPayload,
-                        serverActId
-                    );
-                } else {
-                    await uploadReportPdfAct(reportId, reportPdfActPayload);
-                }
-            }
-
-            for (const clientImageId of removedImageIds) {
-                await deleteReportImage(reportId, clientImageId);
-                reportResponse = {
-                    ...reportResponse,
-                    images: (reportResponse.images ?? []).filter(
-                        (image) => image['client_image_id'] !== clientImageId
-                    ),
+            const trackSubmission = (report) => {
+                if (!task.is_team_task) return;
+                const nextDraft = {
+                    ...submittedDraft,
+                    submissionReport: {
+                        id: report.id,
+                        updatedAt: report.updated_at,
+                    },
                 };
-                if (task.is_team_task) setUpdatedReports([reportResponse]);
-            }
-
-            if (reportCommentPayload) {
-                await addReportComment(reportId, reportCommentPayload);
-            }
-
-            return {
-                reportId,
-                reportResponse,
-                operation: upsertRequest.operation,
-                submittedDraft,
+                if (
+                    areReportDraftsEqual(
+                        submittedDraft,
+                        useReportDraftStore.getState().getDraft(draftId)
+                    )
+                ) {
+                    setDraft({ draftId, values: nextDraft });
+                }
+                submittedDraft = nextDraft;
             };
+
+            try {
+                let reportResponse =
+                    upsertRequest.operation === 'update'
+                        ? await updateReport(
+                              upsertRequest.reportId,
+                              upsertRequest.payload
+                          )
+                        : await createReport(upsertRequest.payload);
+                const reportId = reportResponse?.id;
+
+                if (!reportId) {
+                    throw new Error('Не удалось получить идентификатор отчета');
+                }
+
+                trackSubmission(reportResponse);
+
+                const reportImagesPayload = buildReportImagesPayload(
+                    values,
+                    reportResponse.images,
+                    photoMetadata
+                );
+                const removedImageIds = getRemovedReportImageIds({
+                    photos: values.photos,
+                    photoMetadata,
+                    removedPhotoIds,
+                    existingImages: reportResponse.images,
+                });
+
+                if (reportImagesPayload) {
+                    reportResponse = await retryReportImageUpload(() =>
+                        uploadReportImage(reportId, reportImagesPayload)
+                    );
+                    trackSubmission(reportResponse);
+                }
+
+                const serverActId = reportResponse?.act?.client_act_id;
+                const reportPdfActPayload = buildReportPdfActPayload(
+                    values,
+                    serverActId
+                );
+                if (actPdfUri && reportPdfActPayload) {
+                    if (serverActId) {
+                        await updateReportPdfAct(
+                            reportId,
+                            reportPdfActPayload,
+                            serverActId
+                        );
+                    } else {
+                        await uploadReportPdfAct(reportId, reportPdfActPayload);
+                    }
+                }
+
+                for (const clientImageId of removedImageIds) {
+                    await deleteReportImage(reportId, clientImageId);
+                    reportResponse = {
+                        ...reportResponse,
+                        images: (reportResponse.images ?? []).filter(
+                            (image) =>
+                                image['client_image_id'] !== clientImageId
+                        ),
+                    };
+                    trackSubmission(reportResponse);
+                }
+
+                if (
+                    task.is_team_task &&
+                    ((actPdfUri && reportPdfActPayload) ||
+                        removedImageIds.length)
+                ) {
+                    const latestReport = await getReportByTaskId(taskId);
+                    if (latestReport?.id === reportId) {
+                        reportResponse = latestReport;
+                        trackSubmission(reportResponse);
+                    }
+                }
+
+                if (reportCommentPayload) {
+                    await addReportComment(reportId, reportCommentPayload);
+                }
+
+                return {
+                    reportId,
+                    reportResponse,
+                    operation: upsertRequest.operation,
+                    submittedDraft:
+                        !expectedDraft || task.is_team_task
+                            ? submittedDraft
+                            : null,
+                };
+            } catch (error) {
+                error.submittedDraft = submittedDraft;
+                throw error;
+            }
         },
         onSuccess: async (_data, variables) => {
             if (_data.skipped || _data.offline) return;
             const store = useReportDraftStore.getState();
             const draftId = String(variables.taskId);
             if (
+                !variables.expectedDraft &&
                 _data.submittedDraft &&
                 areReportDraftsEqual(
                     _data.submittedDraft,
@@ -260,10 +289,23 @@ const useSubmitReport = () => {
                     'pending'
             )
                 return;
+            if (
+                error.submittedDraft &&
+                !areReportDraftsEqual(
+                    error.submittedDraft,
+                    useReportDraftStore
+                        .getState()
+                        .getDraft(String(variables.taskId))
+                )
+            )
+                return;
             if (isOnline) {
                 setDraft({
                     draftId: String(variables.taskId),
-                    values: { ...variables.values, reportState: 'error' },
+                    values: {
+                        ...(error.submittedDraft ?? variables.values),
+                        reportState: 'error',
+                    },
                 });
             }
         },

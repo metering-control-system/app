@@ -20,6 +20,7 @@ export const fillEmptyReportFields = ({
 }) => {
     const values = fillEmpty(currentValues, replacement.values);
     delete values.reportState;
+    delete values.submissionReport;
     delete values.photoMetadata;
     delete values.removedPhotoIds;
     const photoMetadata = Object.fromEntries(
