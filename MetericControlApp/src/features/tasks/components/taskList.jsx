@@ -122,9 +122,8 @@ const TasksList = ({
                         task={task}
                         hasPendingTaskReport={!!syncingRecords[task.id]}
                         needsReportRevision={
-                            !task.is_team_task &&
                             selectReportForTask(reports, task.id)?.status ===
-                                'REJECTED'
+                            'REJECTED'
                         }
                     />
                 )}

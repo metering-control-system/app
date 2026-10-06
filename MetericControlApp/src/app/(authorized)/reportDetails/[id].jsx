@@ -23,9 +23,8 @@ const ReportDescription = () => {
     const canOpenTask = Boolean(
         task &&
         report &&
-        (task.is_team_task ||
-            ((report.status === 'REJECTED' || draft) &&
-                !isTaskReportReadOnly(task, report, draft)))
+        (report.status === 'REJECTED' || draft) &&
+        !isTaskReportReadOnly(task, report, draft)
     );
 
     useEffect(() => {

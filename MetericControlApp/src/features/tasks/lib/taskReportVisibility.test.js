@@ -44,16 +44,16 @@ test('keeps new tasks and ignores reports for other tasks', () => {
     assert.deepEqual(filterSubmittedTasks(null, null), []);
 });
 
-test('never hides or locks brigade tasks', () => {
+test('hides and locks submitted brigade tasks and returns rejected tasks', () => {
     const brigade = { ...task, ['is_team_task']: true };
     for (const status of ['ON_REVIEW', 'ON_ADMIN', 'ACCEPTED', 'REJECTED']) {
         assert.deepEqual(
             filterSubmittedTasks([brigade], [{ ...report, status }]),
-            [brigade]
+            status === 'REJECTED' ? [brigade] : []
         );
         assert.equal(
             isTaskReportReadOnly(brigade, { ...report, status }),
-            false
+            status !== 'REJECTED'
         );
     }
 });
@@ -98,5 +98,53 @@ test('keeps a completed single task hidden when its report is archived', () => {
         [completed]
     );
     const brigade = { ...completed, ['is_team_task']: true };
-    assert.deepEqual(filterSubmittedTasks([brigade], []), [brigade]);
+    assert.deepEqual(filterSubmittedTasks([brigade], []), []);
+});
+
+test('a brigade draft cannot unlock the report submitted by another participant', () => {
+    const brigade = { ...task, ['is_team_task']: true };
+    const sent = { ...report, ['updated_at']: '2026-10-06T12:00:00Z' };
+    for (const reportState of [undefined, 'pending', 'error']) {
+        const draft = {
+            reportState,
+            submissionReport: {
+                id: sent.id,
+                updatedAt: '2026-10-06T11:00:00Z',
+            },
+        };
+        assert.deepEqual(
+            filterSubmittedTasks([brigade], [sent], { 1: draft }),
+            []
+        );
+        assert.deepEqual(
+            filterSubmittedTasks([brigade], [{ ...sent, status: 'REJECTED' }], {
+                1: draft,
+            }),
+            [brigade]
+        );
+    }
+});
+
+test('keeps an unfinished brigade upload editable only for its recorded server revision', () => {
+    const brigade = { ...task, ['is_team_task']: true };
+    const partial = { ...report, ['updated_at']: '2026-10-06T12:00:00Z' };
+    for (const reportState of ['pending', 'error']) {
+        const draft = {
+            reportState,
+            submissionReport: { id: partial.id, updatedAt: partial.updated_at },
+        };
+        assert.equal(isTaskReportReadOnly(brigade, partial, draft), false);
+        assert.equal(
+            isTaskReportReadOnly(brigade, { ...partial, id: 11 }, draft),
+            true
+        );
+        assert.equal(
+            isTaskReportReadOnly(
+                brigade,
+                { ...partial, status: 'ACCEPTED' },
+                draft
+            ),
+            true
+        );
+    }
 });

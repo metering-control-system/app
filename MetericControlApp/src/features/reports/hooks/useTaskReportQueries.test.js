@@ -3,7 +3,11 @@ import { registerHooks } from 'node:module';
 import test from 'node:test';
 import { createElement } from 'react';
 import { act, create } from 'react-test-renderer';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import {
+    MutationObserver,
+    QueryClient,
+    QueryClientProvider,
+} from '@tanstack/react-query';
 import { requests } from './fixtures/taskReportQueries.js';
 import {
     useNetwork,
@@ -54,13 +58,12 @@ loader.deregister();
 
 const task = { id: 1, ['is_team_task']: false };
 const report = { id: 10, ['task_id']: task.id, status: 'REJECTED' };
-const useSingleTaskReport = () => useTaskReport(task);
 const responseFor = (kind, report) =>
     kind === 'single'
         ? report
         : { reports: [report], ['snapshot_at']: '2026-10-06T12:00:00Z' };
 
-const setup = async (t, kind) => {
+const setup = async (t, kind, brigade = false) => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
     requests.length = 0;
     useNetwork.setState({ isChecked: true, isOnline: true });
@@ -70,10 +73,13 @@ const setup = async (t, kind) => {
         defaultOptions: { queries: { retry: false } },
     });
     const roots = [];
+    let current;
+    const useSelectedTaskReport = () =>
+        useTaskReport({ ...task, ['is_team_task']: brigade });
     const useReportQuery =
-        kind === 'single' ? useSingleTaskReport : useTaskReports;
+        kind === 'single' ? useSelectedTaskReport : useTaskReports;
     const Harness = () => {
-        useReportQuery();
+        current = useReportQuery();
         return null;
     };
     const mount = async () => {
@@ -104,7 +110,7 @@ const setup = async (t, kind) => {
     await mount();
     assert.equal(requests.length, 1);
     assert.ok(requests[0].signal);
-    return { client, mount, logout };
+    return { client, mount, logout, current: () => current };
 };
 
 const respond = async (request, data) => {
@@ -160,4 +166,52 @@ test('uses the same cancellation signal on every report page', async (t) => {
     assert.equal(nextRequest.signal.aborted, true);
     await respond(nextRequest, responseFor('list', { ...report, id: 11 }));
     assert.deepEqual(useReportsStore.getState().reports, []);
+});
+
+test('checks the shared brigade status and allows editing after rejection without automatically loading form fields', async (t) => {
+    const { current } = await setup(t, 'single', true);
+    await respond(requests[0], {
+        ...report,
+        status: 'ON_REVIEW',
+        ['updated_at']: '2026-10-06T12:00:00Z',
+    });
+    assert.equal(current().isReadOnly, true);
+    assert.deepEqual(useReportDraftStore.getState().drafts, {});
+    let refresh;
+    await act(async () => {
+        refresh = current().refetch();
+    });
+    await respond(requests[1], {
+        ...report,
+        ['updated_at']: '2026-10-06T13:00:00Z',
+    });
+    await act(async () => {
+        await refresh;
+    });
+    assert.equal(current().report.status, 'REJECTED');
+    assert.equal(current().isReadOnly, false);
+    assert.deepEqual(useReportDraftStore.getState().drafts, {});
+});
+
+test('does not redirect away from a brigade form while its submission is uploading files', async (t) => {
+    const { client, current } = await setup(t, 'single', true);
+    const gate = Promise.withResolvers();
+    const observer = new MutationObserver(client, {
+        mutationKey: ['report-operation', 'submit'],
+        mutationFn: () => gate.promise,
+    });
+    let sending;
+    await act(async () => {
+        sending = observer.mutate({ taskId: 1 });
+    });
+    await respond(requests[0], { ...report, status: 'ON_REVIEW' });
+    assert.equal(current().isReadOnly, false);
+    await act(async () => {
+        gate.resolve();
+        await sending;
+    });
+    await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 0));
+    });
+    assert.equal(current().isReadOnly, true);
 });
