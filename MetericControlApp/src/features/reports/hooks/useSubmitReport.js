@@ -140,6 +140,13 @@ const useSubmitReport = () => {
                 existingReport,
                 resubmitRejectedReport: task?.is_team_task === false,
             });
+            const submittedDraft =
+                !task.is_team_task && !expectedDraft
+                    ? { ...values, reportState: 'pending' }
+                    : null;
+            if (submittedDraft) {
+                setDraft({ draftId, values: submittedDraft });
+            }
 
             let reportResponse =
                 upsertRequest.operation === 'update'
@@ -211,10 +218,22 @@ const useSubmitReport = () => {
                 reportId,
                 reportResponse,
                 operation: upsertRequest.operation,
+                submittedDraft,
             };
         },
         onSuccess: async (_data, variables) => {
             if (_data.skipped || _data.offline) return;
+            const store = useReportDraftStore.getState();
+            const draftId = String(variables.taskId);
+            if (
+                _data.submittedDraft &&
+                areReportDraftsEqual(
+                    _data.submittedDraft,
+                    store.getDraft(draftId)
+                )
+            ) {
+                store.clearDraft(draftId);
+            }
             setUpdatedReports([_data.reportResponse]);
             queryClient.setQueryData(
                 ['report', _data.reportId],

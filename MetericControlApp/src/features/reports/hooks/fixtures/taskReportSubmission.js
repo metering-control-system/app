@@ -1,7 +1,12 @@
 import { create } from 'zustand';
 import { mergeReportUpdates } from '../../lib/mergeReportUpdates.js';
 
-export const api = { report: null, calls: [], commentError: null };
+export const api = {
+    report: null,
+    calls: [],
+    commentError: null,
+    onWrite: null,
+};
 export const useNetwork = create(() => ({ isChecked: true, isOnline: true }));
 export const useTasksStore = create(() => ({ tasks: [] }));
 export const useReportsStore = create((set, get) => ({
@@ -14,6 +19,11 @@ export const useReportDraftStore = create((set, get) => ({
     getDraft: (id) => get().drafts[id],
     setDraft: ({ draftId, values }) =>
         set({ drafts: { ...get().drafts, [draftId]: values } }),
+    clearDraft: (id) => {
+        const drafts = { ...get().drafts };
+        delete drafts[id];
+        set({ drafts });
+    },
 }));
 export const useStorePictures = create((set, get) => ({
     photoMetadata: { report: {} },
@@ -41,6 +51,7 @@ export const createReport = async (payload) => {
         images: [],
         ['updated_at']: '2026-10-05T12:00:00Z',
     };
+    api.onWrite?.(api.report);
     return api.report;
 };
 export const updateReport = async (id, payload) => {
@@ -50,6 +61,7 @@ export const updateReport = async (id, payload) => {
         ...payload,
         ['updated_at']: '2026-10-05T13:00:00Z',
     };
+    api.onWrite?.(api.report);
     return api.report;
 };
 export const addReportComment = async () => {

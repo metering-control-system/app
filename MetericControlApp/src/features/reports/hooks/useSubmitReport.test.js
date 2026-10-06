@@ -58,6 +58,7 @@ const setup = async (
     fixtures.api.report = report;
     fixtures.api.calls = [];
     fixtures.api.commentError = null;
+    fixtures.api.onWrite = null;
     fixtures.useNetwork.setState({ isChecked: true, isOnline: online });
     fixtures.useTasksStore.setState({
         tasks: [{ id: 1, ['is_team_task']: brigade }],
@@ -90,12 +91,13 @@ const setup = async (
     });
     return {
         client,
-        submit: async (values = fixtures.createValues()) => {
+        submit: async (values = fixtures.createValues(), expectedDraft) => {
             let result;
             await act(async () => {
                 result = await submission.submitTaskReport({
                     taskId: 1,
                     values,
+                    expectedDraft,
                 });
             });
             return result;
@@ -113,6 +115,90 @@ test('locks a single task after the complete submission succeeds', async (t) => 
             fixtures.useReportsStore.getState().reports[0]
         ),
         true
+    );
+});
+
+test('persists online single submissions before the server changes and clears them after success', async (t) => {
+    const { submit } = await setup(t);
+    const values = {
+        ...fixtures.createValues(),
+        comment: 'unfinished comment',
+    };
+    fixtures.api.onWrite = (report) => {
+        const draft = fixtures.useReportDraftStore.getState().getDraft('1');
+        assert.deepEqual(draft, { ...values, reportState: 'pending' });
+        fixtures.useReportsStore.getState().setUpdatedReports([report]);
+        assert.equal(
+            isTaskReportReadOnly(
+                fixtures.useTasksStore.getState().tasks[0],
+                fixtures.useReportsStore.getState().reports[0],
+                draft
+            ),
+            false
+        );
+    };
+    await submit(values);
+    assert.equal(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        undefined
+    );
+    assert.equal(
+        isTaskReportReadOnly(
+            fixtures.useTasksStore.getState().tasks[0],
+            fixtures.api.report
+        ),
+        true
+    );
+});
+
+test('resumes a persisted online submission after restart using the same report', async (t) => {
+    const { submit } = await setup(t);
+    let persistedDraft;
+    let partialReport;
+    fixtures.api.onWrite = (report) => {
+        persistedDraft = JSON.parse(
+            JSON.stringify(
+                fixtures.useReportDraftStore.getState().getDraft('1')
+            )
+        );
+        partialReport = { ...report };
+    };
+    await submit({ ...fixtures.createValues(), comment: 'unfinished comment' });
+    fixtures.api.onWrite = null;
+    fixtures.api.report = partialReport;
+    fixtures.api.calls = [];
+    fixtures.useReportDraftStore.setState({ drafts: { 1: persistedDraft } });
+    assert.equal(
+        isTaskReportReadOnly(
+            fixtures.useTasksStore.getState().tasks[0],
+            partialReport,
+            persistedDraft
+        ),
+        false
+    );
+    const result = await submit(persistedDraft, persistedDraft);
+    assert.equal(result.reportId, partialReport.id);
+    assert.equal(fixtures.api.calls[0].operation, 'update');
+    assert.deepEqual(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        persistedDraft
+    );
+});
+
+test('preserves a newer draft when an online submission succeeds', async (t) => {
+    const { submit } = await setup(t);
+    const newerDraft = {
+        ...fixtures.createValues(),
+        comment: 'new edits',
+        reportState: 'pending',
+    };
+    fixtures.api.onWrite = () => {
+        fixtures.useReportDraftStore.setState({ drafts: { 1: newerDraft } });
+    };
+    await submit();
+    assert.deepEqual(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        newerDraft
     );
 });
 
@@ -208,6 +294,12 @@ test('stops retrying an old pending draft after the admin accepts its report', a
 test('preserves brigade editing and leaves its rejected status unchanged', async (t) => {
     const report = { id: 10, ['task_id']: 1, status: 'REJECTED', images: [] };
     const { submit } = await setup(t, { brigade: true, report });
+    fixtures.api.onWrite = () => {
+        assert.equal(
+            fixtures.useReportDraftStore.getState().getDraft('1'),
+            undefined
+        );
+    };
     const result = await submit();
     assert.equal(result.reportResponse.status, 'REJECTED');
     assert.equal(Object.hasOwn(fixtures.api.calls[0].payload, 'status'), false);
