@@ -4,11 +4,12 @@ export const requests = [];
 
 export const baseApi = {
     get: (url, { signal, params } = {}) =>
-        new Promise((resolve) => {
+        new Promise((resolve, reject) => {
             requests.push({
                 url,
                 signal,
                 params,
+                reject,
                 respond: (data) => resolve({ data }),
             });
         }),

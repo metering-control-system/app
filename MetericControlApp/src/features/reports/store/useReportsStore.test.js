@@ -104,3 +104,53 @@ test('keeps an empty or cleared report cache empty during hydration', async () =
         assert.equal(useReportsStore.persist.hasHydrated(), true);
     }
 });
+
+test('persists removal of an unchanged report without clearing other reports', async () => {
+    useReportsStore.setState({ snapshotAt: null });
+    useReportsStore
+        .getState()
+        .replaceReports(cachedReports.map((report) => ({ ...report })));
+    const removed = useReportsStore
+        .getState()
+        .removeReports([cachedReports[0]]);
+    assert.deepEqual(
+        removed.map((report) => report.id),
+        [1]
+    );
+    await useReportsStore.persist.rehydrate();
+    assert.deepEqual(search(''), [2]);
+});
+
+test('a missing-report response cannot delete a report updated during that request', () => {
+    const before = {
+        ...cachedReports[0],
+        ['updated_at']: '2026-10-06T11:00:00Z',
+    };
+    const current = { ...before, ['updated_at']: '2026-10-06T12:00:00Z' };
+    useReportsStore.setState({ snapshotAt: null });
+    useReportsStore.getState().replaceReports([current]);
+    assert.deepEqual(useReportsStore.getState().removeReports([before]), []);
+    assert.deepEqual(search(''), [1]);
+});
+
+test('a complete snapshot persists deleted reports and rejects a late cached page', async () => {
+    const before = {
+        ...cachedReports[0],
+        ['updated_at']: '2026-10-06T11:00:00Z',
+    };
+    useReportsStore.setState({ snapshotAt: null });
+    useReportsStore.getState().replaceReports([before]);
+    const removed = useReportsStore
+        .getState()
+        .setUpdatedReports([], { snapshotAt: '2026-10-06T12:00:00Z' });
+    assert.deepEqual(
+        removed.map((report) => report.id),
+        [1]
+    );
+    useReportsStore.getState().setUpdatedReports([before]);
+    assert.deepEqual(search(''), []);
+    await useReportsStore.persist.rehydrate();
+    assert.deepEqual(search(''), []);
+    useReportsStore.getState().clearReports();
+    assert.equal(useReportsStore.getState().snapshotAt, null);
+});

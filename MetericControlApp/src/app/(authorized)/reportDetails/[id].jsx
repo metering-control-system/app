@@ -2,7 +2,7 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportDetailsForm from '@/features/reports/components/reportDetailsForm';
 import useReportById from '@/features/reports/hooks/useReportById';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
 import ShortenedTaskForm from '@/features/tasks/components/shortenedTaskForm';
@@ -61,6 +61,14 @@ const ReportDescription = () => {
               report?.admission.status === 'NOT_ADMITTED'
             ? colors.warning.backgroundTintColor
             : colors.ordinary.backgroundTintColor;
+
+    if (!isReportPending && !report) {
+        return (
+            <ScreenLayout safe>
+                <Text>Отчёт недоступен.</Text>
+            </ScreenLayout>
+        );
+    }
 
     return (
         <ScreenLayout safe style={{ backgroundColor: bgColor }}>

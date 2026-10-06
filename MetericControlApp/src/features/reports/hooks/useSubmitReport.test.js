@@ -63,7 +63,7 @@ const setup = async (
     fixtures.useTasksStore.setState({
         tasks: [{ id: 1, ['is_team_task']: brigade }],
     });
-    fixtures.useReportsStore.setState({ reports: [] });
+    fixtures.useReportsStore.setState({ reports: [], snapshotAt: null });
     fixtures.useReportDraftStore.setState({ drafts: {} });
     fixtures.useStorePictures.setState({ photoMetadata: { report: {} } });
     const client = new QueryClient({

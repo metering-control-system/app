@@ -11,8 +11,35 @@ export const useNetwork = create(() => ({ isChecked: true, isOnline: true }));
 export const useTasksStore = create(() => ({ tasks: [] }));
 export const useReportsStore = create((set, get) => ({
     reports: [],
-    setUpdatedReports: (reports) =>
-        set({ reports: mergeReportUpdates(get().reports, reports) }),
+    snapshotAt: null,
+    setUpdatedReports: (reports, { snapshotAt } = {}) => {
+        const previous = get().reports;
+        const merged = mergeReportUpdates(previous, reports, {
+            snapshotAt,
+            previousSnapshotAt: get().snapshotAt,
+        });
+        const mergedIds = new Set(merged.map((report) => report.id));
+        set({
+            reports: merged,
+            ...(Number.isFinite(Date.parse(snapshotAt)) &&
+            !(Date.parse(snapshotAt) < Date.parse(get().snapshotAt))
+                ? { snapshotAt }
+                : {}),
+        });
+        return previous.filter((report) => !mergedIds.has(report.id));
+    },
+    removeReports: (expectedReports) => {
+        const removed = get().reports.filter((report) =>
+            expectedReports.some(
+                (expected) =>
+                    expected.id === report.id &&
+                    expected.updated_at === report.updated_at
+            )
+        );
+        const ids = new Set(removed.map((report) => report.id));
+        set({ reports: get().reports.filter((report) => !ids.has(report.id)) });
+        return removed;
+    },
 }));
 export const useReportDraftStore = create((set, get) => ({
     drafts: {},
