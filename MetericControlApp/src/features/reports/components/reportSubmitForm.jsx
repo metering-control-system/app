@@ -27,6 +27,10 @@ import useStorePictures from '@/shared/store/useStorePictures';
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
+import {
+    REJECTION_REASON_OPTIONS,
+    SEAL_LOCATION_OPTIONS,
+} from '@/features/reports/constants/reportFieldOptions';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
@@ -55,22 +59,9 @@ const FORM_STEPS = [
     { key: 'act', title: 'Акт допуска/замены' },
 ];
 
-const SEAL_LOCATION_OPTIONS = [
-    { label: 'Автоматический выключатель', value: 'CIRCUIT_BREAKER' },
-    { label: 'Клеммная крышка', value: 'TERMINAL_COVER' },
-    { label: 'Трансформатор', value: 'TRANSFORMER' },
-];
-
 const ADMISSION_STATUS_OPTIONS = [
     { label: 'Допущен', value: 'ADMITTED' },
     { label: 'Не допущен', value: 'NOT_ADMITTED' },
-];
-
-const REJECTION_REASON_OPTIONS = [
-    { label: 'Нарушена схема питания', value: 'POWER_SCHEME_VIOLATION' },
-    { label: 'Нет доступа', value: 'NO_ACCESS' },
-    { label: 'Неисправность прибора', value: 'DEVICE_FAULT' },
-    { label: 'Другое', value: 'OTHER' },
 ];
 
 const mapTaskToReportDefaults = (task) => ({
