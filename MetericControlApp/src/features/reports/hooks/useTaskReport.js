@@ -15,9 +15,11 @@ const useTaskReport = (task) => {
         Boolean(task?.id) && !task.is_team_task && isChecked && isOnline;
     const query = useQuery({
         queryKey: ['report', 'task', Number(task?.id)],
-        queryFn: async () => {
-            const report = await getReportByTaskId(task.id);
-            if (report) useReportsStore.getState().setUpdatedReports([report]);
+        queryFn: async ({ signal }) => {
+            const report = await getReportByTaskId(task.id, { signal });
+            if (report && !signal.aborted) {
+                useReportsStore.getState().setUpdatedReports([report]);
+            }
             return report;
         },
         enabled,

@@ -11,13 +11,18 @@ const useTaskReports = () => {
     const queryClient = useQueryClient();
     const { isChecked, isOnline } = useNetwork();
     const enabled = isChecked && isOnline;
-    const fetchReports = useCallback(async () => {
-        const lastSyncAt =
-            queryClient.getQueryData(queryKey)?.snapshot_at ?? null;
-        const data = await getReportsUpdate({ lastSyncAt });
-        useReportsStore.getState().setUpdatedReports(data.reports);
-        return data;
-    }, [queryClient]);
+    const fetchReports = useCallback(
+        async ({ signal }) => {
+            const lastSyncAt =
+                queryClient.getQueryData(queryKey)?.snapshot_at ?? null;
+            const data = await getReportsUpdate({ lastSyncAt, signal });
+            if (!signal.aborted) {
+                useReportsStore.getState().setUpdatedReports(data.reports);
+            }
+            return data;
+        },
+        [queryClient]
+    );
     const query = useQuery({
         queryKey,
         queryFn: fetchReports,

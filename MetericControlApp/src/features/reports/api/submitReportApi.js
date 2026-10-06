@@ -8,9 +8,11 @@ export const updateReport = (reportId, payload) =>
         .patch(`/reports/${reportId}/`, payload)
         .then((response) => response.data);
 
-export const getReportByTaskId = async (taskId) => {
+export const getReportByTaskId = async (taskId, { signal } = {}) => {
     try {
-        const response = await baseApi.get(`/reports/by-task/${taskId}/`);
+        const response = await baseApi.get(`/reports/by-task/${taskId}/`, {
+            signal,
+        });
         return response.data;
     } catch (error) {
         if (error.response?.status === 404) {
