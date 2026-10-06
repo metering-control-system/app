@@ -8,17 +8,25 @@ import {
 } from '@/features/reports/constants/reportColors';
 import { colors } from '@/shared/consts/baseColors';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
+import useTaskById from '@/features/tasks/hooks/useTaskById';
 
 const Report = ({ report }) => {
     const router = useRouter();
+    const { task } = useTaskById(Number(report.task_id));
+
     return (
         <Card
             clickable
             onPress={() => {
                 router.push(`/(authorized)/reportDetails/${report.id}`);
             }}
-            title={report.consumer_contact?.full_name}
+            title={task?.address?.display_address || `Отчёт №${report.id}`}
             titleAlign={'flex-start'}>
+            {report.consumer_contact?.full_name && (
+                <Text style={styles.cardText}>
+                    {report.consumer_contact.full_name}
+                </Text>
+            )}
             <View style={styles.cardPeriod}>
                 <View style={styles.badges}>
                     <Text
