@@ -8,6 +8,8 @@ import useTaskById from '@/features/tasks/hooks/useTaskById';
 import ShortenedTaskForm from '@/features/tasks/components/shortenedTaskForm';
 import { useEffect } from 'react';
 import { colors } from '@/shared/consts/baseColors';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const ReportDescription = () => {
     const { id } = useLocalSearchParams();
@@ -17,6 +19,13 @@ const ReportDescription = () => {
 
     const tiedTaskId = report?.task_id ? +report.task_id : null;
     const { task, isPending: isTaskPending } = useTaskById(tiedTaskId);
+    const draft = useReportDraftStore((state) => state.drafts?.[tiedTaskId]);
+    const canOpenTask = Boolean(
+        task &&
+        report &&
+        (task.is_team_task ||
+            (draft && !isTaskReportReadOnly(task, report, draft)))
+    );
 
     useEffect(() => {
         if (!report) return;
@@ -64,7 +73,11 @@ const ReportDescription = () => {
                 {isTaskPending ? (
                     <ScreenLoader loading={isTaskPending} />
                 ) : (
-                    <ShortenedTaskForm task={task} id={tiedTaskId} />
+                    <ShortenedTaskForm
+                        task={task}
+                        id={tiedTaskId}
+                        clickable={canOpenTask}
+                    />
                 )}
                 <View style={{ height: 30 }}></View>
                 {isReportPending ? (
