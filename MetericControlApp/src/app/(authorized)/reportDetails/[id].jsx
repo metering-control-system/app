@@ -24,7 +24,8 @@ const ReportDescription = () => {
         task &&
         report &&
         (task.is_team_task ||
-            (draft && !isTaskReportReadOnly(task, report, draft)))
+            ((report.status === 'REJECTED' || draft) &&
+                !isTaskReportReadOnly(task, report, draft)))
     );
 
     useEffect(() => {
