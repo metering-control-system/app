@@ -197,14 +197,18 @@ const useSubmitReport = () => {
                 );
                 if (actPdfUri && reportPdfActPayload) {
                     if (serverActId) {
-                        await updateReportPdfAct(
+                        reportResponse = await updateReportPdfAct(
                             reportId,
                             reportPdfActPayload,
                             serverActId
                         );
                     } else {
-                        await uploadReportPdfAct(reportId, reportPdfActPayload);
+                        reportResponse = await uploadReportPdfAct(
+                            reportId,
+                            reportPdfActPayload
+                        );
                     }
+                    trackSubmission(reportResponse);
                 }
 
                 for (const clientImageId of removedImageIds) {
@@ -219,11 +223,7 @@ const useSubmitReport = () => {
                     trackSubmission(reportResponse);
                 }
 
-                if (
-                    task.is_team_task &&
-                    ((actPdfUri && reportPdfActPayload) ||
-                        removedImageIds.length)
-                ) {
+                if (task.is_team_task && removedImageIds.length) {
                     const latestReport = await getReportByTaskId(taskId);
                     if (latestReport?.id === reportId) {
                         reportResponse = latestReport;

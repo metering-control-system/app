@@ -59,6 +59,8 @@ const setup = async (
     fixtures.api.calls = [];
     fixtures.api.commentError = null;
     fixtures.api.onWrite = null;
+    fixtures.api.lookupCount = 0;
+    fixtures.api.actCalls = [];
     fixtures.useNetwork.setState({ isChecked: true, isOnline: online });
     fixtures.useTasksStore.setState({
         tasks: [{ id: 1, ['is_team_task']: brigade }],
@@ -404,4 +406,88 @@ test('a failed brigade upload does not replace newer local edits with its old su
         fixtures.useReportDraftStore.getState().getDraft('1'),
         edited
     );
+});
+
+for (const brigade of [false, true]) {
+    for (const existingAct of [false, true]) {
+        test(`${brigade ? 'brigade' : 'single'} submission keeps the ${existingAct ? 'updated' : 'uploaded'} act response without another lookup`, async (t) => {
+            const report = existingAct
+                ? {
+                      id: 10,
+                      ['task_id']: 1,
+                      status: 'REJECTED',
+                      images: [],
+                      act: {
+                          ['client_act_id']:
+                              '39e4518d-2bec-4d03-9082-e1d141f45e15',
+                      },
+                  }
+                : null;
+            const { client, submit } = await setup(t, { brigade, report });
+            const result = await submit({
+                ...fixtures.createValues(),
+                actPdf: { uri: 'file://act.pdf', isRefused: false },
+            });
+            assert.equal(fixtures.api.lookupCount, 1);
+            assert.equal(
+                fixtures.api.actCalls[0].operation,
+                existingAct ? 'update' : 'upload'
+            );
+            assert.deepEqual(
+                result.reportResponse.act,
+                fixtures.api.report.act
+            );
+            assert.equal(
+                result.reportResponse.updated_at,
+                fixtures.api.report.updated_at
+            );
+            assert.deepEqual(
+                fixtures.useReportsStore.getState().reports[0].act,
+                fixtures.api.report.act
+            );
+            assert.deepEqual(
+                client.getQueryData(['report', 10]).act,
+                fixtures.api.report.act
+            );
+            assert.deepEqual(
+                client.getQueryData(['report', 'task', 1]).act,
+                fixtures.api.report.act
+            );
+            if (existingAct)
+                assert.equal(
+                    result.reportResponse.act.client_act_id,
+                    report.act.client_act_id
+                );
+        });
+    }
+}
+
+test('a comment failure after a successful act upload keeps the current brigade revision for retry', async (t) => {
+    const { submit } = await setup(t, { brigade: true });
+    fixtures.api.commentError = new Error('comment network error');
+    const values = {
+        ...fixtures.createValues(),
+        actPdf: { uri: 'file://act.pdf', isRefused: false },
+        comment: 'comment',
+    };
+    await assert.rejects(submit(values), /comment network error/);
+    const draft = fixtures.useReportDraftStore.getState().getDraft('1');
+    assert.equal(fixtures.api.lookupCount, 1);
+    assert.equal(
+        draft.submissionReport.updatedAt,
+        fixtures.api.report.updated_at
+    );
+    assert.equal(
+        isTaskReportReadOnly(
+            fixtures.useTasksStore.getState().tasks[0],
+            fixtures.api.report,
+            draft
+        ),
+        false
+    );
+    fixtures.api.commentError = null;
+    const result = await submit(values);
+    assert.equal(result.reportId, 10);
+    assert.equal(fixtures.api.lookupCount, 2);
+    assert.deepEqual(result.reportResponse.act, fixtures.api.report.act);
 });
