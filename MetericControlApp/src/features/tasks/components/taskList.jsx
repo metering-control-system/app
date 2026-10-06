@@ -15,6 +15,7 @@ import useReportsStore from '@/features/reports/store/useReportsStore';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useTaskReports from '@/features/reports/hooks/useTaskReports';
 import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 
 const TasksList = ({
     setError,
@@ -120,6 +121,11 @@ const TasksList = ({
                     <Task
                         task={task}
                         hasPendingTaskReport={!!syncingRecords[task.id]}
+                        needsReportRevision={
+                            !task.is_team_task &&
+                            selectReportForTask(reports, task.id)?.status ===
+                                'REJECTED'
+                        }
                     />
                 )}
                 keyExtractor={(item) => item.id}
