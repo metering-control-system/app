@@ -52,6 +52,16 @@ const useReportsStore = create(
                     ),
                 };
             },
+            merge: (persistedState, currentState) => {
+                const state = { ...currentState, ...persistedState };
+                if (Array.isArray(state.reports)) {
+                    state.reports = state.reports.map((report) => ({
+                        ...report,
+                        search: concatenateFields(report),
+                    }));
+                }
+                return state;
+            },
             skipHydration: false,
         }
     )
