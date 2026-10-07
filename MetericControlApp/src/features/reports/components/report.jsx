@@ -8,12 +8,19 @@ import {
 } from '@/features/reports/constants/reportColors';
 import { colors } from '@/shared/consts/baseColors';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
-import { SEAL_LOCATION_OPTIONS } from '@/features/reports/constants/reportFieldOptions';
+import {
+    REJECTION_REASON_OPTIONS,
+    SEAL_LOCATION_OPTIONS,
+} from '@/features/reports/constants/reportFieldOptions';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
 
 const Report = ({ report }) => {
     const router = useRouter();
     const { task } = useTaskById(Number(report.task_id));
+    const rejectionReason = report.admission?.rejection_reason?.trim();
+    const rejectionReasonLabel =
+        REJECTION_REASON_OPTIONS.find(({ value }) => value === rejectionReason)
+            ?.label ?? rejectionReason;
     const sealLocation =
         SEAL_LOCATION_OPTIONS.find(
             ({ value }) => value === report.metering?.seal_location
@@ -69,10 +76,11 @@ const Report = ({ report }) => {
                     style={
                         styles.cardText
                     }>{`Номер нового ПУ: ${report.metering?.new_meter_number}`}</Text>
-                <Text
-                    style={
-                        styles.cardText
-                    }>{`Причина замены: ${report.admission?.rejection_reason ?? 'не указана'}`}</Text>
+                {rejectionReason && (
+                    <Text style={styles.cardText}>
+                        {`Причина отказа: ${rejectionReasonLabel}`}
+                    </Text>
+                )}
                 <Text
                     style={
                         styles.cardText
