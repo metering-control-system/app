@@ -191,7 +191,15 @@ const useMapGestures = ({ canvasWidth, closeList, handlePointTap }) => {
         [canvasWidth, scale, translateX, translateY]
     );
 
+    const resetMap = useCallback(() => {
+        closeList();
+        translateX.value = withTiming(0, { duration: 250 });
+        translateY.value = withTiming(0, { duration: 250 });
+        scale.value = withTiming(1, { duration: 250 });
+    }, [closeList, scale, translateX, translateY]);
+
     return {
+        resetMap,
         composedGestures,
         animatedStyles,
         scale,
