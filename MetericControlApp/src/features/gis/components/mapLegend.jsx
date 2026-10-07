@@ -1,74 +1,53 @@
 import { StyleSheet, Text, View } from 'react-native';
-import { colorizeMap } from '@/features/gis/lib/colorizeMap';
-import { useMemo } from 'react';
+import { modesVariants } from '@/features/gis/constants/mapModes';
 
-const MapLegend = ({ tasks, mode }) => {
-    const midValue = Math.max(
-        5,
-        tasks.length /
-            tasks.reduce((acc, curr) => {
-                acc.add(curr.address.district);
-                return acc;
-            }, new Set()).size
-    );
-
-    const LEGEND_ITEMS = useMemo(() => {
-        const arr = [];
-        if (mode === 'TASKS_PRIORITY') {
-            for (let i = 0; i < 1; i += 1 / 5) {
-                arr.push(i.toFixed(1));
-            }
-            return arr;
-        }
-        for (let i = 0; i < midValue; i += midValue / 5) {
-            arr.push(Math.trunc(i));
-        }
-        return arr;
-    }, [tasks, mode]);
-
-    return (
-        <View style={styles.container}>
-            <Text style={styles.title}>Задач в районе</Text>
-            <View style={styles.items}>
-                {LEGEND_ITEMS?.map((quantity, index) => (
+const MapLegend = ({ scale, mode, isTiledMap }) => (
+    <View style={styles.container}>
+        <Text style={styles.title} numberOfLines={2}>
+            {mode === modesVariants.TASKS_COUNT
+                ? 'Количество задач'
+                : 'Срочность'}
+            {isTiledMap ? ' в ячейке' : ' в районе'}
+        </Text>
+        <View style={styles.items}>
+            {scale.ticks.map((value) => (
+                <View key={value} style={styles.item}>
                     <View
-                        key={String(quantity) + String(index)}
-                        style={styles.item}>
-                        <View
-                            style={[
-                                styles.swatch,
-                                {
-                                    backgroundColor:
-                                        mode === 'TASKS_COUNT'
-                                            ? colorizeMap(quantity, 25.6)
-                                            : colorizeMap(quantity, 128),
-                                },
-                            ]}
-                        />
-                        <Text style={styles.label}>
-                            {quantity === LEGEND_ITEMS.at(-1)
-                                ? `${quantity}+`
-                                : quantity}
-                        </Text>
-                    </View>
-                ))}
-            </View>
+                        style={[
+                            styles.swatch,
+                            { backgroundColor: scale.color(value) },
+                        ]}
+                    />
+                    <Text style={styles.label}>{value}</Text>
+                </View>
+            ))}
         </View>
-    );
-};
+    </View>
+);
 
 const styles = StyleSheet.create({
     container: {
+        height: 208,
+        flexShrink: 0,
         paddingVertical: 12,
         paddingHorizontal: 16,
         borderTopWidth: 1,
         borderTopColor: '#e0e0e0',
+        justifyContent: 'flex-start',
+        alignItems: 'flex-start',
     },
-    title: { fontSize: 13, fontWeight: '600', color: '#333', marginBottom: 8 },
+    title: {
+        height: 36,
+        fontSize: 13,
+        lineHeight: 18,
+        fontWeight: '600',
+        color: '#333',
+        marginBottom: 8,
+    },
     items: { gap: 6 },
     item: { flexDirection: 'row', alignItems: 'center', gap: 6 },
     swatch: { width: 16, height: 16, borderRadius: 4 },
-    label: { fontSize: 13, color: '#555' },
+    label: { fontSize: 13, lineHeight: 18, color: '#555' },
 });
 
 export default MapLegend;
