@@ -5,12 +5,15 @@ import Animated, {
 } from 'react-native-reanimated';
 import { FlatList, Pressable, StyleSheet, Text, View } from 'react-native';
 import { useEffect } from 'react';
+import { taskPriority } from '@/features/tasks/constants/taskPriority';
+import { taskPriorityColors } from '@/features/tasks/constants/taskColors';
 
 export const MapTaskList = ({
     title,
     selectedTasks,
     goToTask,
     tilePressed,
+    style,
 }) => {
     const listAnim = useSharedValue(0);
 
@@ -31,7 +34,11 @@ export const MapTaskList = ({
             return title;
         } else {
             const districts = [
-                ...new Set(selectedTasks?.map((t) => t.address.district) ?? []),
+                ...new Set(
+                    selectedTasks
+                        ?.map((t) => t.address?.district)
+                        .filter(Boolean) ?? []
+                ),
             ];
             return districts.join('/');
         }
@@ -39,7 +46,12 @@ export const MapTaskList = ({
 
     return (
         <Animated.View
-            style={[{ position: 'absolute' }, styles.list, listAnimatedStyle]}>
+            style={[
+                { position: 'absolute' },
+                styles.list,
+                listAnimatedStyle,
+                style,
+            ]}>
             <View style={styles.listHeader}>
                 <Text style={styles.listHeaderText}>{createTitle()}</Text>
                 <Text style={styles.listHeaderCount}>
@@ -68,13 +80,23 @@ export const MapTaskList = ({
                             style={styles.listItemAddress}>
                             {item.address?.display_address}
                         </Text>
+                        <Text
+                            style={[
+                                styles.priority,
+                                taskPriorityColors[item.manual_priority] ??
+                                    taskPriorityColors.NOT_SPECIFIED,
+                            ]}>
+                            Срочность:{' '}
+                            {taskPriority[item.manual_priority] ??
+                                taskPriority.NOT_SPECIFIED}
+                        </Text>
                         {!item.tileAddress && !tilePressed && (
                             <Text
                                 style={[
                                     styles.listItemConsumer,
                                     { fontWeight: 'bold' },
                                 ]}>
-                                Координаты не определены
+                                Нет координат на карте
                             </Text>
                         )}
                         <Text
@@ -86,9 +108,7 @@ export const MapTaskList = ({
                     </Pressable>
                 )}
                 ListEmptyComponent={
-                    <Text style={styles.listEmpty}>
-                        В этом районе нет задач
-                    </Text>
+                    <Text style={styles.listEmpty}>Нет задач</Text>
                 }
             />
         </Animated.View>
@@ -97,6 +117,8 @@ export const MapTaskList = ({
 
 const styles = StyleSheet.create({
     list: {
+        maxHeight: '50%',
+        width: '100%',
         backgroundColor: '#fff',
         borderRadius: 12,
         elevation: 6,
@@ -123,6 +145,15 @@ const styles = StyleSheet.create({
         color: '#333',
         flexShrink: 1,
     },
+    priority: {
+        alignSelf: 'flex-start',
+        fontSize: 11,
+        paddingHorizontal: 6,
+        paddingVertical: 3,
+        borderRadius: 4,
+        marginTop: 4,
+    },
+    closeButton: { fontSize: 18, color: '#555', padding: 4 },
     listHeaderCount: { fontSize: 12, color: '#999' },
     listItem: {
         paddingHorizontal: 12,
