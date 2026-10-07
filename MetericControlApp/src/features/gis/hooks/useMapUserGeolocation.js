@@ -1,10 +1,12 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useRef, useState } from 'react';
 import * as Location from 'expo-location';
+import * as Linking from 'expo-linking';
 import polygon from '@/features/gis/constants/tiles.json';
 import { findContainingTile } from '@/features/gis/lib/arrangeTasksByDistrict';
 import { projectToTileUnits } from '@/features/gis/lib/projectToTileUnits';
 
-const useUserGeolocation = () => {
+const useMapUserGeolocation = () => {
+    const locatingRef = useRef(false);
     const [userTile, setUserTile] = useState(null);
     const [error, setError] = useState(null);
     const [isLocating, setIsLocating] = useState(false);
@@ -12,6 +14,8 @@ const useUserGeolocation = () => {
     const [, requestPermission] = Location.useForegroundPermissions();
 
     const locate = useCallback(async () => {
+        if (locatingRef.current) return null;
+        locatingRef.current = true;
         setIsLocating(true);
         setError(null);
 
@@ -24,7 +28,14 @@ const useUserGeolocation = () => {
 
             const permission = await requestPermission();
             if (!permission.granted) {
-                setError('Нет доступа к геолокации.');
+                if (!permission.canAskAgain) {
+                    setError(
+                        'Разрешите доступ к геолокации в настройках и нажмите кнопку местоположения снова.'
+                    );
+                    await Linking.openSettings();
+                } else {
+                    setError('Нет доступа к геолокации.');
+                }
                 return null;
             }
 
@@ -54,6 +65,7 @@ const useUserGeolocation = () => {
             setError('Не удалось определить местоположение.');
             return null;
         } finally {
+            locatingRef.current = false;
             setIsLocating(false);
         }
     }, [requestPermission]);
@@ -65,4 +77,4 @@ const useUserGeolocation = () => {
     return { userTile, error, isLocating, locate, dismissError };
 };
 
-export default useUserGeolocation;
+export default useMapUserGeolocation;
