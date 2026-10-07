@@ -8,11 +8,17 @@ import {
 } from '@/features/reports/constants/reportColors';
 import { colors } from '@/shared/consts/baseColors';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
+import { SEAL_LOCATION_OPTIONS } from '@/features/reports/constants/reportFieldOptions';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
 
 const Report = ({ report }) => {
     const router = useRouter();
     const { task } = useTaskById(Number(report.task_id));
+    const sealLocation =
+        SEAL_LOCATION_OPTIONS.find(
+            ({ value }) => value === report.metering?.seal_location
+        )?.label ??
+        (report.metering?.seal_location || 'не указано');
 
     return (
         <Card
@@ -70,7 +76,7 @@ const Report = ({ report }) => {
                 <Text
                     style={
                         styles.cardText
-                    }>{`Место установки: ${report.metering?.seal_location ?? 'не указано'}`}</Text>
+                    }>{`Место пломбирования: ${sealLocation}`}</Text>
             </View>
         </Card>
     );
