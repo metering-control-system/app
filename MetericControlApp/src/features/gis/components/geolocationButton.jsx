@@ -2,11 +2,11 @@ import { ActivityIndicator } from 'react-native';
 import { Entypo } from '@expo/vector-icons';
 import { OverlayButton } from '@/shared/components/button/overlayButton';
 
-const GeolocationDeterminant = ({ onPress, isLocating }) => {
+const GeolocationButton = ({ onPress, isLocating }) => {
     return (
         <OverlayButton
             onPress={onPress}
-            absolute={false}
+            disabled={isLocating}
             icon={
                 isLocating ? (
                     <ActivityIndicator color='white' />
@@ -18,4 +18,4 @@ const GeolocationDeterminant = ({ onPress, isLocating }) => {
     );
 };
 
-export default GeolocationDeterminant;
+export default GeolocationButton;
