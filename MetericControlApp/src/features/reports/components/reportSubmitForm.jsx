@@ -49,15 +49,10 @@ import ModalPicker from '@/shared/components/picker/modalPicker';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import useActTemplates from '@/features/reports/hooks/useActTemplates';
 import PdfViewer from '@/features/reports/components/pdfViewer';
-
-const FORM_STEPS = [
-    { key: 'beforeWork', title: 'До начала работ' },
-    { key: 'metering', title: 'Демонтаж и монтаж' },
-    { key: 'photos', title: 'Фотофиксация' },
-    { key: 'admission', title: 'Итог и допуск' },
-    { key: 'contacts', title: 'Контактные данные' },
-    { key: 'act', title: 'Акт допуска/замены' },
-];
+import {
+    REPORT_FORM_STEPS as FORM_STEPS,
+    getFirstReportValidationError,
+} from '@/features/reports/lib/reportFormValidation';
 
 const ADMISSION_STATUS_OPTIONS = [
     { label: 'Допущен', value: 'ADMITTED' },
@@ -87,6 +82,7 @@ const ReportSubmitForm = ({
     setStepIndex,
     highlightedField,
     defaultActTemplate,
+    onValidationError,
 }) => {
     const router = useRouter();
     const { isOnline } = useNetwork();
@@ -442,6 +438,16 @@ const ReportSubmitForm = ({
                 getApiErrorMessage(error, 'Не удалось отправить отчет.')
             );
         }
+    };
+
+    const onInvalid = (validationErrors) => {
+        const error = getFirstReportValidationError(validationErrors);
+        Keyboard.dismiss();
+        if (error.stepIndex !== null) {
+            setStepIndex(error.stepIndex);
+        }
+        onValidationError?.(error.field);
+        Alert.alert('Проверьте отчёт', error.message);
     };
 
     const renderTextField = ({
@@ -1203,7 +1209,7 @@ const ReportSubmitForm = ({
                     {isLastStep ? (
                         <FormButton
                             message='Сохранить отчет'
-                            onPress={handleSubmit(onSubmit)}
+                            onPress={handleSubmit(onSubmit, onInvalid)}
                             isPending={isSubmitting}
                             disabled={isReportBusy}
                             style={styles.primaryButton}
