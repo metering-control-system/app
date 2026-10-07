@@ -4,3 +4,6 @@ export const modesObj = {
 };
 
 export const modes = Object.entries(modesObj);
+export const modesVariants = Object.fromEntries(
+    Object.entries(modesObj).map(([key]) => [key, key])
+);

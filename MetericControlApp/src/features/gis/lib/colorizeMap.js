@@ -1,22 +1,17 @@
-export const clamp = (a, b, c) => {
-    return c < a ? a : c > b ? b : c;
-};
+export const clamp = (min, max, value) => Math.min(max, Math.max(min, value));
 
-export const colorizeMap = (quantity, coeff = 1) => {
-    const hue = 128 - clamp(0, 128, quantity * coeff);
-    return `hsl(${hue}, 100%, 50%)`;
-};
+export const colorizeMap = (value) =>
+    `hsl(${128 * (1 - clamp(0, 1, value))}, 100%, 50%)`;
 
-export const selectMapColorPalette = (
-    mode,
-    paintCallback,
-    tasksCount,
-    tasksImportance
-) => {
-    switch (mode) {
-        case 'TASKS_COUNT':
-            return paintCallback(tasksCount);
-        case 'TASKS_PRIORITY':
-            return paintCallback(tasksImportance);
-    }
+export const createCountScale = (maxCount) => {
+    const normalize = (count) =>
+        maxCount > 0 ? Math.log1p(count) / Math.log1p(maxCount) : 0;
+    const ticks = [
+        ...new Set(
+            Array.from({ length: 6 }, (_, index) =>
+                Math.round(Math.expm1((Math.log1p(maxCount) * index) / 5))
+            )
+        ),
+    ];
+    return { color: (count) => colorizeMap(normalize(count)), ticks };
 };

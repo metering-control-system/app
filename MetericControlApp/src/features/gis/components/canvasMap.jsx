@@ -1,8 +1,6 @@
 import { useMemo } from 'react';
 import { Canvas, Picture, Skia } from '@shopify/react-native-skia';
 import polygon from '@/features/gis/constants/tiles.json';
-import { colorizeMap } from '@/features/gis/lib/colorizeMap';
-import { calculateImportance } from '@/features/gis/lib/calculateImportance';
 
 const paint = Skia.Paint();
 const recorder = Skia.PictureRecorder();
@@ -15,43 +13,16 @@ const polygonTiles = Object.entries(polygon.coordinates).flatMap(
 );
 
 const CanvasMap = ({
-    districtsTasks,
-    tilesTasks,
     isTiledMap,
     baseScale,
     size,
-    mode,
+    selectMapColorPaletteByMode,
 }) => {
     const districtsPicture = useMemo(() => {
         const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size, size));
-        const numbersOfTasksByDistrict = Object.fromEntries(
-            Object.entries(districtsTasks).map(([district, tasks]) => [
-                district,
-                Object.values(tasks).length,
-            ])
-        );
-        const numberOfTasksImportanceByDistrict = Object.fromEntries(
-            Object.entries(districtsTasks).map(([district, tasks]) => [
-                district,
-                calculateImportance(
-                    Object.entries(tasks).map(([, task]) => task)
-                ),
-            ])
-        );
         for (const [district, tile] of polygonTiles) {
-            let tileColor;
-            if (mode === 'TASKS_COUNT') {
-                tileColor = colorizeMap(
-                    numbersOfTasksByDistrict[district] ?? 0,
-                    25.6
-                );
-            } else if (mode === 'TASKS_PRIORITY') {
-                tileColor = colorizeMap(
-                    numberOfTasksImportanceByDistrict[district] ?? 0,
-                    128
-                );
-            }
-            paint.setColor(Skia.Color(tileColor));
+            const districtColor = selectMapColorPaletteByMode(false, district);
+            paint.setColor(Skia.Color(districtColor));
 
             const x = tile.x * baseScale,
                 y = tile.y * baseScale,
@@ -69,25 +40,12 @@ const CanvasMap = ({
                 canvas.drawLine(x, y + s, x + s, y + s, paint);
         }
         return recorder.finishRecordingAsPicture();
-    }, [districtsTasks, baseScale, size, mode]);
+    }, [size, selectMapColorPaletteByMode, baseScale]);
 
     const tilesPicture = useMemo(() => {
         const canvas = recorder.beginRecording(Skia.XYWHRect(0, 0, size, size));
         for (const [, tile] of polygonTiles) {
-            let tileColor;
-            if (mode === 'TASKS_COUNT') {
-                tileColor = colorizeMap(
-                    tilesTasks[`${tile.x}:${tile.y}`]?.length ?? 0,
-                    25.6
-                );
-            } else if (mode === 'TASKS_PRIORITY') {
-                tileColor = colorizeMap(
-                    calculateImportance(
-                        tilesTasks[`${tile.x}:${tile.y}`] ?? []
-                    ),
-                    128
-                );
-            }
+            const tileColor = selectMapColorPaletteByMode(true, null, tile);
             paint.setColor(Skia.Color(tileColor));
 
             const x = tile.x * baseScale,
@@ -104,7 +62,7 @@ const CanvasMap = ({
             canvas.drawLine(x, y + s, x + s, y + s, paint);
         }
         return recorder.finishRecordingAsPicture();
-    }, [tilesTasks, baseScale, size, mode]);
+    }, [size, selectMapColorPaletteByMode, baseScale]);
 
     return (
         <Canvas width={size} height={size}>
