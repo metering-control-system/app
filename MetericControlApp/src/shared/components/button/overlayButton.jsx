@@ -5,10 +5,12 @@ export const OverlayButton = ({
     displayValue,
     icon,
     absolute = true,
+    disabled = false,
 }) => {
     return (
         <Pressable
             onPress={onPress}
+            disabled={disabled}
             style={[styles.button, absolute && styles.floating]}>
             {icon || <Text style={styles.buttonText}>{displayValue}</Text>}
         </Pressable>

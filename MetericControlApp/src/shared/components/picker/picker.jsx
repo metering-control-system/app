@@ -110,7 +110,13 @@ const Picker = ({
 };
 
 const styles = StyleSheet.create({
-    picker: { maxWidth: '50%', flexDirection: 'column', position: 'relative' },
+    picker: {
+        maxWidth: '50%',
+        minWidth: 0,
+        flexShrink: 1,
+        flexDirection: 'column',
+        position: 'relative',
+    },
     select: {
         flexDirection: 'row',
         alignItems: 'center',
