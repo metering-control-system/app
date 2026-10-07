@@ -16,5 +16,14 @@ export const useMapTaskIndex = (tasks) => {
         }
     }, [tasksByDistrict, tasks]);
 
-    return [tasksByDistrict, tasksByTile];
+    const unmappedTasks = useMemo(() => {
+        const mappedIds = new Set(
+            Object.values(tasksByTile ?? {})
+                .flat()
+                .map((task) => task.id)
+        );
+        return (tasks ?? []).filter((task) => !mappedIds.has(task.id));
+    }, [tasks, tasksByTile]);
+
+    return { tasksByDistrict, tasksByTile, unmappedTasks };
 };

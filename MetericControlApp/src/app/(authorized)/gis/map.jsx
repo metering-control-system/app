@@ -8,30 +8,33 @@ import { ControlPanel } from '@/shared/components/control/controlPanel';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { useCallback, useMemo, useState } from 'react';
-import { StyleSheet, View } from 'react-native';
+import { Modal, Pressable, StyleSheet, View } from 'react-native';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 import { MapModeSwitch } from '@/features/gis/components/mapModeSwitch';
-import { modes } from '@/features/gis/constants/mapModes';
 import Notification from '@/shared/components/notification/Notification';
-import useUserGeolocation from '@/features/gis/hooks/useUserGeolocation';
-import GeolocationDeterminant from '@/features/gis/components/geolocationDeterminant';
+import useMapUserGeolocation from '@/features/gis/hooks/useMapUserGeolocation';
+import MapActionsPanel from '@/features/gis/components/mapActionsPanel';
+import { MapTaskList } from '@/features/gis/components/mapTaskList';
+import { useMapTaskIndex } from '@/features/gis/hooks/useMapTaskIndex';
+import { useMapMode } from '@/features/gis/hooks/useMapMode';
 
 const MapScreen = () => {
     const tasks = useTasksStore((state) => state.tasks);
     const [filtering, setFiltering] = useState(new Set());
     const [search, setSearch] = useState('');
-    const [currentMode, setCurrentMode] = useState(modes[0][0]);
     const [focusRequest, setFocusRequest] = useState(0);
+    const [resetRequest, setResetRequest] = useState(0);
+    const [showUnmapped, setShowUnmapped] = useState(false);
     const router = useRouter();
-
     const { userTile, error, isLocating, locate, dismissError } =
-        useUserGeolocation();
+        useMapUserGeolocation();
 
     const goToTask = (taskId) => {
         if (!tasks?.some((task) => task.id === taskId)) {
             return;
         }
+        setShowUnmapped(false);
         router.push(`/(authorized)/taskFlow/taskDetails/${taskId}`);
     };
 
@@ -50,12 +53,30 @@ const MapScreen = () => {
         return filterBySearch({ query: filtered, input: search });
     }, [tasks, filtering, search]);
 
+    const [isTiledMap, setIsTiledMap] = useState(false);
+    const { tasksByDistrict, tasksByTile, unmappedTasks } =
+        useMapTaskIndex(selectedTasks);
+    const {
+        currentMode,
+        setCurrentMode,
+        selectMapColorPaletteByMode,
+        districts,
+        tiles,
+    } = useMapMode({ tasksByDistrict, tasksByTile });
+
     const handleLocatePress = useCallback(async () => {
         const tile = await locate();
         if (tile) {
             setFocusRequest((request) => request + 1);
         }
     }, [locate]);
+
+    const handleReset = useCallback(() => {
+        setShowUnmapped(false);
+        setResetRequest((request) => request + 1);
+    }, []);
+    const openUnmapped = useCallback(() => setShowUnmapped(true), []);
+    const closeUnmapped = useCallback(() => setShowUnmapped(false), []);
 
     return (
         <ScreenLayout style={{ flex: 1 }}>
@@ -77,29 +98,65 @@ const MapScreen = () => {
             </ControlPanel>
             <GestureHandlerRootView style={{ flex: 1 }}>
                 <InteractiveMap
-                    tasks={selectedTasks}
+                    tasksByTile={tasksByTile}
+                    tasksByDistrict={tasksByDistrict}
                     goToTask={goToTask}
-                    mode={currentMode}
+                    isTiledMap={isTiledMap}
+                    setIsTiledMap={setIsTiledMap}
                     userTile={userTile}
+                    resetRequest={resetRequest}
                     focusRequest={focusRequest}
+                    selectMapColorPaletteByMode={selectMapColorPaletteByMode}
                 />
             </GestureHandlerRootView>
-            <View style={styles.footer}>
-                <View style={styles.legend}>
-                    <MapLegend tasks={tasks} mode={currentMode} />
-                </View>
-                <GeolocationDeterminant
-                    onPress={handleLocatePress}
-                    isLocating={isLocating}
+            <View style={styles.legend}>
+                <MapLegend
+                    scale={isTiledMap ? tiles : districts}
+                    mode={currentMode}
+                    isTiledMap={isTiledMap}
                 />
             </View>
+            <MapActionsPanel
+                onLocate={handleLocatePress}
+                isLocating={isLocating}
+                onReset={handleReset}
+                onUnmappedPress={openUnmapped}
+                unmappedCount={unmappedTasks.length}
+            />
+            <Modal
+                visible={showUnmapped}
+                transparent
+                animationType='fade'
+                onRequestClose={closeUnmapped}>
+                <View style={styles.modal}>
+                    <Pressable
+                        style={StyleSheet.absoluteFill}
+                        onPress={closeUnmapped}
+                        accessibilityLabel='Закрыть список'
+                        accessibilityRole='button'
+                    />
+                    <MapTaskList
+                        title='Задачи вне карты'
+                        selectedTasks={unmappedTasks}
+                        goToTask={goToTask}
+                        onClose={closeUnmapped}
+                        style={styles.unmappedList}
+                    />
+                </View>
+            </Modal>
         </ScreenLayout>
     );
 };
 
 const styles = StyleSheet.create({
-    footer: { flexDirection: 'row', alignItems: 'center', columnGap: 12 },
-    legend: { flex: 1 },
+    legend: { paddingRight: 64 },
+    modal: {
+        flex: 1,
+        justifyContent: 'center',
+        padding: 20,
+        backgroundColor: 'rgba(0, 0, 0, 0.35)',
+    },
+    unmappedList: { position: 'relative', maxHeight: '75%' },
 });
 
 export default MapScreen;

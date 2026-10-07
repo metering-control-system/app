@@ -12,7 +12,6 @@ import {
     TILED_MIN_ZOOM,
     USER_TILE_ZOOM,
 } from '@/features/gis/constants/mapScale';
-import { useMapTaskIndex } from '@/features/gis/hooks/useMapTaskIndex';
 import useMapGestures from '@/features/gis/hooks/useMapGestures';
 import {
     MapDistrictsLabels,
@@ -27,15 +26,22 @@ const getScale = (screenWidth, mapWidth) => {
 
 const counterFontSize = 8;
 
-const InteractiveMap = ({ tasks, goToTask, mode, userTile, focusRequest }) => {
+const InteractiveMap = ({
+    tasksByDistrict,
+    tasksByTile,
+    goToTask,
+    isTiledMap,
+    setIsTiledMap,
+    userTile,
+    resetRequest,
+    focusRequest,
+    selectMapColorPaletteByMode,
+}) => {
     const [width, setWidth] = useState(0);
-    const [isTiledMap, setIsTiledMap] = useState(false);
     const [districtPressed, setDistrictPressed] = useState(null);
     const [tilePressed, setTilePressed] = useState(null);
 
     const districts = Object.keys(polygon.coordinates);
-
-    const [tasksByDistrict, tasksByTile] = useMapTaskIndex(tasks);
 
     const baseScale = useMemo(() => {
         if (width) {
@@ -94,6 +100,7 @@ const InteractiveMap = ({ tasks, goToTask, mode, userTile, focusRequest }) => {
     };
 
     const {
+        resetMap,
         composedGestures: mapGestures,
         animatedStyles,
         scale,
@@ -120,6 +127,10 @@ const InteractiveMap = ({ tasks, goToTask, mode, userTile, focusRequest }) => {
         focusRequest,
         userTile,
     ]);
+
+    useEffect(() => {
+        if (resetRequest) resetMap();
+    }, [resetRequest, resetMap]);
 
     useAnimatedReaction(
         () => scale.value >= TILED_MIN_ZOOM,
@@ -169,9 +180,9 @@ const InteractiveMap = ({ tasks, goToTask, mode, userTile, focusRequest }) => {
                             isTiledMap={isTiledMap}
                             size={width}
                             baseScale={baseScale}
-                            districtsTasks={tasksByDistrict}
-                            tilesTasks={tasksByTile}
-                            mode={mode}
+                            selectMapColorPaletteByMode={
+                                selectMapColorPaletteByMode
+                            }
                         />
                         <MapUserGeolocation
                             tile={userTile}
@@ -196,14 +207,15 @@ const InteractiveMap = ({ tasks, goToTask, mode, userTile, focusRequest }) => {
                             />
                         )}
                     </Animated.View>
-                    <MapTaskList
-                        selectedTasks={selectedTasks}
-                        title={districtPressed || tilePressed}
-                        tilePressed={tilePressed}
-                        goToTask={goToTask}
-                    />
                 </View>
             </GestureDetector>
+            <MapTaskList
+                onClose={closeList}
+                selectedTasks={selectedTasks}
+                title={districtPressed || tilePressed}
+                tilePressed={tilePressed}
+                goToTask={goToTask}
+            />
         </View>
     );
 };
