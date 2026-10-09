@@ -46,6 +46,7 @@ export const MapTaskList = ({
 
     return (
         <Animated.View
+            pointerEvents={title ? 'auto' : 'none'}
             style={[
                 { position: 'absolute' },
                 styles.list,
@@ -59,7 +60,6 @@ export const MapTaskList = ({
                 </Text>
             </View>
             <FlatList
-                pointerEvents={title ? 'auto' : 'none'}
                 data={selectedTasks}
                 keyExtractor={(task) => String(task.id)}
                 renderItem={({ item }) => (
