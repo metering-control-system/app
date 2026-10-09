@@ -36,6 +36,7 @@ const TasksList = ({
     } = useTaskReports();
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
+    const [isRefreshingList, setIsRefreshingList] = useState(false);
     const isAutoFetchingRef = useRef(false);
 
     const {
@@ -104,6 +105,29 @@ const TasksList = ({
         return filterBySearch({ query: sorted, input: search });
     }, [tasks, reports, drafts, filtering, sorting, search]);
 
+    const onRefresh = async () => {
+        setIsRefreshingList(true);
+        try {
+            const [tasksResult, reportsResult, syncResult] =
+                await Promise.allSettled(
+                    [updateTasks, refreshReports, sync].map((operation) =>
+                        Promise.resolve().then(operation)
+                    )
+                );
+            if (syncResult.status === 'rejected') {
+                setError('Не удалось синхронизировать отчёты.');
+            } else if (syncResult.value) {
+                setError(`Не синхронизировано отчётов: ${syncResult.value}.`);
+            } else if (reportsResult.status === 'rejected') {
+                setError('Не удалось обновить статусы отчётов.');
+            } else if (tasksResult.status === 'rejected') {
+                setError('Не удалось обновить задачи.');
+            }
+        } finally {
+            setIsRefreshingList(false);
+        }
+    };
+
     if (isPending || isReportsPending) {
         return <ScreenLoader />;
     }
@@ -130,17 +154,10 @@ const TasksList = ({
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>No tasks found.</Text>}
-                refreshing={isRefrehsing || isReportsFetching}
-                onRefresh={async () => {
-                    updateTasks();
-                    await refreshReports();
-                    const unsynchronizedCount = await sync();
-                    if (unsynchronizedCount) {
-                        setError(
-                            `Не синхронизировано отчетов: ${unsynchronizedCount}. Попробуйте синхронизировать самостоятельно.`
-                        );
-                    }
-                }}
+                refreshing={
+                    isRefreshingList || isRefrehsing || isReportsFetching
+                }
+                onRefresh={onRefresh}
                 onContentSizeChange={(_, height) => {
                     setContentHeight(height);
                 }}
