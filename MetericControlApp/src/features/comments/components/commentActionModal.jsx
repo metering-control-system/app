@@ -113,7 +113,9 @@ const CommentActionModal = ({ comment, taskId, visible, onClose }) => {
                                 ]}
                                 onPress={onSaveEdit}
                                 disabled={isEditing || !editText.trim()}>
-                                <Text style={styles.editButtonText}>Save</Text>
+                                <Text style={styles.editButtonText}>
+                                    Сохранить
+                                </Text>
                             </Pressable>
                         </View>
                     </Pressable>

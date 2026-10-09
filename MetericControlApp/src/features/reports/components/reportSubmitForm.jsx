@@ -966,8 +966,8 @@ const ReportSubmitForm = ({
             </Text>
             {renderTextField({
                 name: 'consumerContact.email',
-                label: 'Email',
-                placeholder: 'Введите email',
+                label: 'Электронная почта',
+                placeholder: 'Введите адрес электронной почты',
                 keyboardType: 'email-address',
                 editable: !isRefusedContact,
                 error: errors.consumerContact?.email,

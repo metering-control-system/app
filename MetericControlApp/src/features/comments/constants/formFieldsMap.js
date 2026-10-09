@@ -163,7 +163,7 @@ export const FORM_FIELDS_MAP = {
         step: 4,
         stepLabel: 'Контакты',
         field: 'consumerContact.email',
-        label: 'Email',
+        label: 'Электронная почта',
     },
     '@METERIC_CONTACT_NAME': {
         step: 4,

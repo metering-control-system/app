@@ -208,7 +208,10 @@ const ReportDetailsForm = ({ report, task }) => {
                             />
                         )}
                         {contact.email && (
-                            <DetailRow label='Email' value={contact.email} />
+                            <DetailRow
+                                label='Электронная почта'
+                                value={contact.email}
+                            />
                         )}
                     </>
                 )}
