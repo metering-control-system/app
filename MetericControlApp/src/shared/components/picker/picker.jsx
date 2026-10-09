@@ -20,6 +20,7 @@ const Picker = ({
     canBeOpened,
     setCanBeOpened,
     icon,
+    changeOnRepeatedPress = true,
 }) => {
     const [opened, setOpened] = useState(false);
     const animValue = useRef(new Animated.Value(0)).current;
@@ -41,10 +42,20 @@ const Picker = ({
     const onSelect = (item) => {
         if (!multiSelect) {
             setOpened(false);
-            setState((prev) => (prev === item[0] ? null : item[0]));
+            if (changeOnRepeatedPress) {
+                setState((prev) => (prev === item[0] ? null : item[0]));
+            } else {
+                setState(item[0]);
+            }
         } else {
             const newSet = new Set(state);
-            state.has(item[0]) ? newSet.delete(item[0]) : newSet.add(item[0]);
+            if (changeOnRepeatedPress) {
+                state.has(item[0])
+                    ? newSet.delete(item[0])
+                    : newSet.add(item[0]);
+            } else {
+                newSet.add(item[0]);
+            }
             setState(newSet);
         }
     };
@@ -110,7 +121,13 @@ const Picker = ({
 };
 
 const styles = StyleSheet.create({
-    picker: { maxWidth: '50%', flexDirection: 'column', position: 'relative' },
+    picker: {
+        maxWidth: '50%',
+        minWidth: 0,
+        flexShrink: 1,
+        flexDirection: 'column',
+        position: 'relative',
+    },
     select: {
         flexDirection: 'row',
         alignItems: 'center',

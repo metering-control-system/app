@@ -1,8 +1,17 @@
 import { Pressable, StyleSheet, Text } from 'react-native';
 
-export const OverlayButton = ({ onPress, displayValue, icon }) => {
+export const OverlayButton = ({
+    onPress,
+    displayValue,
+    icon,
+    absolute = true,
+    disabled = false,
+}) => {
     return (
-        <Pressable onPress={onPress} style={styles.button}>
+        <Pressable
+            onPress={onPress}
+            disabled={disabled}
+            style={[styles.button, absolute && styles.floating]}>
             {icon || <Text style={styles.buttonText}>{displayValue}</Text>}
         </Pressable>
     );
@@ -10,9 +19,6 @@ export const OverlayButton = ({ onPress, displayValue, icon }) => {
 
 const styles = StyleSheet.create({
     button: {
-        position: 'absolute',
-        bottom: 50,
-        right: 20,
         borderRadius: 50,
         padding: 10,
         justifyContent: 'center',
@@ -24,5 +30,6 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.25,
         shadowRadius: 4,
     },
+    floating: { position: 'absolute', bottom: 50, right: 20 },
     buttonText: { color: 'white', fontSize: 14, fontWeight: '600' },
 });

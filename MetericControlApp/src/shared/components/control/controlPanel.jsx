@@ -12,6 +12,7 @@ export const ControlPanel = ({
     sortingVariants,
     search,
     setSearch,
+    children,
 }) => {
     const [isNotSearched, setIsNotSearched] = useState(true);
 
@@ -53,6 +54,7 @@ export const ControlPanel = ({
                     icon='filter'
                 />
             )}
+            {children}
         </View>
     );
 };
