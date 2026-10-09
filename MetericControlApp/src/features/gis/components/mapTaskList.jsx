@@ -59,6 +59,7 @@ export const MapTaskList = ({
                 </Text>
             </View>
             <FlatList
+                pointerEvents={title ? 'auto' : 'none'}
                 data={selectedTasks}
                 keyExtractor={(task) => String(task.id)}
                 renderItem={({ item }) => (

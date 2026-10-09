@@ -10,6 +10,7 @@ export const MapModeSwitch = ({ currentMode, setCurrentMode }) => {
             setState={setCurrentMode}
             canBeOpened={true}
             icon='sort-amount-up'
+            changeOnRepeatedPress={false}
         />
     );
 };

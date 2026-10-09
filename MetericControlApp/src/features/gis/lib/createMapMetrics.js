@@ -16,7 +16,13 @@ export const createMapMetrics = (groups, mode) => {
     );
     const scale =
         mode === modesVariants.TASKS_COUNT
-            ? createCountScale(Math.max(...(Object.values(metrics) ?? [0])))
+            ? createCountScale(
+                  Math.max(
+                      ...(Object.values(metrics)?.length > 0
+                          ? Object.values(metrics)
+                          : [0])
+                  )
+              )
             : { color: colorizeMap, ticks: [0, 0.2, 0.4, 0.6, 0.8, 1] };
     return { metrics, ...scale };
 };
