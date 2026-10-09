@@ -5,6 +5,7 @@
     "slug": "MetericControlApp",
     "version": "1.0.0",
     "orientation": "portrait",
+    "icon": "./assets/images/rks-energo-icon.png",
     "userInterfaceStyle": "light",
     "splash": {
       "resizeMode": "contain",
@@ -16,7 +17,8 @@
     },
     "android": {
       "adaptiveIcon": {
-        "backgroundColor": "#E6F4FE"
+        "foregroundImage": "./assets/images/rks-energo-adaptive-foreground.png",
+        "backgroundColor": "#FFFFFF"
       },
       "package": "com.pr1de.MetericControlApp",
       "permissions": [
