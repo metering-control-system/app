@@ -60,6 +60,9 @@ const setup = async (
     fixtures.api.commentError = null;
     fixtures.api.onWrite = null;
     fixtures.api.lookupCount = 0;
+    fixtures.api.lookupError = null;
+    fixtures.api.updateError = null;
+    fixtures.api.onLookup = null;
     fixtures.api.actCalls = [];
     fixtures.useNetwork.setState({ isChecked: true, isOnline: online });
     fixtures.useTasksStore.setState({
@@ -390,6 +393,79 @@ test('returns the persisted brigade submission revision for offline synchronizat
         result.submittedDraft
     );
     assert.equal(result.submittedDraft.submissionReport.id, result.reportId);
+});
+
+for (const failure of ['lookupError', 'updateError']) {
+    test(`preserves the brigade submission revision when a retry fails with ${failure}`, async (t) => {
+        const { submit } = await setup(t, { brigade: true });
+        const values = {
+            ...fixtures.createValues(),
+            comment: 'unfinished comment',
+        };
+        fixtures.api.commentError = new Error('comment failed');
+        await assert.rejects(submit(values), /comment failed/);
+        const previous = fixtures.useReportDraftStore.getState().getDraft('1');
+        const editedValues = { ...values, comment: 'edited comment' };
+        fixtures.api.commentError = null;
+        fixtures.api[failure] = new Error('retry failed');
+
+        await assert.rejects(submit(editedValues), /retry failed/);
+
+        const draft = fixtures.useReportDraftStore.getState().getDraft('1');
+        assert.equal(draft.comment, editedValues.comment);
+        assert.equal(draft.reportState, 'error');
+        assert.deepEqual(draft.submissionReport, previous.submissionReport);
+        assert.equal(
+            isTaskReportReadOnly(
+                fixtures.useTasksStore.getState().tasks[0],
+                fixtures.api.report,
+                draft
+            ),
+            false
+        );
+
+        fixtures.api[failure] = null;
+        const result = await submit(editedValues);
+        assert.equal(result.reportId, previous.submissionReport.id);
+        assert.deepEqual(
+            fixtures.api.calls.map((call) => call.operation),
+            ['create', 'update']
+        );
+        assert.equal(
+            fixtures.useReportDraftStore.getState().getDraft('1'),
+            undefined
+        );
+    });
+}
+
+test('a failed preflight lookup does not overwrite newer local edits', async (t) => {
+    const { submit } = await setup(t, { brigade: true });
+    const previous = { ...fixtures.createValues(), reportState: 'pending' };
+    const edited = { ...previous, comment: 'new edits' };
+    fixtures.useReportDraftStore.setState({ drafts: { 1: previous } });
+    fixtures.api.onLookup = () =>
+        fixtures.useReportDraftStore.setState({ drafts: { 1: edited } });
+    fixtures.api.lookupError = new Error('lookup failed');
+
+    await assert.rejects(submit(fixtures.createValues()), /lookup failed/);
+
+    assert.deepEqual(
+        fixtures.useReportDraftStore.getState().getDraft('1'),
+        edited
+    );
+});
+
+test('a failed initial lookup saves form values when no draft exists yet', async (t) => {
+    const { submit } = await setup(t);
+    const values = { ...fixtures.createValues(), comment: 'keep form values' };
+    fixtures.api.lookupError = new Error('lookup failed');
+
+    await assert.rejects(submit(values), /lookup failed/);
+
+    assert.deepEqual(fixtures.useReportDraftStore.getState().getDraft('1'), {
+        ...values,
+        reportState: 'error',
+    });
 });
 
 test('a failed brigade upload does not replace newer local edits with its old submission draft', async (t) => {

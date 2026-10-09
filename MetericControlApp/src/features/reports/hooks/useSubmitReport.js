@@ -47,8 +47,13 @@ const useSubmitReport = () => {
         mutationKey: [...REPORT_OPERATION_KEY, 'submit'],
         networkMode: 'always',
         retry: false,
+        onMutate: ({ taskId }) =>
+            useReportDraftStore.getState().getDraft(String(taskId)),
         mutationFn: async ({ taskId, values, expectedDraft }) => {
             const draftId = String(taskId);
+            const previousDraft = useReportDraftStore
+                .getState()
+                .getDraft(draftId);
             if (
                 expectedDraft &&
                 !areReportDraftsEqual(
@@ -129,6 +134,9 @@ const useSubmitReport = () => {
             });
             let submittedDraft = expectedDraft ?? {
                 ...values,
+                ...(previousDraft?.submissionReport && {
+                    submissionReport: previousDraft.submissionReport,
+                }),
                 reportState: 'pending',
             };
             if (!expectedDraft) {
@@ -280,30 +288,32 @@ const useSubmitReport = () => {
                 queryClient.invalidateQueries({ queryKey: ['tasks'] }),
             ]);
         },
-        onError: (error, variables) => {
+        onError: (error, variables, previousDraft) => {
+            const draftId = String(variables.taskId);
+            const currentDraft = useReportDraftStore
+                .getState()
+                .getDraft(draftId);
             if (
                 error.code === 'REPORT_READ_ONLY' &&
-                useReportDraftStore
-                    .getState()
-                    .getDraft(String(variables.taskId))?.reportState !==
-                    'pending'
+                currentDraft?.reportState !== 'pending'
             )
                 return;
             if (
-                error.submittedDraft &&
                 !areReportDraftsEqual(
-                    error.submittedDraft,
-                    useReportDraftStore
-                        .getState()
-                        .getDraft(String(variables.taskId))
+                    error.submittedDraft ?? previousDraft,
+                    currentDraft
                 )
             )
                 return;
             if (isOnline) {
                 setDraft({
-                    draftId: String(variables.taskId),
+                    draftId,
                     values: {
-                        ...(error.submittedDraft ?? variables.values),
+                        ...variables.values,
+                        ...(previousDraft?.submissionReport && {
+                            submissionReport: previousDraft.submissionReport,
+                        }),
+                        ...error.submittedDraft,
                         reportState: 'error',
                     },
                 });

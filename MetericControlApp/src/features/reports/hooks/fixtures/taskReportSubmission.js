@@ -7,6 +7,9 @@ export const api = {
     commentError: null,
     onWrite: null,
     lookupCount: 0,
+    lookupError: null,
+    updateError: null,
+    onLookup: null,
     actCalls: [],
 };
 export const useNetwork = create(() => ({ isChecked: true, isOnline: true }));
@@ -72,6 +75,8 @@ export const getTaskById = async (id) =>
     useTasksStore.getState().tasks.find((task) => task.id === id);
 export const getReportByTaskId = async () => {
     api.lookupCount++;
+    api.onLookup?.();
+    if (api.lookupError) throw api.lookupError;
     return api.report;
 };
 export const createReport = async (payload) => {
@@ -87,6 +92,7 @@ export const createReport = async (payload) => {
     return api.report;
 };
 export const updateReport = async (id, payload) => {
+    if (api.updateError) throw api.updateError;
     api.calls.push({ operation: 'update', id, payload });
     api.report = {
         ...api.report,
