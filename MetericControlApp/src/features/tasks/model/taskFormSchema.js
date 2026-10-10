@@ -7,7 +7,6 @@ export const taskFormSchema = z.object({
             .string()
             .trim()
             .min(1, 'Введите ФИО')
-            .min(5, 'ФИО слишком короткое')
             .max(150, 'ФИО слишком длинное'),
         // eslint-disable-next-line camelcase
         phone_number: z
