@@ -44,6 +44,7 @@ import useLoadBrigadeReport from '@/features/reports/hooks/useLoadBrigadeReport'
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
 import { validateReportAct } from '@/features/reports/lib/validateReportAct';
+import { ensureActFileExists } from '@/features/reports/lib/ensureActFileExists';
 import { generateActPdf } from '@/features/reports/lib/generateActPdf';
 import useReportActStore from '@/features/reports/store/useReportActStore';
 import * as Sharing from 'expo-sharing';
@@ -138,7 +139,9 @@ const ReportSubmitForm = ({
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
     );
-    const savedAct = useReportActStore((state) => state.actsByTask[draftId]);
+    const savedAct = useReportActStore(
+        (state) => state.actMetadataByTask[draftId]
+    );
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
     const templates = useActTemplatesStore((state) => state.templates);
@@ -1046,7 +1049,8 @@ const ReportSubmitForm = ({
                 const actPdf = await generateActPdf({
                     template: selectedTemplate,
                     values: getValues(),
-                    resetSignatures: true,
+                    previousAct:
+                        useReportActStore.getState().actMetadataByTask[draftId],
                 });
                 useReportActStore.getState().saveAct(draftId, actPdf);
                 setValue('actPdf', actPdf, { shouldDirty: true });
@@ -1112,6 +1116,7 @@ const ReportSubmitForm = ({
                     onGenerate={printToFile}
                     onShare={async () => {
                         try {
+                            ensureActFileExists(getValues('actPdf.uri'));
                             if (await Sharing.isAvailableAsync()) {
                                 await Sharing.shareAsync(
                                     getValues('actPdf.uri')

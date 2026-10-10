@@ -1,3 +1,4 @@
+import { ensureActFileExists } from './ensureActFileExists';
 import { createActChecksum } from './createActChecksum';
 import { areReportDraftsEqual } from './areReportDraftsEqual';
 import useReportActStore from '@/features/reports/store/useReportActStore';
@@ -6,7 +7,8 @@ import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore'
 export const validateReportAct = async ({ taskId, values }) => {
     if (values.actPdf?.isRefused) return;
     const actPdf = values.actPdf;
-    const record = useReportActStore.getState().actsByTask[String(taskId)];
+    const record =
+        useReportActStore.getState().actMetadataByTask[String(taskId)];
     const template = useActTemplatesStore
         .getState()
         .templates.find(
@@ -17,9 +19,11 @@ export const validateReportAct = async ({ taskId, values }) => {
             'Сгенерируйте акт перед подписанием или отправкой отчёта.'
         );
     }
+    ensureActFileExists(actPdf.uri);
     const checksum = await createActChecksum({ values, template });
     if (
-        useReportActStore.getState().actsByTask[String(taskId)] !== record ||
+        useReportActStore.getState().actMetadataByTask[String(taskId)] !==
+            record ||
         checksum !== actPdf.checksum ||
         checksum !== record.checksum ||
         String(record.templateId) !== String(template.id) ||
