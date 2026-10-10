@@ -75,7 +75,8 @@ const useSubmitReport = () => {
             ) {
                 return { skipped: true };
             }
-            const actRecord = useReportActStore.getState().actsByTask[draftId];
+            const actRecord =
+                useReportActStore.getState().actMetadataByTask[draftId];
             const picturesState = useStorePictures.getState();
             const photoMetadata = prepareReportPhotoMetadata({
                 photos: values.photos,
