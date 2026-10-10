@@ -11,6 +11,11 @@ import { sortBy } from '@/features/tasks/lib/sortTasks';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useTaskReports from '@/features/reports/hooks/useTaskReports';
+import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 
 const TasksList = ({
     setError,
@@ -21,8 +26,17 @@ const TasksList = ({
     syncingRecords,
 }) => {
     const tasks = useTasksStore((state) => state.tasks);
+    const reports = useReportsStore((state) => state.reports);
+    const drafts = useReportDraftStore((state) => state.drafts);
+    const {
+        isPending: isReportsPending,
+        isFetching: isReportsFetching,
+        error: reportsError,
+        refreshReports,
+    } = useTaskReports();
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
+    const [isRefreshingList, setIsRefreshingList] = useState(false);
     const isAutoFetchingRef = useRef(false);
 
     const {
@@ -45,8 +59,10 @@ const TasksList = ({
             setError(error?.message);
         } else if (refreshError) {
             setError(refreshError?.message);
+        } else if (reportsError) {
+            setError('Не удалось обновить статусы отчётов.');
         }
-    }, [error, refreshError, setError]);
+    }, [error, refreshError, reportsError, setError]);
 
     useEffect(() => {
         if (
@@ -83,13 +99,36 @@ const TasksList = ({
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            tasks
+            filterSubmittedTasks(tasks, reports, drafts)
         );
         const sorted = sortBy(filtered, sorting);
         return filterBySearch({ query: sorted, input: search });
-    }, [tasks, filtering, sorting, search]);
+    }, [tasks, reports, drafts, filtering, sorting, search]);
 
-    if (isPending) {
+    const onRefresh = async () => {
+        setIsRefreshingList(true);
+        try {
+            const [tasksResult, reportsResult, syncResult] =
+                await Promise.allSettled(
+                    [updateTasks, refreshReports, sync].map((operation) =>
+                        Promise.resolve().then(operation)
+                    )
+                );
+            if (syncResult.status === 'rejected') {
+                setError('Не удалось синхронизировать отчёты.');
+            } else if (syncResult.value) {
+                setError(`Не синхронизировано отчётов: ${syncResult.value}.`);
+            } else if (reportsResult.status === 'rejected') {
+                setError('Не удалось обновить статусы отчётов.');
+            } else if (tasksResult.status === 'rejected') {
+                setError('Не удалось обновить задачи.');
+            }
+        } finally {
+            setIsRefreshingList(false);
+        }
+    };
+
+    if (isPending || isReportsPending) {
         return <ScreenLoader />;
     }
 
@@ -106,21 +145,19 @@ const TasksList = ({
                     <Task
                         task={task}
                         hasPendingTaskReport={!!syncingRecords[task.id]}
+                        needsReportRevision={
+                            selectReportForTask(reports, task.id)?.status ===
+                            'REJECTED'
+                        }
                     />
                 )}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>No tasks found.</Text>}
-                refreshing={isRefrehsing}
-                onRefresh={async () => {
-                    updateTasks();
-                    const unsynchronizedCount = await sync();
-                    if (unsynchronizedCount) {
-                        setError(
-                            `Не синхронизировано отчетов: ${unsynchronizedCount}. Попробуйте синхронизировать самостоятельно.`
-                        );
-                    }
-                }}
+                refreshing={
+                    isRefreshingList || isRefrehsing || isReportsFetching
+                }
+                onRefresh={onRefresh}
                 onContentSizeChange={(_, height) => {
                     setContentHeight(height);
                 }}

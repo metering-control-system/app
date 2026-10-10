@@ -1,16 +1,5 @@
-import { baseApi } from '@/shared/api/baseApi';
-import axios from 'axios';
-import { processingReportResponse } from '@/features/reports/lib/processingTaskResponse';
+import { getReports } from '@/features/reports/api/getReportsApi';
+import { fetchReportPages } from '@/features/reports/lib/fetchReportPages';
 
-export const getReportsUpdate = ({ lastSyncAt }) => {
-    return baseApi
-        .get('reports', {
-            // eslint-disable-next-line camelcase
-            params: { update_since: lastSyncAt },
-            transformResponse: [
-                ...(axios.defaults.transformResponse || []),
-                processingReportResponse,
-            ],
-        })
-        .then((response) => response.data);
-};
+export const getReportsUpdate = ({ lastSyncAt, signal }) =>
+    fetchReportPages((params) => getReports(params, { signal }), lastSyncAt);

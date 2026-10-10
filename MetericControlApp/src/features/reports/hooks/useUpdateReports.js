@@ -1,27 +1,20 @@
-import { useMutation } from '@tanstack/react-query';
-import useReportsSyncStore from '@/features/reports/store/useReportsSyncStore';
-import { getReportsUpdate } from '@/features/reports/api/getReportsUpdateApi';
-import useReportsStore from '@/features/reports/store/useReportsStore';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import {
+    syncReports,
+    TASK_REPORTS_QUERY_KEY,
+} from '@/features/reports/lib/syncReports';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const useUpdateReports = () => {
-    const setLastSyncAt = useReportsSyncStore((state) => state.setLastSyncAt);
-    const setUpdatedReports = useReportsStore(
-        (state) => state.setUpdatedReports
-    );
+    const queryClient = useQueryClient();
     const { isOnline, isChecked } = useNetwork();
 
-    const { mutate, error, isPending } = useMutation({
-        mutationFn: async () => {
-            const lastSyncAt = useReportsSyncStore.getState().lastSyncAt;
-            return getReportsUpdate({ lastSyncAt });
-        },
+    const { mutate, mutateAsync, error, isPending } = useMutation({
+        mutationFn: () => syncReports(queryClient, { full: true }),
         onSuccess: (data) => {
-            const serverDate = data?.snapshot_at;
-            if (serverDate) {
-                setLastSyncAt(serverDate);
+            if (data && queryClient.getQueryState(TASK_REPORTS_QUERY_KEY)) {
+                queryClient.setQueryData(TASK_REPORTS_QUERY_KEY, data);
             }
-            setUpdatedReports(data?.reports);
         },
     });
 
@@ -33,7 +26,12 @@ const useUpdateReports = () => {
         mutate();
     };
 
-    return { updateReports, error, isPending };
+    const updateReportsAsync = () => {
+        if (!isChecked || !isOnline) return Promise.resolve();
+        return mutateAsync();
+    };
+
+    return { updateReports, updateReportsAsync, error, isPending };
 };
 
 export default useUpdateReports;

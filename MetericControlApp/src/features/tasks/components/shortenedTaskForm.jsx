@@ -3,11 +3,11 @@ import Card from '@/shared/components/wrapper/card';
 import { useRouter } from 'expo-router';
 import { FieldRow } from '@/shared/components/field/fieldRow';
 
-const ShortenedTaskForm = ({ task, id }) => {
+const ShortenedTaskForm = ({ task, id, clickable = false }) => {
     const router = useRouter();
 
     const goToMainTask = () => {
-        if (!task) {
+        if (!task || !clickable) {
             return;
         }
         router.push(`/(authorized)/taskFlow/${id}`);
@@ -17,8 +17,8 @@ const ShortenedTaskForm = ({ task, id }) => {
         <Card
             title='Информация о задаче'
             style={styles.form}
-            clickable
-            onPress={goToMainTask}>
+            clickable={clickable}
+            onPress={clickable ? goToMainTask : undefined}>
             {task ? (
                 <View style={styles.details}>
                     <FieldRow

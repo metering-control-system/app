@@ -65,3 +65,28 @@ test('does not apply a response to a closed form or a different task', async () 
     );
     assert.equal(writes, 0);
 });
+
+test('explicitly loads the fields and photos of a rejected brigade report', async () => {
+    const rejected = {
+        ...report,
+        status: 'REJECTED',
+        metering: { ['new_meter_number']: 'NEW-123' },
+        images: [
+            {
+                kind: 'SEAL',
+                url: 'https://example.test/seal.jpg',
+                ['client_image_id']: 'seal-1',
+            },
+        ],
+    };
+    let applied;
+    const result = await loadReportReplacement({
+        taskId: 17,
+        fetchReport: async () => rejected,
+        applyReport: (value) => {
+            applied = value;
+        },
+    });
+    assert.equal(result, rejected);
+    assert.equal(applied, rejected);
+});

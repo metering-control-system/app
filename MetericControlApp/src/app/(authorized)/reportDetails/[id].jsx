@@ -2,12 +2,14 @@ import { useLocalSearchParams, useNavigation } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportDetailsForm from '@/features/reports/components/reportDetailsForm';
 import useReportById from '@/features/reports/hooks/useReportById';
-import { ScrollView, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
 import ShortenedTaskForm from '@/features/tasks/components/shortenedTaskForm';
 import { useEffect } from 'react';
 import { colors } from '@/shared/consts/baseColors';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const ReportDescription = () => {
     const { id } = useLocalSearchParams();
@@ -17,6 +19,13 @@ const ReportDescription = () => {
 
     const tiedTaskId = report?.task_id ? +report.task_id : null;
     const { task, isPending: isTaskPending } = useTaskById(tiedTaskId);
+    const draft = useReportDraftStore((state) => state.drafts?.[tiedTaskId]);
+    const canOpenTask = Boolean(
+        task &&
+        report &&
+        (report.status === 'REJECTED' || draft) &&
+        !isTaskReportReadOnly(task, report, draft)
+    );
 
     useEffect(() => {
         if (!report) return;
@@ -53,6 +62,14 @@ const ReportDescription = () => {
             ? colors.warning.backgroundTintColor
             : colors.ordinary.backgroundTintColor;
 
+    if (!isReportPending && !report) {
+        return (
+            <ScreenLayout safe>
+                <Text>Отчёт недоступен.</Text>
+            </ScreenLayout>
+        );
+    }
+
     return (
         <ScreenLayout safe style={{ backgroundColor: bgColor }}>
             <ScrollView
@@ -64,7 +81,11 @@ const ReportDescription = () => {
                 {isTaskPending ? (
                     <ScreenLoader loading={isTaskPending} />
                 ) : (
-                    <ShortenedTaskForm task={task} id={tiedTaskId} />
+                    <ShortenedTaskForm
+                        task={task}
+                        id={tiedTaskId}
+                        clickable={canOpenTask}
+                    />
                 )}
                 <View style={{ height: 30 }}></View>
                 {isReportPending ? (

@@ -80,8 +80,7 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
                 return { skipped: true };
             }
             sent.push(taskId);
-            await beforeFinish(taskId);
-            return {};
+            return (await beforeFinish(taskId)) ?? {};
         },
     });
     submission.current = (variables) =>
@@ -265,4 +264,25 @@ test('preserves a changed draft, photos and PDF when an earlier submission finis
     assert.equal(useReportDraftStore.getState().getDraft('1'), edited);
     assert.deepEqual(cleanup.photos, []);
     assert.deepEqual(cleanup.pdfs, []);
+});
+
+test('cleans the updated brigade draft after its server revision is recorded during synchronization', async (t) => {
+    const sent = {
+        reportState: 'pending',
+        actPdf: { uri: 'file://brigade.pdf' },
+        submissionReport: { id: 10, updatedAt: '2026-10-06T12:00:00Z' },
+    };
+    const { mount } = setup(
+        t,
+        { 1: { reportState: 'pending', actPdf: sent.actPdf } },
+        () => {
+            useReportDraftStore.setState({ drafts: { 1: sent } });
+            return { submittedDraft: sent };
+        }
+    );
+    await mount();
+    await flush();
+    assert.equal(useReportDraftStore.getState().getDraft('1'), undefined);
+    assert.deepEqual(cleanup.photos, [{ entity: 'report', entityId: '1' }]);
+    assert.deepEqual(cleanup.pdfs, ['file://brigade.pdf']);
 });

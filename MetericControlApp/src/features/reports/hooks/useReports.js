@@ -4,7 +4,6 @@ import useReportsSyncStore from '@/features/reports/store/useReportsSyncStore';
 import { useEffect, useState } from 'react';
 import useReportsStore from '@/features/reports/store/useReportsStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
-import { concatenateFields } from '@/shared/lib/collections/concatenateFields';
 
 const useReports = () => {
     const { isChecked, isOnline } = useNetwork();
@@ -66,11 +65,7 @@ const useReports = () => {
         void useReportsStore.persist
             .rehydrate()
             .then(() => {
-                const reports = useReportsStore.getState().reports ?? [];
-                for (const report of reports) {
-                    report.search = concatenateFields(reports);
-                }
-                setError(useReportsStore.persist.hasHydrated());
+                setError(null);
             })
             .catch((error) => setError(`ERROR${error.message}`));
     }, [isChecked, isOnline]);

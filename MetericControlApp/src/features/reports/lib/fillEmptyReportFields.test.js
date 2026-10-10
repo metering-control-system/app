@@ -52,6 +52,7 @@ test('clears pending state so the merged draft requires manual submission', () =
         currentValues: {
             comment: null,
             reportState: 'pending',
+            submissionReport: { id: 10, updatedAt: '2026-10-06T12:00:00Z' },
             photoMetadata: {},
             removedPhotoIds: ['old-id'],
             photos: {},
@@ -60,6 +61,7 @@ test('clears pending state so the merged draft requires manual submission', () =
     });
     assert.equal(result.values.comment, 'server');
     assert.equal(Object.hasOwn(result.values, 'reportState'), false);
+    assert.equal(Object.hasOwn(result.values, 'submissionReport'), false);
     assert.equal(Object.hasOwn(result.values, 'photoMetadata'), false);
     assert.equal(Object.hasOwn(result.values, 'removedPhotoIds'), false);
 });

@@ -18,9 +18,16 @@ import MapActionsPanel from '@/features/gis/components/mapActionsPanel';
 import { MapTaskList } from '@/features/gis/components/mapTaskList';
 import { useMapTaskIndex } from '@/features/gis/hooks/useMapTaskIndex';
 import { useMapMode } from '@/features/gis/hooks/useMapMode';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useTaskReports from '@/features/reports/hooks/useTaskReports';
+import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
 
 const MapScreen = () => {
     const tasks = useTasksStore((state) => state.tasks);
+    const reports = useReportsStore((state) => state.reports);
+    const drafts = useReportDraftStore((state) => state.drafts);
+    useTaskReports();
     const [filtering, setFiltering] = useState(new Set());
     const [search, setSearch] = useState('');
     const [focusRequest, setFocusRequest] = useState(0);
@@ -35,7 +42,7 @@ const MapScreen = () => {
             return;
         }
         setShowUnmapped(false);
-        router.push(`/(authorized)/taskFlow/taskDetails/${taskId}`);
+        router.push(`/(authorized)/taskFlow/${taskId}`);
     };
 
     const taskFilteringVariants = Object.entries(taskStatus).concat(
@@ -48,10 +55,10 @@ const MapScreen = () => {
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            tasks
+            filterSubmittedTasks(tasks, reports, drafts)
         );
         return filterBySearch({ query: filtered, input: search });
-    }, [tasks, filtering, search]);
+    }, [tasks, reports, drafts, filtering, search]);
 
     const [isTiledMap, setIsTiledMap] = useState(false);
     const { tasksByDistrict, tasksByTile, unmappedTasks } =
