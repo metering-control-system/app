@@ -1,23 +1,102 @@
+import { SIGNATURE_ROLES } from '@/features/reports/constants/signatureRoles';
+import { createSignatureSvg } from '@/features/reports/lib/createSignatureSvg';
+
 export const fillActTemplate = (html, data, requiredFields = []) => {
-    let result = html;
+    const allowedFields = new Set(
+        requiredFields.map((field) => field.toLowerCase())
+    );
+    const signatures = Object.fromEntries(
+        Object.entries(SIGNATURE_ROLES).flatMap(([role, { placeholders }]) => {
+            const svg = createSignatureSvg(data.actPdf?.signatures?.[role]);
+            return placeholders.map((placeholder) => [placeholder, svg]);
+        })
+    );
+    const resolveValue = (expression) => {
+        const comparison = expression
+            .trim()
+            .match(
+                /^([\w.]+)\s*(===|!==|==|!=)\s*(?:"([^"]*)"|'([^']*)'|([^\s]+))$/
+            );
+        const field = comparison?.[1] ?? expression.trim();
+        if (
+            allowedFields.size &&
+            !allowedFields.has(field.toLowerCase()) &&
+            !allowedFields.has(expression.trim().toLowerCase())
+        )
+            return undefined;
 
-    const regex = /\{\{([^}]+)}}/g;
+        let value = field.split('.').reduce((current, part) => {
+            if (!current || typeof current !== 'object') return undefined;
+            const key = Object.keys(current).find(
+                (name) => name.toLowerCase() === part.toLowerCase()
+            );
+            return key === undefined ? undefined : current[key];
+        }, data);
 
-    let match;
-
-    while ((match = regex.exec(html)) !== null) {
-        const placeholder = `{{${match[1]}}}`;
-        const value = match[1]
-            .split('.')
-            .reduce((acc, part) => acc?.[part], data);
-
-        if (!value || !requiredFields.includes(match[1])) {
-            result = result.replace(placeholder, '');
-            continue;
+        if (value === undefined && field === 'admission.accepted') {
+            value = data.admission?.status === 'ADMITTED';
         }
+        if (value === undefined && field === 'admission.rejected') {
+            value = data.admission?.status === 'NOT_ADMITTED';
+        }
+        if (!comparison) return value;
+        if (value === undefined || value === null) return false;
 
-        result = result.replace(placeholder, () => value);
-    }
+        const literal = comparison[5];
+        const expected =
+            comparison[3] ??
+            comparison[4] ??
+            (literal === 'true'
+                ? true
+                : literal === 'false'
+                  ? false
+                  : literal === 'null'
+                    ? null
+                    : /^-?\d+(\.\d+)?$/.test(literal)
+                      ? Number(literal)
+                      : literal);
+        return comparison[2].startsWith('!')
+            ? value !== expected
+            : value === expected;
+    };
 
-    return result;
+    const withCheckboxes = html.replace(
+        /<input\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi,
+        (input) => {
+            if (
+                !/\btype\s*=\s*(?:"checkbox"|'checkbox'|checkbox\b)/i.test(
+                    input
+                )
+            )
+                return input;
+            return input.replace(
+                /\{\{([^}]+)}}(?:\s*=\s*(?:""|''))?/g,
+                (_, expression) => {
+                    const value = resolveValue(expression);
+                    return value === true || value === 'checked'
+                        ? 'checked'
+                        : '';
+                }
+            );
+        }
+    );
+
+    return withCheckboxes.replace(/\{\{([^}]+)}}/g, (_, expression) => {
+        const field = expression.trim();
+        if (Object.hasOwn(signatures, field)) return signatures[field];
+        const value = resolveValue(field);
+        if (value === undefined || value === null || typeof value === 'object')
+            return '';
+        return String(value).replace(
+            /[&<>"']/g,
+            (character) =>
+                ({
+                    '&': '&amp;',
+                    '<': '&lt;',
+                    '>': '&gt;',
+                    '"': '&quot;',
+                    "'": '&#39;',
+                })[character]
+        );
+    });
 };
