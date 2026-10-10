@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import Card from '@/shared/components/wrapper/card';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
+import { taskMeterPhase } from '@/features/tasks/constants/taskMeterPhase';
 import {
     taskPriorityColors,
     taskStatusColors,
@@ -92,7 +93,7 @@ const Task = ({ task, hasPendingTaskReport, needsReportRevision }) => {
                 <Text
                     style={
                         styles.cardText
-                    }>{`Фаза ПУ: ${task.meter?.phase}`}</Text>
+                    }>{`Фазность ПУ: ${taskMeterPhase[task.meter?.phase] ?? 'не указана'}`}</Text>
             </View>
         </Card>
     );

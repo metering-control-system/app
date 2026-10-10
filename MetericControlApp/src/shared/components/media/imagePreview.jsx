@@ -57,11 +57,8 @@ const ImagePreview = ({
             handleUpdatePhoto(updatedUri);
             setCurrentRotate(0);
             closeModal();
-        } catch (error) {
-            Alert.alert(
-                'Не удалось сохранить изменения',
-                error?.message ?? 'Попробуйте еще раз.'
-            );
+        } catch {
+            Alert.alert('Не удалось сохранить изменения фотографии');
         } finally {
             setIsApplying(false);
         }

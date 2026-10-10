@@ -153,7 +153,7 @@ const TasksList = ({
                 )}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text>No tasks found.</Text>}
+                ListEmptyComponent={<Text>Задачи не найдены</Text>}
                 refreshing={
                     isRefreshingList || isRefrehsing || isReportsFetching
                 }

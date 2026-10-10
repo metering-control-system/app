@@ -75,6 +75,13 @@ const ReportSubmitScreen = () => {
                             setStepIndex={setStep}
                             highlightedField={highlightedField}
                             defaultActTemplate={defaultActTemplate}
+                            onValidationError={(field) => {
+                                setHighlightedField(field);
+                                scrollRef.current?.scrollTo({
+                                    y: 0,
+                                    animated: true,
+                                });
+                            }}
                         />
                     </ScrollView>
                     <View style={styles.chatDivider} />

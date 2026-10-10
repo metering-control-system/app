@@ -8,17 +8,38 @@ import {
 } from '@/features/reports/constants/reportColors';
 import { colors } from '@/shared/consts/baseColors';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
+import {
+    REJECTION_REASON_OPTIONS,
+    SEAL_LOCATION_OPTIONS,
+} from '@/features/reports/constants/reportFieldOptions';
+import useTaskById from '@/features/tasks/hooks/useTaskById';
 
 const Report = ({ report }) => {
     const router = useRouter();
+    const { task } = useTaskById(Number(report.task_id));
+    const rejectionReason = report.admission?.rejection_reason?.trim();
+    const rejectionReasonLabel =
+        REJECTION_REASON_OPTIONS.find(({ value }) => value === rejectionReason)
+            ?.label ?? rejectionReason;
+    const sealLocation =
+        SEAL_LOCATION_OPTIONS.find(
+            ({ value }) => value === report.metering?.seal_location
+        )?.label ??
+        (report.metering?.seal_location || 'не указано');
+
     return (
         <Card
             clickable
             onPress={() => {
                 router.push(`/(authorized)/reportDetails/${report.id}`);
             }}
-            title={report.consumer_contact?.full_name}
+            title={task?.address?.display_address || `Отчёт №${report.id}`}
             titleAlign={'flex-start'}>
+            {report.consumer_contact?.full_name && (
+                <Text style={styles.cardText}>
+                    {report.consumer_contact.full_name}
+                </Text>
+            )}
             <View style={styles.cardPeriod}>
                 <View style={styles.badges}>
                     <Text
@@ -55,14 +76,15 @@ const Report = ({ report }) => {
                     style={
                         styles.cardText
                     }>{`Номер нового ПУ: ${report.metering?.new_meter_number}`}</Text>
+                {rejectionReason && (
+                    <Text style={styles.cardText}>
+                        {`Причина отказа: ${rejectionReasonLabel}`}
+                    </Text>
+                )}
                 <Text
                     style={
                         styles.cardText
-                    }>{`Причина замены: ${report.admission?.rejection_reason ?? 'не указана'}`}</Text>
-                <Text
-                    style={
-                        styles.cardText
-                    }>{`Место установки: ${report.metering?.seal_location ?? 'не указано'}`}</Text>
+                    }>{`Место пломбирования: ${sealLocation}`}</Text>
             </View>
         </Card>
     );

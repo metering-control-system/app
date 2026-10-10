@@ -27,7 +27,7 @@ const optionalEmailField = z
     .trim()
     .refine(
         (value) => !value || z.email().safeParse(value).success,
-        'Введите корректный email'
+        'Введите корректный адрес электронной почты'
     );
 
 const photoArrayField = z.array(z.string().trim()).default([]);

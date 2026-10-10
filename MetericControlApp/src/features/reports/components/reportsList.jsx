@@ -100,7 +100,7 @@ const ReportsList = ({ setError, sorting, filtering, search }) => {
                 renderItem={({ item: report }) => <Report report={report} />}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text>No reports found.</Text>}
+                ListEmptyComponent={<Text>Отчёты не найдены</Text>}
                 refreshing={isRefreshing}
                 onRefresh={updateReports}
                 onContentSizeChange={(_, height) => {

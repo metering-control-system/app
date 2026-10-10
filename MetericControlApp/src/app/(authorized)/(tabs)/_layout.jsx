@@ -12,7 +12,7 @@ const DashboardLayout = () => {
             <Tabs.Screen
                 name='tasks'
                 options={{
-                    title: 'Tasks',
+                    title: 'Задачи',
                     tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
@@ -27,7 +27,7 @@ const DashboardLayout = () => {
             <Tabs.Screen
                 name='reports'
                 options={{
-                    title: 'Reports',
+                    title: 'Отчёты',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
                         <AntDesign
@@ -41,7 +41,7 @@ const DashboardLayout = () => {
             <Tabs.Screen
                 name='profile'
                 options={{
-                    title: 'Profile',
+                    title: 'Профиль',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
                         <Ionicons

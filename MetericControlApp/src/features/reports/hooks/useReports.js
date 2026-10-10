@@ -67,7 +67,9 @@ const useReports = () => {
             .then(() => {
                 setError(null);
             })
-            .catch((error) => setError(`ERROR${error.message}`));
+            .catch(() =>
+                setError(new Error('Не удалось загрузить сохранённые отчёты'))
+            );
     }, [isChecked, isOnline]);
 
     return {

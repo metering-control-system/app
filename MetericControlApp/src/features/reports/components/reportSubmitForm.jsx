@@ -27,6 +27,10 @@ import useStorePictures from '@/shared/store/useStorePictures';
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
+import {
+    REJECTION_REASON_OPTIONS,
+    SEAL_LOCATION_OPTIONS,
+} from '@/features/reports/constants/reportFieldOptions';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
@@ -45,32 +49,14 @@ import ModalPicker from '@/shared/components/picker/modalPicker';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import useActTemplates from '@/features/reports/hooks/useActTemplates';
 import PdfViewer from '@/features/reports/components/pdfViewer';
-
-const FORM_STEPS = [
-    { key: 'beforeWork', title: 'До начала работ' },
-    { key: 'metering', title: 'Демонтаж и монтаж' },
-    { key: 'photos', title: 'Фотофиксация' },
-    { key: 'admission', title: 'Итог и допуск' },
-    { key: 'contacts', title: 'Контактные данные' },
-    { key: 'act', title: 'Акт допуска/замены' },
-];
-
-const SEAL_LOCATION_OPTIONS = [
-    { label: 'Автоматический выключатель', value: 'CIRCUIT_BREAKER' },
-    { label: 'Клеммная крышка', value: 'TERMINAL_COVER' },
-    { label: 'Трансформатор', value: 'TRANSFORMER' },
-];
+import {
+    REPORT_FORM_STEPS as FORM_STEPS,
+    getFirstReportValidationError,
+} from '@/features/reports/lib/reportFormValidation';
 
 const ADMISSION_STATUS_OPTIONS = [
     { label: 'Допущен', value: 'ADMITTED' },
     { label: 'Не допущен', value: 'NOT_ADMITTED' },
-];
-
-const REJECTION_REASON_OPTIONS = [
-    { label: 'Нарушена схема питания', value: 'POWER_SCHEME_VIOLATION' },
-    { label: 'Нет доступа', value: 'NO_ACCESS' },
-    { label: 'Неисправность прибора', value: 'DEVICE_FAULT' },
-    { label: 'Другое', value: 'OTHER' },
 ];
 
 const mapTaskToReportDefaults = (task) => ({
@@ -96,6 +82,7 @@ const ReportSubmitForm = ({
     setStepIndex,
     highlightedField,
     defaultActTemplate,
+    onValidationError,
 }) => {
     const router = useRouter();
     const { isOnline } = useNetwork();
@@ -451,6 +438,16 @@ const ReportSubmitForm = ({
                 getApiErrorMessage(error, 'Не удалось отправить отчет.')
             );
         }
+    };
+
+    const onInvalid = (validationErrors) => {
+        const error = getFirstReportValidationError(validationErrors);
+        Keyboard.dismiss();
+        if (error.stepIndex !== null) {
+            setStepIndex(error.stepIndex);
+        }
+        onValidationError?.(error.field);
+        Alert.alert('Проверьте отчёт', error.message);
     };
 
     const renderTextField = ({
@@ -969,8 +966,8 @@ const ReportSubmitForm = ({
             </Text>
             {renderTextField({
                 name: 'consumerContact.email',
-                label: 'Email',
-                placeholder: 'Введите email',
+                label: 'Электронная почта',
+                placeholder: 'Введите адрес электронной почты',
                 keyboardType: 'email-address',
                 editable: !isRefusedContact,
                 error: errors.consumerContact?.email,
@@ -1212,7 +1209,7 @@ const ReportSubmitForm = ({
                     {isLastStep ? (
                         <FormButton
                             message='Сохранить отчет'
-                            onPress={handleSubmit(onSubmit)}
+                            onPress={handleSubmit(onSubmit, onInvalid)}
                             isPending={isSubmitting}
                             disabled={isReportBusy}
                             style={styles.primaryButton}

@@ -115,7 +115,7 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
                 renderItem={renderItem}
                 keyExtractor={(item) => item.localId}
                 contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text>No comments found.</Text>}
+                ListEmptyComponent={<Text>Пока нет сообщений</Text>}
                 onContentSizeChange={(_, height) => {
                     setContentHeight(height);
                 }}
