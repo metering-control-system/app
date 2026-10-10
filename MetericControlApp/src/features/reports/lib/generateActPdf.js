@@ -3,11 +3,7 @@ import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
 import { getActReportFields } from './getActReportFields';
 import { createActChecksum } from './createActChecksum';
 
-export const generateActPdf = async ({
-    template,
-    values,
-    resetSignatures = false,
-}) => {
+export const generateActPdf = async ({ template, values, previousAct }) => {
     if (!template?.html) throw new Error('Выберите шаблон акта.');
     const snapshot = JSON.parse(JSON.stringify(values));
     const templateSnapshot = {
@@ -18,7 +14,7 @@ export const generateActPdf = async ({
         ...snapshot.actPdf,
         isRefused: false,
         templateId: String(templateSnapshot.id),
-        signatures: resetSignatures ? {} : (snapshot.actPdf?.signatures ?? {}),
+        signatures: {},
     };
     const normalizedValues = {
         ...snapshot,
@@ -29,6 +25,9 @@ export const generateActPdf = async ({
         template: templateSnapshot,
         values: normalizedValues,
     });
+    const savedAct = previousAct ?? snapshot.actPdf;
+    actPdf.signatures =
+        savedAct?.checksum === checksum ? (savedAct.signatures ?? {}) : {};
     const html = fillActTemplate(
         templateSnapshot.html,
         normalizedValues,
