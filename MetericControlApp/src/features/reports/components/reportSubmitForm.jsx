@@ -56,7 +56,6 @@ import {
     getFirstReportValidationError,
 } from '@/features/reports/lib/reportFormValidation';
 
-
 const ADMISSION_STATUS_OPTIONS = [
     { label: 'Допущен', value: 'ADMITTED' },
     { label: 'Не допущен', value: 'NOT_ADMITTED' },
