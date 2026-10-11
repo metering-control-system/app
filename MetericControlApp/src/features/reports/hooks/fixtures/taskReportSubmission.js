@@ -107,6 +107,11 @@ export const addReportComment = async () => {
 };
 export const uploadReportImage = async () => api.report;
 export const deleteReportImage = async () => {};
+export const validateReportAct = async () => {};
+export const useReportActStore = create(() => ({
+    actMetadataByTask: {},
+    clearTaskAct: () => {},
+}));
 const savePdfAct = (operation, reportId, payload) => {
     api.actCalls.push({ operation, reportId, payload });
     api.report = {

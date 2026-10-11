@@ -1,5 +1,6 @@
 import { createClientReportId } from './createClientReportId.js';
 import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
+import { buildReportActFieldsPayload } from './reportActFieldValues.js';
 
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
@@ -14,11 +15,11 @@ const toNullableValue = (value) => {
 const toReadingValue = (value) => {
     const normalizedValue = toNullableValue(value);
 
-    if (!normalizedValue) {
+    if (normalizedValue === null) {
         return null;
     }
 
-    return normalizedValue.replace(',', '.');
+    return String(normalizedValue).replace(',', '.');
 };
 
 const splitFullName = (fullName) => {
@@ -70,20 +71,25 @@ export const buildReportPayload = (
     const rejectionReason = toNullableValue(
         formValues.admission.rejectionReason
     );
-    const actualOldMeterNumber =
-        toNullableValue(formValues.meterBefore.actualNumber) ??
-        toNullableValue(formValues.meterBefore.number);
-    const actualOldMeterType =
-        toNullableValue(formValues.meterBefore.actualType) ??
-        toNullableValue(formValues.meterBefore.type);
+    const actFields = buildReportActFieldsPayload(formValues);
+    const actualOldMeterNumber = formValues.meterBefore.isActualDifferent
+        ? toNullableValue(formValues.meterBefore.actualNumber)
+        : (toNullableValue(formValues.meterBefore.actualNumber) ??
+          toNullableValue(formValues.meterBefore.number));
+    const actualOldMeterType = formValues.meterBefore.isActualDifferent
+        ? toNullableValue(formValues.meterBefore.actualType)
+        : (toNullableValue(formValues.meterBefore.actualType) ??
+          toNullableValue(formValues.meterBefore.type));
 
     const payload = {
         ['client_report_id']: formValues.clientReportId,
         ['task_id']: Number(formValues.taskId),
+        ['act_details']: actFields['act_details'],
         metering: {
+            ...actFields.metering,
             ['dismantling_completed']: formValues.metering.dismantlingCompleted,
-            ['actual_old_meter_number']: actualOldMeterNumber,
-            ['actual_old_meter_type']: actualOldMeterType,
+            ['actual_old_meter_number']: actualOldMeterNumber ?? '',
+            ['actual_old_meter_type']: actualOldMeterType ?? '',
             ['new_meter_number']: toNullableValue(
                 formValues.metering.newMeterNumber
             ),
@@ -94,12 +100,13 @@ export const buildReportPayload = (
             ['installation_reading']: toReadingValue(
                 formValues.metering.installationReading
             ),
-            ['seal_location']: toNullableValue(
-                formValues.metering.sealLocation
-            ),
-            ['seal_number']: toNullableValue(formValues.metering.sealNumber),
+            ['seal_location']:
+                toNullableValue(formValues.metering.sealLocation) ?? '',
+            ['seal_number']:
+                toNullableValue(formValues.metering.sealNumber) ?? '',
         },
         admission: {
+            ...actFields.admission,
             status: toNullableValue(formValues.admission.status),
             ['rejection_reason']: rejectionReason,
             ['rejection_comment']: toNullableValue(

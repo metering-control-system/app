@@ -207,3 +207,40 @@ test('does not delete a photo removed and then restored before save', () => {
         []
     );
 });
+
+test('submits new act fields and allows explicitly missing old meter and seal', () => {
+    const values = createFormValues();
+    values.meterBefore = {
+        ...values.meterBefore,
+        isActualDifferent: true,
+        actualType: '',
+        actualNumber: '',
+        accuracyClass: '1.0',
+        digitsAfter: '0',
+    };
+    values.metering = {
+        ...values.metering,
+        oldReading: '',
+        sealNumber: '',
+        sealLocation: '',
+        oldT1: '0',
+        newT2: '12,345',
+    };
+    values.actDetails = {
+        powerOfAttorneyDate: '12.10.2026',
+        representativeName: 'Представитель',
+    };
+    values.admission.isCompliant = false;
+    const payload = buildReportPayload(values);
+    assert.equal(payload.metering.actual_old_meter_type, '');
+    assert.equal(payload.metering.actual_old_meter_number, '');
+    assert.equal(payload.metering.removal_reading, null);
+    assert.equal(payload.metering.seal_number, '');
+    assert.equal(payload.metering.seal_location, '');
+    assert.equal(payload.metering.old_t1, '0');
+    assert.equal(payload.metering.new_t2, '12.345');
+    assert.equal(payload.metering.old_digits_after, 0);
+    assert.equal(payload.admission.is_compliant, false);
+    assert.equal(payload.act_details.power_of_attorney_date, '2026-10-12');
+    assert.equal(payload.act_details.representative_name, 'Представитель');
+});

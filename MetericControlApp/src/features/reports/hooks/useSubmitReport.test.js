@@ -18,6 +18,7 @@ const replacements = new Map(
         ['@/features/reports/store/useReportsStore', 'useReportsStore'],
         ['@/features/reports/store/useReportDraftStore', 'useReportDraftStore'],
         ['@/shared/store/useStorePictures', 'useStorePictures'],
+        ['@/features/reports/store/useReportActStore', 'useReportActStore'],
     ].map(([specifier, name]) => [
         specifier,
         `data:text/javascript,${encodeURIComponent(`export { ${name} as default } from '${fixturesUrl}';`)}`,
@@ -27,6 +28,7 @@ const apiModules = new Set([
     '@/features/reports/api/submitReportApi',
     '@/features/tasks/api/getTaskByIdApi',
     '@/features/reports/lib/savePdfToDocuments',
+    '@/features/reports/lib/validateReportAct',
 ]);
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {

@@ -28,10 +28,15 @@ import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFor
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 import {
+    REPORT_ACT_FIELDS,
+    OPTIONAL_BOOLEAN_OPTIONS,
+} from '@/features/reports/constants/reportActFields';
+import {
     REJECTION_REASON_OPTIONS,
     SEAL_LOCATION_OPTIONS,
 } from '@/features/reports/constants/reportFieldOptions';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import { mapTaskToReportDefaults } from '@/features/reports/lib/mapTaskToReportDefaults';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
     buildReportReplacement,
@@ -50,6 +55,7 @@ import useReportActStore from '@/features/reports/store/useReportActStore';
 import * as Sharing from 'expo-sharing';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import ActDocumentPanel from '@/features/reports/components/actDocumentPanel';
+import ReportDateField from './reportDateField';
 import {
     REPORT_FORM_STEPS as FORM_STEPS,
     getFirstReportValidationError,
@@ -59,20 +65,6 @@ const ADMISSION_STATUS_OPTIONS = [
     { label: 'Допущен', value: 'ADMITTED' },
     { label: 'Не допущен', value: 'NOT_ADMITTED' },
 ];
-
-const mapTaskToReportDefaults = (task) => ({
-    ...reportSubmitFormDefaultValues,
-    clientReportId: createClientReportId(),
-    customerName: task?.consumer?.full_name || '',
-    personalAccount: task?.address?.account_number || '',
-    meterBefore: {
-        ...reportSubmitFormDefaultValues.meterBefore,
-        type: task?.meter?.type || '',
-        number: task?.meter?.number || '',
-        actualNumber: task?.realMeter?.number || '',
-        isActualDifferent: Boolean(task?.realMeter?.number),
-    },
-});
 
 const ReportSubmitForm = ({
     onError,
@@ -159,6 +151,11 @@ const ReportSubmitForm = ({
         return {
             ...taskDefaults,
             ...draftFormValues,
+            address: taskDefaults.address,
+            actDetails: {
+                ...taskDefaults.actDetails,
+                ...draftFormValues?.actDetails,
+            },
             meterBefore: {
                 ...taskDefaults.meterBefore,
                 ...draftFormValues?.meterBefore,
@@ -546,6 +543,7 @@ const ReportSubmitForm = ({
         onChange,
         options,
         name,
+        allowEmpty = false,
     }) => (
         <View
             onLayout={(e) => {
@@ -560,8 +558,16 @@ const ReportSubmitForm = ({
 
                             return (
                                 <Pressable
-                                    key={option.value}
-                                    onPress={() => onChange(option.value)}
+                                    key={String(option.value)}
+                                    accessibilityRole='radio'
+                                    accessibilityState={{ checked: isSelected }}
+                                    onPress={() =>
+                                        onChange(
+                                            allowEmpty && isSelected
+                                                ? ''
+                                                : option.value
+                                        )
+                                    }
                                     style={[
                                         styles.chip,
                                         isSelected && styles.chipSelected,
@@ -644,6 +650,95 @@ const ReportSubmitForm = ({
         </View>
     );
 
+    const renderActFields = (fields, title) => (
+        <View style={styles.section}>
+            <Text style={styles.sectionTitle}>{title}</Text>
+            <Text style={styles.hintText}>
+                Дополнительные сведения можно оставить незаполненными.
+            </Text>
+            {fields.map((field) => {
+                const name = `${field.group}.${field.name}`;
+                const error = errors[field.group]?.[field.name];
+                if (field.kind === 'date' || field.kind === 'datetime')
+                    return (
+                        <View
+                            key={name}
+                            onLayout={(e) => fillPositions({ e, name })}>
+                            <HighlightWrap isActive={highlightedField === name}>
+                                <Controller
+                                    control={control}
+                                    name={name}
+                                    render={({
+                                        field: { value, onChange, onBlur },
+                                    }) => (
+                                        <ReportDateField
+                                            label={field.label}
+                                            value={value}
+                                            onChange={onChange}
+                                            onBlur={onBlur}
+                                            dateTime={field.kind === 'datetime'}
+                                            disabled={isReportBusy}
+                                            error={error?.message}
+                                        />
+                                    )}
+                                />
+                            </HighlightWrap>
+                        </View>
+                    );
+                if (field.kind === 'choice' || field.kind === 'boolean')
+                    return (
+                        <View key={name}>
+                            <Controller
+                                control={control}
+                                name={name}
+                                render={({ field: { value, onChange } }) =>
+                                    renderSingleOptionGroup({
+                                        name,
+                                        label: field.label,
+                                        value,
+                                        onChange,
+                                        options:
+                                            field.options ??
+                                            OPTIONAL_BOOLEAN_OPTIONS,
+                                        allowEmpty: field.kind === 'choice',
+                                    })
+                                }
+                            />
+                            {error && (
+                                <Text style={styles.errorText}>
+                                    {error.message}
+                                </Text>
+                            )}
+                        </View>
+                    );
+                return (
+                    <View key={name}>
+                        {renderTextField({
+                            name,
+                            label: field.label,
+                            error,
+                            placeholder:
+                                field.kind === 'integer'
+                                    ? 'Например, 0'
+                                    : field.kind === 'reading'
+                                      ? 'Введите показания'
+                                      : 'Не указано',
+                            keyboardType:
+                                field.kind === 'integer'
+                                    ? 'number-pad'
+                                    : field.kind === 'reading'
+                                      ? 'decimal-pad'
+                                      : 'default',
+                            multiline:
+                                field.maxLength === null &&
+                                field.kind === 'text',
+                        })}
+                    </View>
+                );
+            })}
+        </View>
+    );
+
     const renderBeforeWorkStep = () => (
         <View style={styles.section}>
             {renderTextField({
@@ -659,6 +754,17 @@ const ReportSubmitForm = ({
                 keyboardType: 'number-pad',
                 error: errors.personalAccount,
             })}
+            <View style={styles.control}>
+                <Text style={styles.label}>Адрес из задачи</Text>
+                <Text>
+                    {Object.entries(initialValues.address)
+                        .filter(([, value]) => value)
+                        .map(([key, value]) =>
+                            key === 'room' ? `Помещение: ${value}` : value
+                        )
+                        .join(', ') || 'Не указан'}
+                </Text>
+            </View>
             {renderTextField({
                 name: 'meterBefore.type',
                 label: 'Тип старого ПУ',
@@ -707,6 +813,12 @@ const ReportSubmitForm = ({
                 numberOfLines: 4,
                 error: errors.comment,
             })}
+            {renderActFields(
+                REPORT_ACT_FIELDS.filter(
+                    (field) => field.group === 'meterBefore'
+                ),
+                'Характеристики старого счётчика'
+            )}
         </View>
     );
 
@@ -732,6 +844,12 @@ const ReportSubmitForm = ({
                 keyboardType: 'decimal-pad',
                 error: errors.metering?.oldReading,
             })}
+            {renderActFields(
+                REPORT_ACT_FIELDS.filter((field) =>
+                    ['oldT1', 'oldT2'].includes(field.name)
+                ),
+                'Тарифные показания старого счётчика'
+            )}
             {renderTextField({
                 name: 'metering.newMeterType',
                 label: 'Тип нового ПУ',
@@ -754,6 +872,7 @@ const ReportSubmitForm = ({
                         value,
                         onChange,
                         options: SEAL_LOCATION_OPTIONS,
+                        allowEmpty: true,
                     })
                 }
             />
@@ -775,6 +894,27 @@ const ReportSubmitForm = ({
                 keyboardType: 'decimal-pad',
                 error: errors.metering?.installationReading,
             })}
+            {renderActFields(
+                REPORT_ACT_FIELDS.filter(
+                    (field) =>
+                        field.group === 'metering' &&
+                        ![
+                            'oldT1',
+                            'oldT2',
+                            'replacementReason',
+                            'replacementReasonComment',
+                        ].includes(field.name)
+                ),
+                'Характеристики нового счётчика'
+            )}
+            {renderActFields(
+                REPORT_ACT_FIELDS.filter((field) =>
+                    ['replacementReason', 'replacementReasonComment'].includes(
+                        field.name
+                    )
+                ),
+                'Причина замены'
+            )}
         </View>
     );
 
@@ -943,6 +1083,20 @@ const ReportSubmitForm = ({
                     {errors.admission.rejectionReason.message}
                 </Text>
             ) : null}
+            {admissionStatus === 'NOT_ADMITTED' &&
+                renderTextField({
+                    name: 'admission.rejectionComment',
+                    label: 'Пояснение причины недопуска',
+                    placeholder: 'Укажите причину недопуска',
+                    multiline: true,
+                    error: errors.admission?.rejectionComment,
+                })}
+            {renderActFields(
+                REPORT_ACT_FIELDS.filter(
+                    (field) => field.group === 'admission'
+                ),
+                'Дополнительные сведения о допуске'
+            )}
         </View>
     );
 
@@ -1017,8 +1171,8 @@ const ReportSubmitForm = ({
             })}
             {renderTextField({
                 name: 'consumerContact.fullName',
-                label: 'ФИО контактного лица',
-                placeholder: 'Введите ФИО контактного лица',
+                label: 'ФИО потребителя или его представителя',
+                placeholder: 'Фамилия Имя Отчество',
                 editable: !isRefusedContact,
                 error: errors.consumerContact?.fullName,
             })}
@@ -1173,6 +1327,13 @@ const ReportSubmitForm = ({
                 return renderAdmissionStep();
             case 'contacts':
                 return renderContactsStep();
+            case 'reportDetails':
+                return renderActFields(
+                    REPORT_ACT_FIELDS.filter(
+                        (field) => field.group === 'actDetails'
+                    ),
+                    'Дата, представители и доверенность'
+                );
             case 'act':
                 return renderPdfStep();
             default:
@@ -1267,6 +1428,12 @@ const ReportSubmitForm = ({
 };
 
 const styles = StyleSheet.create({
+    sectionTitle: {
+        fontSize: 17,
+        fontWeight: '600',
+        color: '#172b4d',
+        marginTop: 12,
+    },
     card: { gap: 16, marginTop: 16 },
     brigadeActions: { gap: 10 },
     brigadeBadge: {

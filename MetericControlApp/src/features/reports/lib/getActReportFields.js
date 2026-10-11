@@ -17,6 +17,7 @@ export const getActReportFields = (values) =>
         clientReportId: values.clientReportId ?? '',
         customerName: values.customerName ?? '',
         personalAccount: values.personalAccount ?? '',
+        actDetails: values.actDetails ?? {},
         meterBefore: values.meterBefore ?? {},
         metering: values.metering ?? {},
         admission: values.admission ?? {},

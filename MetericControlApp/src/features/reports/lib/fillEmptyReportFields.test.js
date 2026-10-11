@@ -84,3 +84,35 @@ test('fills unchecked flags from the server without unchecking local flags', () 
         assert.equal(result.values.metering.installed, expected);
     }
 });
+
+test('new nullable choices preserve explicit no and load unknown values from server', () => {
+    const result = fillEmptyReportFields({
+        currentValues: {
+            admission: { isCompliant: false, isSmartSystemConnected: null },
+            metering: { oldT1: '0', newT2: '' },
+            actDetails: {
+                representativeName: 'Моё имя',
+                powerOfAttorneyNumber: '',
+            },
+            photos: {},
+        },
+        replacement: {
+            values: {
+                admission: { isCompliant: true, isSmartSystemConnected: false },
+                metering: { oldT1: '10', newT2: '0' },
+                actDetails: {
+                    representativeName: 'Другое имя',
+                    powerOfAttorneyNumber: '123',
+                },
+                photos: {},
+            },
+            photoMetadata: {},
+        },
+    });
+    assert.equal(result.values.admission.isCompliant, false);
+    assert.equal(result.values.admission.isSmartSystemConnected, false);
+    assert.equal(result.values.metering.oldT1, '0');
+    assert.equal(result.values.metering.newT2, '0');
+    assert.equal(result.values.actDetails.representativeName, 'Моё имя');
+    assert.equal(result.values.actDetails.powerOfAttorneyNumber, '123');
+});

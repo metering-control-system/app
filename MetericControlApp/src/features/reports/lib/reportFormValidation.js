@@ -18,6 +18,7 @@ export const REPORT_FORM_STEPS = [
         title: 'Контактные данные',
         fields: ['consumerContact'],
     },
+    { key: 'reportDetails', title: 'Реквизиты отчёта', fields: ['actDetails'] },
     { key: 'act', title: 'Акт допуска/замены', fields: ['actPdf'] },
 ];
 
