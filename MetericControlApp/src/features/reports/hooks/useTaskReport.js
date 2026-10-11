@@ -56,6 +56,7 @@ const useTaskReport = (task) => {
         data: report,
         isReadOnly: !isSubmitting && isTaskReportReadOnly(task, report, draft),
         isPending: enabled && query.isPending,
+        isFetching: enabled && query.isFetching,
         isError: enabled && query.isError,
         error: enabled && query.error,
         refetch: query.refetch,
