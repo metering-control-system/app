@@ -89,6 +89,7 @@ export default function MediaBlock({
             <ImagePreview
                 onError={onError}
                 uri={selectedUri}
+                editable={!disabled && !/^https?:\/\//i.test(selectedUri ?? '')}
                 handleUpdatePhoto={(nextUri) =>
                     handleUpdatePhoto(nextUri, selectedIndex)
                 }
