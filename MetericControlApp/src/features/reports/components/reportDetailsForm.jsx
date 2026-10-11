@@ -12,6 +12,7 @@ import {
     SEAL_LOCATION_OPTIONS,
 } from '@/features/reports/constants/reportFieldOptions';
 import { colors } from '@/shared/consts/baseColors';
+import { getAdditionalReportDetails } from '../lib/reportFieldDetails';
 
 const DetailRow = ({ label, value }) => (
     <View style={styles.detailRow}>
@@ -36,6 +37,11 @@ const Section = ({ icon, title, children }) => (
     </View>
 );
 
+const AdditionalDetails = ({ rows }) =>
+    rows.map(({ key, label, value }) => (
+        <DetailRow key={key} label={label} value={value} />
+    ));
+
 const ReportDetailsForm = ({ onError, report, task }) => {
     const [previewUri, setPreviewUri] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
@@ -48,6 +54,7 @@ const ReportDetailsForm = ({ onError, report, task }) => {
     const metering = report.metering ?? {};
     const admission = report.admission ?? {};
     const contact = report.consumer_contact ?? {};
+    const additionalDetails = getAdditionalReportDetails(report);
     const dates = [
         ['Отправлен', report.submitted_at],
         ['Проверен', report.reviewed_at],
@@ -103,6 +110,11 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                         Лицевой счёт: {task.address.account_number}
                     </Text>
                 )}
+                {task?.address?.room && (
+                    <Text style={styles.subtitle}>
+                        Комната: {task.address.room}
+                    </Text>
+                )}
                 {dates.length > 0 && (
                     <View style={styles.dates}>
                         {dates.map(([label, date]) => (
@@ -122,6 +134,12 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                     </View>
                 )}
             </View>
+
+            {additionalDetails.actDetails.length > 0 && (
+                <Section title='Реквизиты отчёта' icon='document-text-outline'>
+                    <AdditionalDetails rows={additionalDetails.actDetails} />
+                </Section>
+            )}
 
             <Section title='Итог работы' icon='clipboard-outline'>
                 <DetailRow
@@ -147,6 +165,7 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                         </Text>
                     </View>
                 )}
+                <AdditionalDetails rows={additionalDetails.admission} />
             </Section>
 
             <Section title='Старый счётчик' icon='speedometer-outline'>
@@ -169,6 +188,7 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                             : null
                     }
                 />
+                <AdditionalDetails rows={additionalDetails.oldMeter} />
             </Section>
 
             <Section title='Новый счётчик' icon='flash-outline'>
@@ -187,7 +207,14 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                         )?.label ?? metering.seal_location
                     }
                 />
+                <AdditionalDetails rows={additionalDetails.newMeter} />
             </Section>
+
+            {additionalDetails.replacement.length > 0 && (
+                <Section title='Причина замены' icon='construct-outline'>
+                    <AdditionalDetails rows={additionalDetails.replacement} />
+                </Section>
+            )}
 
             <Section title='Контактные данные' icon='person-outline'>
                 {contact.is_refused_contact ? (
