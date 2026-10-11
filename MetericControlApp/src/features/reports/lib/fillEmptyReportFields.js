@@ -1,13 +1,26 @@
-const fillEmpty = (local, server) => {
+const fillEmpty = (local, server, path = '') => {
     if (local == null || (typeof local === 'string' && !local.trim())) {
         return server ?? local;
     }
-    if (typeof local === 'boolean') return local || server === true;
+    if (typeof local === 'boolean')
+        return [
+            'admission.isCompliant',
+            'admission.isSmartSystemConnected',
+        ].includes(path)
+            ? local
+            : local || server === true;
     if (Array.isArray(local)) return local.length ? local : (server ?? local);
     if (typeof local !== 'object') return local;
     return Object.fromEntries(
         [...new Set([...Object.keys(local), ...Object.keys(server ?? {})])].map(
-            (key) => [key, fillEmpty(local[key], server?.[key])]
+            (key) => [
+                key,
+                fillEmpty(
+                    local[key],
+                    server?.[key],
+                    path ? `${path}.${key}` : key
+                ),
+            ]
         )
     );
 };

@@ -32,6 +32,7 @@ import {
     SEAL_LOCATION_OPTIONS,
 } from '@/features/reports/constants/reportFieldOptions';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import { mapTaskToReportDefaults } from '@/features/reports/lib/mapTaskToReportDefaults';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
     buildReportReplacement,
@@ -59,20 +60,6 @@ const ADMISSION_STATUS_OPTIONS = [
     { label: 'Допущен', value: 'ADMITTED' },
     { label: 'Не допущен', value: 'NOT_ADMITTED' },
 ];
-
-const mapTaskToReportDefaults = (task) => ({
-    ...reportSubmitFormDefaultValues,
-    clientReportId: createClientReportId(),
-    customerName: task?.consumer?.full_name || '',
-    personalAccount: task?.address?.account_number || '',
-    meterBefore: {
-        ...reportSubmitFormDefaultValues.meterBefore,
-        type: task?.meter?.type || '',
-        number: task?.meter?.number || '',
-        actualNumber: task?.realMeter?.number || '',
-        isActualDifferent: Boolean(task?.realMeter?.number),
-    },
-});
 
 const ReportSubmitForm = ({
     onError,
@@ -159,6 +146,11 @@ const ReportSubmitForm = ({
         return {
             ...taskDefaults,
             ...draftFormValues,
+            address: taskDefaults.address,
+            actDetails: {
+                ...taskDefaults.actDetails,
+                ...draftFormValues?.actDetails,
+            },
             meterBefore: {
                 ...taskDefaults.meterBefore,
                 ...draftFormValues?.meterBefore,

@@ -1,4 +1,5 @@
 import { REPORT_PHOTO_SLOT_BY_KIND } from '../constants/reportPhotoConfigs.js';
+import { hydrateReportActFields } from './reportActFieldValues.js';
 
 export const mapReportImagesToForm = (images = []) => {
     const photos = {};
@@ -30,25 +31,31 @@ export const mapReportToFormValues = (report, taskDefaults) => {
     const metering = report.metering ?? {};
     const admission = report.admission ?? {};
     const contact = report['consumer_contact'] ?? {};
+    const actFields = hydrateReportActFields(report);
     const images = mapReportImagesToForm(report.images);
     const actualNumber = metering['actual_old_meter_number'] ?? '';
     const actualType = metering['actual_old_meter_type'] ?? '';
     const isActualDifferent =
-        (actualNumber && actualNumber !== taskDefaults.meterBefore.number) ||
-        (actualType && actualType !== taskDefaults.meterBefore.type);
+        (Object.hasOwn(metering, 'actual_old_meter_number') &&
+            actualNumber !== taskDefaults.meterBefore.number) ||
+        (Object.hasOwn(metering, 'actual_old_meter_type') &&
+            actualType !== taskDefaults.meterBefore.type);
 
     return {
         ...taskDefaults,
         clientReportId:
             report['client_report_id'] ?? taskDefaults.clientReportId,
+        actDetails: actFields.actDetails,
         meterBefore: {
             ...taskDefaults.meterBefore,
+            ...actFields.meterBefore,
             actualNumber: isActualDifferent ? actualNumber : '',
             actualType: isActualDifferent ? actualType : '',
             isActualDifferent: Boolean(isActualDifferent),
         },
         metering: {
             ...taskDefaults.metering,
+            ...actFields.metering,
             dismantlingCompleted: metering['dismantling_completed'] ?? false,
             oldReading: metering['removal_reading'] ?? '',
             newMeterType: metering['new_meter_type'] ?? '',
@@ -59,13 +66,24 @@ export const mapReportToFormValues = (report, taskDefaults) => {
         },
         photos: { ...taskDefaults.photos, ...images.photos },
         admission: {
+            ...actFields.admission,
             status: admission.status ?? '',
             rejectionReason: admission['rejection_reason'] ?? '',
             rejectionComment: admission['rejection_comment'] ?? '',
         },
         consumerContact: {
             isRefusedContact: contact['is_refused_contact'] ?? false,
-            fullName: contact['full_name'] ?? '',
+            fullName: ['last_name', 'first_name', 'middle_name'].some((key) =>
+                Object.hasOwn(contact, key)
+            )
+                ? [
+                      contact['last_name'],
+                      contact['first_name'],
+                      contact['middle_name'],
+                  ]
+                      .filter(Boolean)
+                      .join(' ')
+                : (contact['full_name'] ?? ''),
             phoneNumber: contact['phone_number_1'] ?? '',
             phoneNumber2: contact['phone_number_2'] ?? '',
             email: contact.email ?? '',
