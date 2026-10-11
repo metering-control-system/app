@@ -9,6 +9,15 @@ export const getApiErrorMessage = (
     error,
     fallbackMessage = 'Не удалось выполнить действие. Попробуйте ещё раз.'
 ) => {
+    if (
+        [
+            'UPLOAD_FILE_UNAVAILABLE',
+            'REPORT_PHOTO_UNAVAILABLE',
+            'REPORT_ACT_INVALID',
+        ].includes(error?.code)
+    ) {
+        return error.message;
+    }
     if (error?.code === 'ECONNABORTED' || error?.code === 'ETIMEDOUT') {
         return 'Сервер не ответил вовремя. Попробуйте ещё раз через минуту.';
     }
