@@ -141,3 +141,23 @@ test('valid zero readings and refused contacts do not produce validation errors'
     );
     assert.deepEqual(result.errors, {});
 });
+
+test('invalid act date opens the report details step and identifies the field', async () => {
+    const input = values();
+    input.actDetails = { powerOfAttorneyDate: '31.02.2026' };
+    assert.deepEqual(await firstError(input), {
+        stepIndex: 5,
+        field: 'actDetails.powerOfAttorneyDate',
+        message: 'Введите существующую дату в формате ДД.ММ.ГГГГ',
+    });
+});
+
+test('invalid tariff reading opens the meter step', async () => {
+    const input = values();
+    input.metering.newT1 = 'нет';
+    assert.deepEqual(await firstError(input), {
+        stepIndex: 1,
+        field: 'metering.newT1',
+        message: 'Введите показания: до 9 цифр до запятой и до 3 после',
+    });
+});
