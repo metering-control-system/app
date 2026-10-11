@@ -1,6 +1,12 @@
+import useReportDetailsNavigation from '@/features/reports/hooks/useReportDetailsNavigation';
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
-import { useLocalSearchParams, useNavigation } from 'expo-router';
+import {
+    Redirect,
+    useLocalSearchParams,
+    useNavigation,
+    useRouter,
+} from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportDetailsForm from '@/features/reports/components/reportDetailsForm';
 import useReportById from '@/features/reports/hooks/useReportById';
@@ -8,27 +14,40 @@ import { ScrollView, StyleSheet } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
 import ShortenedTaskForm from '@/features/tasks/components/shortenedTaskForm';
-import { useEffect } from 'react';
-import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
+import { useCallback, useEffect } from 'react';
+import { ShrinkedChat } from '@/features/comments/components/shrinkedChat';
 
 const ReportDescription = () => {
     const { error: errorMessage, handleError, dismissError } = useErrors();
 
-    const { id } = useLocalSearchParams();
+    const { id, reference, viewOnly } = useLocalSearchParams();
     const { report, isPending: isReportPending } = useReportById(+id);
 
     const navigation = useNavigation();
+    const router = useRouter();
+    const openComments = useCallback(() => {
+        if (report?.id) {
+            router.push(`/(authorized)/commentsScreen/${report.id}`);
+        }
+    }, [report?.id, router]);
 
     const tiedTaskId = report?.task_id ? +report.task_id : null;
     const { task, isPending: isTaskPending } = useTaskById(tiedTaskId);
-    const draft = useReportDraftStore((state) => state.drafts?.[tiedTaskId]);
-    const canOpenTask = Boolean(
-        task &&
-        report &&
-        (report.status === 'REJECTED' || draft) &&
-        !isTaskReportReadOnly(task, report, draft)
-    );
+    const {
+        scrollRef,
+        fillPositions,
+        scrollToReference,
+        target,
+        isResolvingReference,
+        canOpenTask,
+        redirect,
+    } = useReportDetailsNavigation({
+        report,
+        task,
+        isTaskPending,
+        reference,
+        viewOnly,
+    });
 
     useEffect(() => {
         if (!report) return;
@@ -39,18 +58,24 @@ const ReportDescription = () => {
         });
     }, [report, navigation]);
 
+    if (redirect) return <Redirect href={redirect} />;
+
     return (
         <ScreenLayout safe style={styles.screen}>
             <ScrollView
+                ref={scrollRef}
+                onContentSizeChange={scrollToReference}
                 contentContainerStyle={styles.content}
                 showsVerticalScrollIndicator={false}>
-                {isReportPending ? (
-                    <ScreenLoader loading={isReportPending} />
+                {isReportPending || isResolvingReference ? (
+                    <ScreenLoader loading />
                 ) : (
                     <ReportDetailsForm
                         onError={handleError}
                         report={report}
                         task={task}
+                        highlightedField={target?.field}
+                        fillPositions={fillPositions}
                     />
                 )}
                 {report &&
@@ -64,6 +89,9 @@ const ReportDescription = () => {
                         />
                     ))}
             </ScrollView>
+            {report?.id && (
+                <ShrinkedChat reportId={report.id} onPress={openComments} />
+            )}
             <Notification
                 variant='warning'
                 message={errorMessage}

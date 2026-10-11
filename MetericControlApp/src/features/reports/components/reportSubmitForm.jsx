@@ -89,7 +89,6 @@ const ReportSubmitForm = ({
     onValidationError,
 }) => {
     const router = useRouter();
-    const formRef = useRef(null);
     const { isOnline } = useNetwork();
     const hydratedDraftIdRef = useRef(null);
     const hydratedPhotosIdRef = useRef(null);
@@ -529,7 +528,7 @@ const ReportSubmitForm = ({
     }) => (
         <ReportFieldLayout
             name={name}
-            containerRef={formRef}
+
             fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <View style={styles.control}>
@@ -584,7 +583,7 @@ const ReportSubmitForm = ({
     }) => (
         <ReportFieldLayout
             name={name}
-            containerRef={formRef}
+
             fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <View style={styles.control}>
@@ -642,7 +641,7 @@ const ReportSubmitForm = ({
     }) => (
         <ReportFieldLayout
             name={name}
-            containerRef={formRef}
+
             fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <Pressable
@@ -688,7 +687,7 @@ const ReportSubmitForm = ({
                         <ReportFieldLayout
                             key={name}
                             name={name}
-                            containerRef={formRef}
+
                             fillPositions={fillPositions}>
                             <HighlightWrap isActive={highlightedField === name}>
                                 <Controller
@@ -1012,7 +1011,7 @@ const ReportSubmitForm = ({
             <ReportFieldLayout
                 key={photoField.name}
                 name={photoFieldName}
-                containerRef={formRef}
+
                 fillPositions={fillPositions}>
                 <HighlightWrap isActive={highlightedField === photoFieldName}>
                     <ReportFormSection
@@ -1438,7 +1437,7 @@ const ReportSubmitForm = ({
     };
 
     return (
-        <View ref={formRef} collapsable={false} style={styles.form}>
+        <View collapsable={false} style={styles.form}>
             <View style={styles.header}>
                 <View style={styles.headerTitleRow}>
                     <View style={styles.headerIcon}>
