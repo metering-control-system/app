@@ -103,6 +103,20 @@ test('invalid optional values point to the concrete field', () => {
     }
 });
 
+test('saving report fields leaves server signature values outside the update', () => {
+    const input = validValues();
+    input.actDetails.memberSignature = '';
+    input.actDetails.consumerSignature = '';
+    const payload = buildReportActFieldsPayload(
+        reportSubmitFormSchema.parse(input)
+    );
+    assert.equal(Object.hasOwn(payload.act_details, 'member_signature'), false);
+    assert.equal(
+        Object.hasOwn(payload.act_details, 'consumer_signature'),
+        false
+    );
+});
+
 test('date parsing rejects impossible calendar dates and keeps local act time', () => {
     assert.equal(parseReportDate('29.02.2025'), null);
     assert.equal(parseReportDate('31.04.2026'), null);

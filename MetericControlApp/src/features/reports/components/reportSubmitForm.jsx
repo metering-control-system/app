@@ -1307,9 +1307,7 @@ const ReportSubmitForm = ({
             case 'reportDetails':
                 return renderActFields(
                     REPORT_ACT_FIELDS.filter(
-                        (field) =>
-                            field.group === 'actDetails' &&
-                            field.kind !== 'signature'
+                        (field) => field.group === 'actDetails'
                     ),
                     'Дата, представители и доверенность'
                 );

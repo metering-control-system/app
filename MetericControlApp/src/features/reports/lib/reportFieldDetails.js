@@ -12,7 +12,6 @@ export const getAdditionalReportDetails = (report) => {
     };
 
     for (const field of REPORT_ACT_FIELDS) {
-        if (field.kind === 'signature') continue;
         const value = values[field.group][field.name];
         if (value === '' || value == null) continue;
         const section =

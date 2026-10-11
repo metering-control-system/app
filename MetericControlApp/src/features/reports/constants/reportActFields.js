@@ -332,22 +332,6 @@ export const REPORT_ACT_FIELDS = [
         kind: 'text',
         maxLength: 160,
     },
-    {
-        group: 'actDetails',
-        name: 'memberSignature',
-        api: 'member_signature',
-        label: 'Подпись представителя',
-        kind: 'signature',
-        maxLength: null,
-    },
-    {
-        group: 'actDetails',
-        name: 'consumerSignature',
-        api: 'consumer_signature',
-        label: 'Подпись потребителя',
-        kind: 'signature',
-        maxLength: null,
-    },
 ];
 
 export const getReportActFieldDefaults = (group) =>
