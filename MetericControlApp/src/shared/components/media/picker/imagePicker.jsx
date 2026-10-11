@@ -2,6 +2,8 @@ import { Pressable, StyleSheet, Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { validatePickedImage } from '@/shared/lib/media/validatePickedImage';
+import { prepareGalleryImage } from '@/shared/lib/media/prepareGalleryImage';
+import { useRef, useState } from 'react';
 
 export default function ImagePickerButton({
     onError,
@@ -9,7 +11,13 @@ export default function ImagePickerButton({
     disabled,
     maxSizeBytes,
 }) {
+    const [isProcessing, setIsProcessing] = useState(false);
+    const processingRef = useRef(false);
     const pickImage = async () => {
+        if (disabled || processingRef.current) return;
+        processingRef.current = true;
+        setIsProcessing(true);
+        let preparedFile;
         try {
             const permissionResult =
                 await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -30,36 +38,48 @@ export default function ImagePickerButton({
 
             if (!result.canceled) {
                 const asset = result.assets[0];
+                preparedFile = await prepareGalleryImage(asset.uri);
                 const validationError = await validatePickedImage(
-                    asset,
+                    { uri: preparedFile.uri, fileSize: preparedFile.size },
                     maxSizeBytes
                 );
 
                 if (validationError) {
-                    onError('Файл слишком большой', validationError);
+                    preparedFile.delete();
+                    preparedFile = null;
+                    onError(
+                        'Не удалось прикрепить фотографию',
+                        validationError
+                    );
                     return;
                 }
 
-                await handleUploadPhoto(asset.uri);
+                await handleUploadPhoto(preparedFile.uri);
             }
         } catch {
+            if (preparedFile?.exists) preparedFile.delete();
             onError(
                 'Не удалось загрузить фотографию',
                 'Попробуйте выбрать её ещё раз или сделайте новое фото.'
             );
+        } finally {
+            processingRef.current = false;
+            setIsProcessing(false);
         }
     };
 
     return (
         <Pressable
-            disabled={disabled}
+            disabled={disabled || isProcessing}
             onPress={pickImage}
             style={({ pressed }) => [
                 styles.button,
                 { opacity: pressed ? 0.5 : 1 },
             ]}>
             <Feather name='upload' size={25} color='#278cff' />
-            <Text>Загрузить из галереи</Text>
+            <Text>
+                {isProcessing ? 'Подготовка фото…' : 'Загрузить из галереи'}
+            </Text>
         </Pressable>
     );
 }
