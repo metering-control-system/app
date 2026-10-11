@@ -1,5 +1,10 @@
 import { z } from 'zod';
 import { createReportPhotoSlotRecord } from '@/features/reports/constants/reportPhotoConfigs';
+import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
+import {
+    parseReportDate,
+    parseReportDateTime,
+} from '../lib/reportActFieldValues.js';
 
 const optionalTrimmedString = (max, message) =>
     z.string().trim().max(max, message);
@@ -33,6 +38,55 @@ const optionalEmailField = z
 const photoArrayField = z.array(z.string().trim()).default([]);
 const reportPhotoFields = createReportPhotoSlotRecord(() => photoArrayField);
 
+const actFieldsSchema = (group) =>
+    Object.fromEntries(
+        REPORT_ACT_FIELDS.filter((field) => field.group === group).map(
+            (field) => {
+                let schema = z.string().trim();
+                if (field.kind === 'boolean')
+                    return [field.name, z.boolean().nullable().default(null)];
+                if (field.maxLength)
+                    schema = schema.max(
+                        field.maxLength,
+                        `${field.label}: значение слишком длинное`
+                    );
+                if (field.kind === 'reading')
+                    schema = schema.refine(
+                        (value) =>
+                            !value || /^\d{1,9}([.,]\d{1,3})?$/.test(value),
+                        'Введите показания: до 9 цифр до запятой и до 3 после'
+                    );
+                if (field.kind === 'integer')
+                    schema = schema.refine(
+                        (value) =>
+                            !value ||
+                            (/^\d+$/.test(value) && Number(value) <= 32767),
+                        'Введите целое число от 0 до 32767'
+                    );
+                if (field.kind === 'date')
+                    schema = schema.refine(
+                        (value) => !value || parseReportDate(value),
+                        'Введите существующую дату в формате ДД.ММ.ГГГГ'
+                    );
+                if (field.kind === 'datetime')
+                    schema = schema.refine(
+                        (value) => !value || parseReportDateTime(value),
+                        'Введите дату и время в формате ДД.ММ.ГГГГ ЧЧ:ММ'
+                    );
+                if (field.kind === 'choice')
+                    schema = schema.refine(
+                        (value) =>
+                            !value ||
+                            field.options.some(
+                                (option) => option.value === value
+                            ),
+                        'Выберите значение из списка'
+                    );
+                return [field.name, schema.default('')];
+            }
+        )
+    );
+
 export const reportSubmitFormSchema = z
     .object({
         clientReportId: z.string().trim().optional(),
@@ -50,16 +104,27 @@ export const reportSubmitFormSchema = z
             .regex(/^\d{1,20}$/, 'Лицевой счет должен содержать только цифры'),
 
         comment: z.string().trim().max(1000, 'Комментарий слишком длинный'),
+        address: z
+            .object(
+                Object.fromEntries(
+                    [
+                        'locality',
+                        'street',
+                        'house',
+                        'building',
+                        'apartment',
+                        'room',
+                    ].map((name) => [name, z.string().default('')])
+                )
+            )
+            .prefault({}),
+        actDetails: z.object(actFieldsSchema('actDetails')).prefault({}),
 
         meterBefore: z.object({
-            type: requiredTrimmedString(
+            ...actFieldsSchema('meterBefore'),
+            type: optionalTrimmedString(40, 'Тип старого ПУ слишком длинный'),
+            number: optionalTrimmedString(
                 40,
-                'Введите тип старого ПУ',
-                'Тип старого ПУ слишком длинный'
-            ),
-            number: requiredTrimmedString(
-                40,
-                'Введите номер старого ПУ',
                 'Номер старого ПУ слишком длинный'
             ),
             isActualDifferent: z.boolean(),
@@ -74,8 +139,15 @@ export const reportSubmitFormSchema = z
         }),
 
         metering: z.object({
+            ...actFieldsSchema('metering'),
             dismantlingCompleted: z.boolean(),
-            oldReading: meterReadingField('последние показания старого ПУ'),
+            oldReading: z
+                .string()
+                .trim()
+                .refine(
+                    (value) => !value || /^\d{1,9}([.,]\d{1,3})?$/.test(value),
+                    'Введите корректные показания старого ПУ'
+                ),
             newMeterType: requiredTrimmedString(
                 40,
                 'Введите тип нового ПУ',
@@ -89,17 +161,16 @@ export const reportSubmitFormSchema = z
             sealLocation: z
                 .string()
                 .trim()
-                .min(1, 'Выберите место установки пломбы')
                 .max(40, 'Место установки пломбы слишком длинное'),
-            sealNumber: requiredTrimmedString(
+            sealNumber: optionalTrimmedString(
                 40,
-                'Введите номер пломбы',
                 'Номер пломбы слишком длинный'
             ),
             installationReading: meterReadingField('показания при установке'),
         }),
         photos: z.object(reportPhotoFields),
         admission: z.object({
+            ...actFieldsSchema('admission'),
             status: z.string().trim().min(1, 'Выберите статус допуска'),
             rejectionReason: z.string().trim(),
             rejectionComment: z
@@ -185,17 +256,6 @@ export const reportSubmitFormSchema = z
                 path: ['consumerContact', 'phoneNumber'],
                 message:
                     'Укажите хотя бы один контактный способ или отметьте отказ',
-            });
-        }
-
-        if (
-            values.meterBefore.isActualDifferent &&
-            !values.meterBefore.actualNumber
-        ) {
-            ctx.addIssue({
-                code: 'custom',
-                path: ['meterBefore', 'actualNumber'],
-                message: 'Введите фактический номер старого ПУ',
             });
         }
     });
