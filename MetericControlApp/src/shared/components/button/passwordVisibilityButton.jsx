@@ -11,7 +11,7 @@ const PasswordVisibilityButton = ({ isVisible, disabled, onPress }) => {
             style={styles.toggle}
             onPress={onPress}>
             <Ionicons
-                name={isVisible ? 'eye-off' : 'eye'}
+                name={isVisible ? 'eye' : 'eye-off'}
                 size={22}
                 color='#727272'
             />

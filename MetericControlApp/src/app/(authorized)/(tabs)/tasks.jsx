@@ -19,6 +19,10 @@ const TaskScreen = () => {
     const [error, setError] = useState(null);
     const { requestedTemplatesError, requestActTemplates } = useActTemplates();
 
+    const [dismissedTemplateError, setDismissedTemplateError] = useState(null);
+    const templateErrorVisible =
+        requestedTemplatesError &&
+        requestedTemplatesError !== dismissedTemplateError;
     const router = useRouter();
 
     const [filtering, setFiltering] = useState(new Set());
@@ -49,24 +53,6 @@ const TaskScreen = () => {
 
     return (
         <ScreenLayout safe>
-            {error && (
-                <Notification
-                    variant='warning'
-                    message={error}
-                    handleClose={() => setError(null)}
-                />
-            )}
-            {requestedTemplatesError && (
-                <Notification
-                    variant='warning'
-                    message={
-                        requestedTemplatesError
-                            ? 'Не удалось загрузить шаблоны актов.'
-                            : null
-                    }
-                    onPress={requestActTemplates}
-                />
-            )}
             <ControlPanel
                 filteringVariants={taskFilteringVariants}
                 sortingVariants={taskSortingVariants}
@@ -95,6 +81,25 @@ const TaskScreen = () => {
             <OverlayButton
                 onPress={() => router.push('/(authorized)/gis/map')}
                 icon={<FontAwesome name='map' size={20} color='white' />}
+            />
+            <Notification
+                variant='warning'
+                message={
+                    error ||
+                    (templateErrorVisible
+                        ? 'Не удалось обновить шаблоны актов. Проверьте подключение и повторите загрузку.'
+                        : null)
+                }
+                handleClose={() =>
+                    error
+                        ? setError(null)
+                        : setDismissedTemplateError(requestedTemplatesError)
+                }
+                onPress={
+                    !error && templateErrorVisible
+                        ? requestActTemplates
+                        : undefined
+                }
             />
         </ScreenLayout>
     );

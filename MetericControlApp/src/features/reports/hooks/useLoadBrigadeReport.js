@@ -10,7 +10,7 @@ import {
 } from '@/features/reports/lib/reportOperation';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 
-const useLoadBrigadeReport = ({ taskId, onLoaded }) => {
+const useLoadBrigadeReport = ({ onError, taskId, onLoaded }) => {
     const queryClient = useQueryClient();
     const mounted = useRef(true);
 
@@ -53,7 +53,7 @@ const useLoadBrigadeReport = ({ taskId, onLoaded }) => {
         },
         onError: (error) => {
             if (mounted.current) {
-                Alert.alert(
+                onError(
                     'Не удалось загрузить отчёт',
                     getApiErrorMessage(
                         error,

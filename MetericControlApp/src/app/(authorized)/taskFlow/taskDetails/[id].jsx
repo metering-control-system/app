@@ -1,3 +1,5 @@
+import useErrors from '@/shared/hooks/useErrors';
+import Notification from '@/shared/components/notification/Notification';
 import { useEffect } from 'react';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
@@ -10,6 +12,8 @@ import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
 
 const TaskDetailsScreen = () => {
+    const { error: errorMessage, handleError, dismissError } = useErrors();
+
     const { id } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
     const router = useRouter();
@@ -49,7 +53,10 @@ const TaskDetailsScreen = () => {
             {isPending || isReportPending ? (
                 <ScreenLoader loading />
             ) : error ? (
-                <TaskReportLookupError onRetry={refetch} />
+                <TaskReportLookupError
+                    onRetry={refetch}
+                    onClose={() => router.replace('/(authorized)/(tabs)/tasks')}
+                />
             ) : (
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -59,10 +66,19 @@ const TaskDetailsScreen = () => {
                         contentContainerStyle={styles.content}
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
-                        <TaskDetailsForm task={task} id={id} />
+                        <TaskDetailsForm
+                            onError={handleError}
+                            task={task}
+                            id={id}
+                        />
                     </ScrollView>
                 </KeyboardAvoidingView>
             )}
+            <Notification
+                variant='warning'
+                message={errorMessage}
+                handleClose={dismissError}
+            />
         </ScreenLayout>
     );
 };

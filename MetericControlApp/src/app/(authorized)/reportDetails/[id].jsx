@@ -1,3 +1,5 @@
+import useErrors from '@/shared/hooks/useErrors';
+import Notification from '@/shared/components/notification/Notification';
 import { useLocalSearchParams, useNavigation } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportDetailsForm from '@/features/reports/components/reportDetailsForm';
@@ -11,6 +13,8 @@ import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const ReportDescription = () => {
+    const { error: errorMessage, handleError, dismissError } = useErrors();
+
     const { id } = useLocalSearchParams();
     const { report, isPending: isReportPending } = useReportById(+id);
 
@@ -43,7 +47,11 @@ const ReportDescription = () => {
                 {isReportPending ? (
                     <ScreenLoader loading={isReportPending} />
                 ) : (
-                    <ReportDetailsForm report={report} task={task} />
+                    <ReportDetailsForm
+                        onError={handleError}
+                        report={report}
+                        task={task}
+                    />
                 )}
                 {report &&
                     (isTaskPending ? (
@@ -56,6 +64,11 @@ const ReportDescription = () => {
                         />
                     ))}
             </ScrollView>
+            <Notification
+                variant='warning'
+                message={errorMessage}
+                handleClose={dismissError}
+            />
         </ScreenLayout>
     );
 };

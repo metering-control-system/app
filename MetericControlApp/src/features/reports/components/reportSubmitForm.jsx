@@ -49,7 +49,6 @@ import { generateActPdf } from '@/features/reports/lib/generateActPdf';
 import useReportActStore from '@/features/reports/store/useReportActStore';
 import * as Sharing from 'expo-sharing';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
-import useActTemplates from '@/features/reports/hooks/useActTemplates';
 import ActDocumentPanel from '@/features/reports/components/actDocumentPanel';
 import {
     REPORT_FORM_STEPS as FORM_STEPS,
@@ -76,6 +75,8 @@ const mapTaskToReportDefaults = (task) => ({
 });
 
 const ReportSubmitForm = ({
+    onError,
+    onActionStart,
     task,
     existingReport,
     id,
@@ -144,7 +145,6 @@ const ReportSubmitForm = ({
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
     const templates = useActTemplatesStore((state) => state.templates);
-    const { requestActTemplates, isPending, isUpToDated } = useActTemplates();
     const initialValues = useMemo(() => {
         const taskDefaults = mapReportToFormValues(
             task?.is_team_task ? null : existingReport,
@@ -203,12 +203,10 @@ const ReportSubmitForm = ({
         [existingReport?.images, task?.is_team_task]
     );
 
-    const [template, setTemplate] = useState(
-        () =>
-            templates.find(
-                (item) => String(item.id) === initialValues.actPdf.templateId
-            )?.id ?? defaultActTemplate
-    );
+    const template =
+        templates.find(
+            (item) => String(item.id) === initialValues.actPdf.templateId
+        )?.id ?? defaultActTemplate;
 
     const {
         control,
@@ -349,6 +347,7 @@ const ReportSubmitForm = ({
     }, [reportPhotos, setValue]);
 
     const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
+        onError,
         taskId: task?.id ?? id,
         onLoaded: (report, mode) => {
             const replacement = buildReportReplacement(
@@ -390,6 +389,7 @@ const ReportSubmitForm = ({
 
     const confirmLoadReport = () => {
         if (!isOnline || isReportBusy) return;
+        onActionStart();
         const load = (mode) => {
             Keyboard.dismiss();
             void loadReport(mode);
@@ -423,6 +423,7 @@ const ReportSubmitForm = ({
 
     const onSubmit = async (values) => {
         if (isReportBusy) return;
+        onActionStart();
         try {
             const res = await submitTaskReport({
                 taskId: task?.id ?? id,
@@ -471,9 +472,12 @@ const ReportSubmitForm = ({
                 );
             }
         } catch (error) {
-            Alert.alert(
+            onError(
                 'Ошибка отправки',
-                getApiErrorMessage(error, 'Не удалось отправить отчет.')
+                getApiErrorMessage(
+                    error,
+                    'Не удалось отправить отчёт. Проверьте подключение и повторите отправку.'
+                )
             );
         }
     };
@@ -485,7 +489,7 @@ const ReportSubmitForm = ({
             setStepIndex(error.stepIndex);
         }
         onValidationError?.(error.field);
-        Alert.alert('Проверьте отчёт', error.message);
+        onError('Проверьте отчёт', error.message);
     };
 
     const renderTextField = ({
@@ -795,9 +799,9 @@ const ReportSubmitForm = ({
                 if (
                     existingReport?.images?.some((image) => image.url === uri)
                 ) {
-                    Alert.alert(
+                    onError(
                         'Не удалось удалить фото',
-                        'У этого фото нет идентификатора. Обратитесь к администратору.'
+                        'Не удалось обновить это фото. Загрузите отчёт бригады заново и повторите попытку.'
                     );
                     return false;
                 }
@@ -822,6 +826,7 @@ const ReportSubmitForm = ({
                     <View style={styles.control}>
                         <Text style={styles.label}>{title}</Text>
                         <MediaBlock
+                            onError={onError}
                             uris={uris}
                             handleOpenCamera={() => {
                                 router.push({
@@ -1042,6 +1047,7 @@ const ReportSubmitForm = ({
 
         const printToFile = async () => {
             if (generatingPdfRef.current) return;
+            onActionStart();
             generatingPdfRef.current = true;
             setIsGeneratingPdf(true);
             try {
@@ -1053,10 +1059,10 @@ const ReportSubmitForm = ({
                 });
                 useReportActStore.getState().saveAct(draftId, actPdf);
                 setValue('actPdf', actPdf, { shouldDirty: true });
-            } catch (error) {
-                Alert.alert(
+            } catch {
+                onError(
                     'Не удалось подготовить акт',
-                    error.message || 'Попробуйте ещё раз.'
+                    'Попробуйте ещё раз. Если ошибка повторится, пересоздайте акт.'
                 );
             } finally {
                 generatingPdfRef.current = false;
@@ -1094,26 +1100,15 @@ const ReportSubmitForm = ({
                     }
                 />
                 <ActDocumentPanel
+                    onError={onError}
                     templates={templates}
                     template={template}
-                    onTemplateChange={(update) => {
-                        const nextTemplate =
-                            typeof update === 'function'
-                                ? update(template)
-                                : update;
-                        if (nextTemplate !== template) {
-                            setValue('actPdf.uri', '', { shouldDirty: true });
-                            setTemplate(nextTemplate);
-                        }
-                    }}
                     actPdf={getValues('actPdf')}
                     isBusy={isReportBusy}
                     isGenerating={isGeneratingPdf}
-                    isLoadingTemplates={isPending}
-                    isUpToDated={isUpToDated}
-                    onRefreshTemplates={requestActTemplates}
                     onGenerate={printToFile}
                     onShare={async () => {
+                        onActionStart();
                         try {
                             ensureActFileExists(getValues('actPdf.uri'));
                             if (await Sharing.isAvailableAsync()) {
@@ -1121,20 +1116,21 @@ const ReportSubmitForm = ({
                                     getValues('actPdf.uri')
                                 );
                             } else {
-                                Alert.alert(
+                                onError(
                                     'Недоступно',
                                     'На этом устройстве нельзя поделиться файлом.'
                                 );
                             }
-                        } catch (error) {
-                            Alert.alert(
+                        } catch {
+                            onError(
                                 'Не удалось поделиться актом',
-                                error.message || 'Попробуйте ещё раз.'
+                                'Попробуйте ещё раз. Если ошибка повторится, пересоздайте акт.'
                             );
                         }
                     }}
                     onSign={async (role) => {
                         if (generatingPdfRef.current) return;
+                        onActionStart();
                         generatingPdfRef.current = true;
                         try {
                             const values = JSON.parse(
@@ -1151,8 +1147,11 @@ const ReportSubmitForm = ({
                                 values,
                             });
                             router.push('/(authorized)/signature');
-                        } catch (error) {
-                            Alert.alert('Нужно пересоздать акт', error.message);
+                        } catch {
+                            onError(
+                                'Нужно пересоздать акт',
+                                'Данные отчёта изменились или файл акта недоступен. Сгенерируйте акт заново и повторите подписание.'
+                            );
                         } finally {
                             generatingPdfRef.current = false;
                         }
@@ -1243,7 +1242,11 @@ const ReportSubmitForm = ({
                     {isLastStep ? (
                         <FormButton
                             message='Сохранить отчет'
-                            onPress={handleSubmit(onSubmit, onInvalid)}
+                            onPress={() => {
+                                if (isReportBusy) return;
+                                onActionStart();
+                                return handleSubmit(onSubmit, onInvalid)();
+                            }}
                             isPending={isSubmitting}
                             disabled={isReportBusy}
                             style={styles.primaryButton}

@@ -56,9 +56,13 @@ const TasksList = ({
     useEffect(() => {
         setError(null);
         if (error) {
-            setError(error?.message);
+            setError(
+                'Не удалось загрузить задачи. Проверьте подключение и обновите список.'
+            );
         } else if (refreshError) {
-            setError(refreshError?.message);
+            setError(
+                'Не удалось загрузить задачи. Проверьте подключение и обновите список.'
+            );
         } else if (reportsError) {
             setError('Не удалось обновить статусы отчётов.');
         }

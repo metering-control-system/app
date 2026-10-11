@@ -1,13 +1,17 @@
 import { ensureActFileExists } from '@/features/reports/lib/ensureActFileExists';
 import { PdfView } from 'react-native-pdf-light';
-import { Alert, Modal, Pressable, StyleSheet, Text } from 'react-native';
+import { Modal, Pressable, StyleSheet } from 'react-native';
 import { ZoomPdfView } from 'react-native-pdf-light/Zoom';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import { useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
-const OverlayPdfViewer = ({ visible, onClose, source }) => {
+const OverlayPdfViewer = ({ visible, onClose, source, onError }) => {
     return (
-        <Modal visible={visible} transparent animationType='fade'>
+        <Modal
+            visible={visible}
+            transparent
+            animationType='fade'
+            onRequestClose={onClose}>
             <GestureHandlerRootView>
                 <Pressable style={styles.overlay} onPress={onClose}>
                     <Pressable
@@ -16,6 +20,7 @@ const OverlayPdfViewer = ({ visible, onClose, source }) => {
                             e.stopPropagation();
                         }}>
                         <ZoomPdfView
+                            onError={onError}
                             page={0}
                             style={{ flex: 1 }}
                             source={source ?? ''}
@@ -28,17 +33,28 @@ const OverlayPdfViewer = ({ visible, onClose, source }) => {
     );
 };
 
-const PdfViewer = ({ source }) => {
+const PdfViewer = ({ onError, source }) => {
     const [visible, setVisible] = useState(false);
 
-    if (!source) {
-        return null;
-    }
-    try {
-        ensureActFileExists(source);
-    } catch (error) {
-        return <Text>{error.message}</Text>;
-    }
+    const [unavailable, setUnavailable] = useState(false);
+    const handleError = useCallback(() => {
+        setVisible(false);
+        setUnavailable(true);
+        onError(
+            'Не удалось открыть акт',
+            'Файл недоступен или повреждён. Сгенерируйте акт заново.'
+        );
+    }, [onError]);
+    useEffect(() => {
+        setUnavailable(false);
+        if (!source) return;
+        try {
+            ensureActFileExists(source);
+        } catch {
+            handleError();
+        }
+    }, [source, handleError]);
+    if (!source || unavailable) return null;
     return (
         <Pressable
             style={({ pressed }) => [
@@ -49,8 +65,8 @@ const PdfViewer = ({ source }) => {
                 try {
                     ensureActFileExists(source);
                     setVisible(true);
-                } catch (error) {
-                    Alert.alert('Акт недоступен', error.message);
+                } catch {
+                    handleError();
                 }
             }}
             disabled={!source}>
@@ -58,10 +74,11 @@ const PdfViewer = ({ source }) => {
                 page={0}
                 style={{ flex: 1 }}
                 source={source}
-                onError={(event) => console.error(event.message)}
+                onError={handleError}
                 resizeMode='contain'
             />
             <OverlayPdfViewer
+                onError={handleError}
                 visible={visible}
                 onClose={() => setVisible(false)}
                 source={source}

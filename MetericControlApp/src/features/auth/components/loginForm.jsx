@@ -25,12 +25,23 @@ const LoginForm = ({ setError }) => {
                 password: data.password,
             });
         } catch (error) {
-            setError(getApiErrorMessage(error, 'Не удалось выполнить вход'));
+            setError(
+                error?.response?.status === 401
+                    ? 'Неверный логин или пароль. Проверьте данные и попробуйте снова.'
+                    : getApiErrorMessage(
+                          error,
+                          'Не удалось войти. Попробуйте ещё раз.'
+                      )
+            );
         }
     };
 
     const onError = (error) => {
-        console.error(error);
+        setError(
+            error.login?.message ??
+                error.password?.message ??
+                'Проверьте логин и пароль.'
+        );
     };
 
     return (
