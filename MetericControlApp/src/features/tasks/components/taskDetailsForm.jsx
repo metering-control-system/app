@@ -16,7 +16,7 @@ import {
 } from '@/features/tasks/components/taskDetailsForm/taskDetailsFormFields';
 import { taskDetailsFormStyles as styles } from '@/features/tasks/components/taskDetailsForm/taskDetailsFormStyles';
 
-const TaskDetailsForm = ({ task }) => {
+const TaskDetailsForm = ({ onError, task }) => {
     const {
         control,
         handleSubmit,
@@ -45,7 +45,10 @@ const TaskDetailsForm = ({ task }) => {
             try {
                 await changeStatus({ id: task?.id, status: 'IN_PROGRESS' });
             } catch {
-                console.error('Ошибка изменения статуса');
+                onError(
+                    'Не удалось начать работу',
+                    'Проверьте подключение и нажмите «Приступить» ещё раз.'
+                );
             }
         }
     };
@@ -74,7 +77,12 @@ const TaskDetailsForm = ({ task }) => {
             </View>
             <FormButton
                 isPending={isPending}
-                onPress={handleSubmit(onSubmit)}
+                onPress={handleSubmit(onSubmit, () =>
+                    onError(
+                        'Проверьте данные задачи',
+                        'Заполните выделенные поля: ФИО, телефон, лицевой счёт и сведения о счётчике.'
+                    )
+                )}
                 disabled={isPending || disabled}
                 message={
                     isPending

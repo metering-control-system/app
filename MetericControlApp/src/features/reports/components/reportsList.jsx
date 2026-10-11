@@ -35,9 +35,13 @@ const ReportsList = ({ setError, sorting, filtering, search }) => {
     useEffect(() => {
         setError(null);
         if (error) {
-            setError(error?.message);
+            setError(
+                'Не удалось загрузить отчёты. Проверьте подключение и обновите список.'
+            );
         } else if (refreshError) {
-            setError(refreshError?.message);
+            setError(
+                'Не удалось загрузить отчёты. Проверьте подключение и обновите список.'
+            );
         }
     }, [error, refreshError, setError]);
 

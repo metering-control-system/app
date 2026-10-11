@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { filterDetectedReferences } from '@/features/comments/lib/detectReference';
 import { TipsList } from '@/features/comments/components/tipsList';
 
-const SendMessagePanel = ({ chatId, userId, listRef }) => {
+const SendMessagePanel = ({ onError, chatId, userId, listRef }) => {
     const [message, setMessage] = useState('');
     const { handleComment } = useSendComment(userId);
     const [tips, setTips] = useState([]);
@@ -16,7 +16,7 @@ const SendMessagePanel = ({ chatId, userId, listRef }) => {
     useEffect(() => {
         const filteredTips = filterDetectedReferences(lastWord);
         setTips(filteredTips?.length ? filteredTips : []);
-    }, [message]);
+    }, [lastWord]);
 
     const handleTipPress = (tip) => {
         const words = message.split(/\s+/);
@@ -57,8 +57,15 @@ const SendMessagePanel = ({ chatId, userId, listRef }) => {
                             offset: 0,
                             animated: false,
                         });
-                        await handleComment({ id: chatId, message });
-                        setMessage('');
+                        try {
+                            await handleComment({ id: chatId, message });
+                            setMessage('');
+                        } catch {
+                            onError(
+                                'Не удалось отправить комментарий',
+                                'Текст сохранён в поле ввода. Проверьте подключение и повторите отправку.'
+                            );
+                        }
                     }}>
                     <Ionicons name='send-sharp' size={14} color='white' />
                 </Pressable>

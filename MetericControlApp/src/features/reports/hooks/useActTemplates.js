@@ -2,24 +2,38 @@ import { useMutation, useMutationState } from '@tanstack/react-query';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import { getActTemplatesApi } from '@/features/reports/api/getActTemplatesApi';
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect } from 'react';
+import useSettingsStore from '@/features/settings/store/useSettingsStore';
 
 const mutationKey = ['actTemplates'];
 
 const useActTemplates = () => {
+    const templates = useActTemplatesStore((state) => state.templates);
+    const defaultActTemplate = useSettingsStore(
+        (state) => state.defaultActTemplate
+    );
+    const setDefaultActTemplate = useSettingsStore(
+        (state) => state.setDefaultActTemplate
+    );
+
+    useEffect(() => {
+        if (defaultActTemplate == null && templates.length) {
+            setDefaultActTemplate(templates.at(-1).id);
+        }
+    }, [defaultActTemplate, templates, setDefaultActTemplate]);
+
     const setTemplates = useActTemplatesStore((state) => state.setTemplates);
     const setSyncTime = useActTemplatesStore((state) => state.setSyncTime);
-    const [isUpToDated, setIsUpToDated] = useState(false);
     const { isChecked, isOnline } = useNetwork();
 
-    const { mutate, isPending } = useMutation({
+    const { mutate } = useMutation({
+        mutationKey,
         mutationFn: async () => {
             const lastSyncAt = useActTemplatesStore.getState().lastSyncAt;
             return await getActTemplatesApi(lastSyncAt);
         },
         onSuccess: (data) => {
             if (!data.results) {
-                setIsUpToDated(true);
                 return;
             }
 
@@ -33,7 +47,7 @@ const useActTemplates = () => {
     });
 
     const requestedTemplatesError = useMutationState({
-        filters: { mutationKey, status: 'error' },
+        filters: { mutationKey },
         select: (mutation) => mutation.state.error,
     });
 
@@ -45,9 +59,7 @@ const useActTemplates = () => {
 
     return {
         requestActTemplates,
-        requestedTemplatesError,
-        isUpToDated,
-        isPending,
+        requestedTemplatesError: requestedTemplatesError.at(-1) ?? null,
     };
 };
 

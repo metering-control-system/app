@@ -36,7 +36,7 @@ const Section = ({ icon, title, children }) => (
     </View>
 );
 
-const ReportDetailsForm = ({ report, task }) => {
+const ReportDetailsForm = ({ onError, report, task }) => {
     const [previewUri, setPreviewUri] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -268,6 +268,7 @@ const ReportDetailsForm = ({ report, task }) => {
                 )}
             </Section>
             <ImagePreview
+                onError={onError}
                 uri={previewUri}
                 modalVisible={modalVisible}
                 setModalVisible={setModalVisible}

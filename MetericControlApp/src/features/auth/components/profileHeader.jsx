@@ -8,7 +8,7 @@ const ProfileHeader = () => {
     const { fullName, avatar } = useMe();
 
     const displayName = fullName ?? login ?? 'Пользователь';
-    const initials = displayName[0].toUpperCase();
+    const initials = displayName[0]?.toUpperCase();
 
     return (
         <View style={styles.container}>

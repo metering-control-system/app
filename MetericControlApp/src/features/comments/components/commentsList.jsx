@@ -6,9 +6,15 @@ import { Comment } from '@/features/comments/components/comment';
 import { usePullNewComments } from '@/features/comments/hooks/usePullNewComments';
 import { sortMessages } from '@/features/comments/lib/sortMessages';
 import { ScrollListButton } from '@/features/comments/components/scrollListButton';
-import Notification from '@/shared/components/notification/Notification';
 
-const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
+const CommentsList = ({
+    onError,
+    comments,
+    id,
+    userId,
+    ref,
+    onSelectComment,
+}) => {
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const isAutoFetchingRef = useRef(false);
@@ -20,7 +26,7 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
         isFetchingNextPage,
         hasNextPage,
         rehydrateError,
-        rehydrateLocaleComments,
+        error: loadError,
     } = useReceiveComments(id);
 
     const { newCommentsNumber, setNewCommentsNumber, newCommentsIds } =
@@ -58,6 +64,15 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
         fetchNextPage,
     ]);
 
+    useEffect(() => {
+        if (rehydrateError || loadError) {
+            onError(
+                'Не удалось загрузить комментарии',
+                'Проверьте подключение к интернету и откройте обсуждение ещё раз.'
+            );
+        }
+    }, [rehydrateError, loadError, onError]);
+
     const displayedComments = useMemo(() => {
         if (comments) {
             return sortMessages(comments);
@@ -74,17 +89,20 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
                 id={id}
             />
         ),
-        [userId, onSelectComment]
+        [id, userId, onSelectComment]
     );
 
-    const handleScrolledMessages = useCallback(({ viewableItems }) => {
-        viewableItems.forEach((viewableItem) => {
-            if (newCommentsIds.has(viewableItem.item.id)) {
-                newCommentsIds.delete(viewableItem.item.id);
-                setNewCommentsNumber(newCommentsIds.size);
-            }
-        });
-    }, []);
+    const handleScrolledMessages = useCallback(
+        ({ viewableItems }) => {
+            viewableItems.forEach((viewableItem) => {
+                if (newCommentsIds.has(viewableItem.item.id)) {
+                    newCommentsIds.delete(viewableItem.item.id);
+                    setNewCommentsNumber(newCommentsIds.size);
+                }
+            });
+        },
+        [newCommentsIds, setNewCommentsNumber]
+    );
 
     const scrollToBottom = () => {
         ref.current.scrollToOffset({ offset: 0, animated: true });
@@ -101,13 +119,6 @@ const CommentsList = ({ comments, id, userId, ref, onSelectComment }) => {
             onLayout={(event) => {
                 setListHeight(event.nativeEvent.layout.height);
             }}>
-            {(rehydrateError ?? null) && (
-                <Notification
-                    variant='warning'
-                    message={rehydrateError}
-                    onPress={rehydrateLocaleComments}
-                />
-            )}
             <FlatList
                 ref={ref}
                 data={displayedComments}

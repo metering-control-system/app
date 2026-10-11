@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
-import { Alert, StyleSheet, Text } from 'react-native';
+import { StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import SvgCanvas from '@/features/reports/components/svgCanvas';
 import { SIGNATURE_ROLES } from '@/features/reports/constants/signatureRoles';
@@ -10,7 +10,7 @@ import useReportActStore from '@/features/reports/store/useReportActStore';
 import FormButton from '@/shared/components/button/formButton';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 
-const ReportSignatureCapture = () => {
+const ReportSignatureCapture = ({ onError }) => {
     const router = useRouter();
     const [session] = useState(() => useReportActStore.getState().session);
     const completeSession = useReportActStore((state) => state.completeSession);
@@ -46,7 +46,7 @@ const ReportSignatureCapture = () => {
                             onSave={async (strokes) => {
                                 if (savingRef.current) return;
                                 if (!strokes.some((stroke) => stroke.length)) {
-                                    Alert.alert(
+                                    onError(
                                         'Подпись отсутствует',
                                         'Нарисуйте подпись перед сохранением.'
                                     );
@@ -85,12 +85,11 @@ const ReportSignatureCapture = () => {
                                         closingRef.current = true;
                                         router.back();
                                     }
-                                } catch (error) {
+                                } catch {
                                     if (mountedRef.current)
-                                        Alert.alert(
+                                        onError(
                                             'Не удалось обновить акт',
-                                            error.message ||
-                                                'Попробуйте сохранить подпись ещё раз.'
+                                            'Попробуйте сохранить подпись ещё раз. Если ошибка повторится, вернитесь в отчёт и пересоздайте акт.'
                                         );
                                 } finally {
                                     if (!closingRef.current) {

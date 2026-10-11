@@ -18,6 +18,7 @@ const useReports = () => {
 
     const {
         data,
+        error: queryError,
         fetchNextPage,
         isPending,
         isFetching,
@@ -74,7 +75,7 @@ const useReports = () => {
 
     return {
         fetchNextPage,
-        error,
+        error: error ?? queryError,
         isPending: !isChecked || (isOnline && isPending),
         isFetching,
         isFetchingNextPage,

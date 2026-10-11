@@ -11,7 +11,7 @@ import {
 import { MaterialIcons } from '@expo/vector-icons';
 import useCommentActions from '@/features/comments/hooks/useCommentActions';
 
-const CommentActionModal = ({ comment, taskId, visible, onClose }) => {
+const CommentActionModal = ({ onError, comment, taskId, visible, onClose }) => {
     const [editVisible, setEditVisible] = useState(false);
     const [editText, setEditText] = useState(comment?.content ?? '');
     const { handleEdit, handleDelete, isEditing } = useCommentActions(taskId);
@@ -23,7 +23,13 @@ const CommentActionModal = ({ comment, taskId, visible, onClose }) => {
             {
                 text: 'Удалить',
                 style: 'destructive',
-                onPress: () => handleDelete({ commentId: comment.id }),
+                onPress: () =>
+                    handleDelete({ commentId: comment.id }).catch(() =>
+                        onError(
+                            'Не удалось удалить комментарий',
+                            'Проверьте подключение и повторите попытку.'
+                        )
+                    ),
             },
         ]);
     };
@@ -38,7 +44,12 @@ const CommentActionModal = ({ comment, taskId, visible, onClose }) => {
             void handleEdit({
                 commentId: comment?.id,
                 content: editText.trim(),
-            });
+            }).catch(() =>
+                onError(
+                    'Не удалось изменить комментарий',
+                    'Проверьте подключение и повторите редактирование.'
+                )
+            );
         }
         onClose();
         setEditVisible(false);
