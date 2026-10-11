@@ -129,6 +129,7 @@ test('Android commits date and time together, retaining the chosen day', async (
     assert.deepEqual(changes, []);
     assert.equal(picker.opened.at(-1).mode, 'time');
     assert.equal(picker.opened.at(-1).is24Hour, true);
+    assert.equal(picker.opened.at(-1).display, 'spinner');
     await select(new Date(2000, 0, 1, 14, 5));
     assert.deepEqual(changes, ['15.10.2026 14:05']);
     const payload = buildReportActFieldsPayload({
@@ -206,4 +207,38 @@ test('iOS selection stays pending until confirmation and can be cancelled', asyn
     await changeIos(new Date(2026, 9, 16, 14, 5));
     await press('Готово');
     assert.deepEqual(changes, ['16.10.2026 14:05']);
+});
+
+test('Android time can be edited directly without changing the date or losing it on cancel', async (t) => {
+    const { changes, press, select } = await setup(t, {
+        value: '12.10.2026 11:40',
+        dateTime: true,
+    });
+    await press('Изменить время: Дата отчёта');
+    assert.equal(picker.opened.at(-1).mode, 'time');
+    assert.equal(picker.opened.at(-1).display, 'spinner');
+    await select(undefined, 'dismissed');
+    assert.deepEqual(changes, []);
+    await press('Изменить время: Дата отчёта');
+    await select(new Date(2000, 0, 1, 9, 3));
+    assert.deepEqual(changes, ['12.10.2026 09:03']);
+    assert.ok(picker.opened.every(({ mode }) => mode === 'time'));
+});
+
+test('iOS direct time selection preserves the report date until confirmation', async (t) => {
+    const { root, changes, press } = await setup(t, {
+        value: '12.10.2026 11:40',
+        dateTime: true,
+        platform: 'ios',
+    });
+    await press('Изменить время: Дата отчёта');
+    const control = root.root.findByType('DateTimePicker');
+    assert.equal(control.props.mode, 'time');
+    assert.equal(control.props.display, 'spinner');
+    await act(async () =>
+        control.props.onChange({ type: 'set' }, new Date(2000, 0, 1, 9, 3))
+    );
+    assert.deepEqual(changes, []);
+    await press('Готово');
+    assert.deepEqual(changes, ['12.10.2026 09:03']);
 });

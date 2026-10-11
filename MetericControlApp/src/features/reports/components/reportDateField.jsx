@@ -60,6 +60,7 @@ const ReportDateField = ({
         DateTimePickerAndroid.open({
             mode,
             value: date,
+            display: mode === 'time' ? 'spinner' : 'default',
             is24Hour: true,
             positiveButton: { label: 'Выбрать' },
             negativeButton: { label: 'Отмена' },
@@ -96,7 +97,7 @@ const ReportDateField = ({
             },
         });
     };
-    const open = () => {
+    const open = (mode = 'date') => {
         if (disabled || activeMode.current) return;
         Keyboard.dismiss();
         const parsed = dateTime
@@ -105,9 +106,9 @@ const ReportDateField = ({
         const date = parsed
             ? new Date(dateTime ? parsed : `${parsed}T12:00:00`)
             : new Date();
-        activeMode.current = 'date';
-        setPicker({ mode: 'date', date });
-        if (Platform.OS === 'android') openAndroid('date', date);
+        activeMode.current = mode;
+        setPicker({ mode, date });
+        if (Platform.OS === 'android') openAndroid(mode, date);
     };
 
     return (
@@ -130,7 +131,7 @@ const ReportDateField = ({
                         disabled: disabled || Boolean(picker),
                     }}
                     disabled={disabled || Boolean(picker)}
-                    onPress={open}
+                    onPress={() => open('date')}
                     style={[
                         styles.input,
                         disabled && styles.disabled,
@@ -144,24 +145,47 @@ const ReportDateField = ({
                     </Text>
                 </Pressable>
             )}
-            {Boolean(value) && (
-                <Pressable
-                    accessibilityRole='button'
-                    accessibilityLabel={`Очистить: ${label}`}
-                    disabled={disabled || Boolean(picker)}
-                    onPress={() => {
-                        onChange('');
-                        onBlur?.();
-                    }}
-                    style={styles.clear}>
-                    <Text
-                        style={
-                            disabled ? styles.placeholder : styles.buttonText
-                        }>
-                        Очистить
-                    </Text>
-                </Pressable>
-            )}
+            <View style={styles.fieldActions}>
+                {dateTime &&
+                    Platform.OS !== 'web' &&
+                    parseReportDateTime(value) && (
+                        <Pressable
+                            accessibilityRole='button'
+                            accessibilityLabel={`Изменить время: ${label}`}
+                            disabled={disabled || Boolean(picker)}
+                            onPress={() => open('time')}
+                            style={styles.clear}>
+                            <Text
+                                style={
+                                    disabled
+                                        ? styles.placeholder
+                                        : styles.buttonText
+                                }>
+                                Изменить время
+                            </Text>
+                        </Pressable>
+                    )}
+                {Boolean(value) && (
+                    <Pressable
+                        accessibilityRole='button'
+                        accessibilityLabel={`Очистить: ${label}`}
+                        disabled={disabled || Boolean(picker)}
+                        onPress={() => {
+                            onChange('');
+                            onBlur?.();
+                        }}
+                        style={styles.clear}>
+                        <Text
+                            style={
+                                disabled
+                                    ? styles.placeholder
+                                    : styles.buttonText
+                            }>
+                            Очистить
+                        </Text>
+                    </Pressable>
+                )}
+            </View>
             {error && <Text style={styles.error}>{error}</Text>}
             {Platform.OS === 'ios' && picker && (
                 <Modal transparent animationType='fade' onRequestClose={close}>
@@ -178,7 +202,22 @@ const ReportDateField = ({
                                 }
                                 themeVariant='light'
                                 onChange={(_, date) => {
-                                    if (date) setPicker({ ...picker, date });
+                                    if (!date) return;
+                                    const next = new Date(picker.date);
+                                    if (picker.mode === 'time')
+                                        next.setHours(
+                                            date.getHours(),
+                                            date.getMinutes(),
+                                            0,
+                                            0
+                                        );
+                                    else
+                                        next.setFullYear(
+                                            date.getFullYear(),
+                                            date.getMonth(),
+                                            date.getDate()
+                                        );
+                                    setPicker({ ...picker, date: next });
                                 }}
                             />
                             <View style={styles.actions}>
@@ -244,6 +283,7 @@ const styles = StyleSheet.create({
         paddingVertical: 8,
         paddingHorizontal: 4,
     },
+    fieldActions: { flexDirection: 'row', flexWrap: 'wrap', gap: 16 },
     buttonText: { color: '#1a5eb0', fontSize: 15, fontWeight: '600' },
     backdrop: {
         flex: 1,
