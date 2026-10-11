@@ -15,10 +15,24 @@ const normalizeValue = (value) => {
 export const getActReportFields = (values) =>
     normalizeValue({
         clientReportId: values.clientReportId ?? '',
+        act: {
+            consumerSignerName:
+                values.consumerContact?.fullName || values.customerName || '',
+            notificationEmail: values.consumerContact?.email ?? '',
+            nonAdmissionReason:
+                values.admission?.rejectionComment ||
+                values.admission?.rejectionReason ||
+                '',
+        },
         customerName: values.customerName ?? '',
         personalAccount: values.personalAccount ?? '',
-        actDetails: values.actDetails ?? {},
-        meterBefore: values.meterBefore ?? {},
+        meterBefore: {
+            ...values.meterBefore,
+            ...(values.meterBefore?.isActualDifferent && {
+                number: values.meterBefore.actualNumber,
+                type: values.meterBefore.actualType,
+            }),
+        },
         metering: values.metering ?? {},
         admission: values.admission ?? {},
         consumerContact: values.consumerContact ?? {},
