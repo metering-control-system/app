@@ -28,6 +28,7 @@ import ImagePicker from '@/shared/components/media/picker/imagePicker';
  * @param {boolean} [props.disabled] Disables camera and gallery actions.
  */
 export default function MediaBlock({
+    onError,
     uri,
     uris,
     handleOpenCamera,
@@ -49,6 +50,7 @@ export default function MediaBlock({
                     disabled={disabled}
                 />
                 <ImagePicker
+                    onError={onError}
                     handleUploadPhoto={handleUploadPhoto}
                     disabled={disabled}
                 />
@@ -83,6 +85,7 @@ export default function MediaBlock({
                 <PictureWrapper uri={null} onPress={() => {}} />
             )}
             <ImagePreview
+                onError={onError}
                 uri={selectedUri}
                 handleUpdatePhoto={(nextUri) =>
                     handleUpdatePhoto(nextUri, selectedIndex)

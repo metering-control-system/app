@@ -1,37 +1,48 @@
-import { Alert, Pressable, StyleSheet, Text } from 'react-native';
+import { Pressable, StyleSheet, Text } from 'react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { Feather } from '@expo/vector-icons';
 import { validatePickedImage } from '@/shared/lib/media/validatePickedImage';
 
-export default function ImagePickerButton({ handleUploadPhoto, disabled }) {
+export default function ImagePickerButton({
+    onError,
+    handleUploadPhoto,
+    disabled,
+}) {
     const pickImage = async () => {
-        const permissionResult =
-            await ImagePicker.requestMediaLibraryPermissionsAsync();
+        try {
+            const permissionResult =
+                await ImagePicker.requestMediaLibraryPermissionsAsync();
 
-        if (!permissionResult.granted) {
-            Alert.alert(
-                'Нужен доступ к галерее',
-                'Разрешите доступ к галерее, чтобы выбрать изображение.'
-            );
-            return;
-        }
-
-        const result = await ImagePicker.launchImageLibraryAsync({
-            mediaTypes: ['images'],
-            allowsEditing: true,
-            quality: 1,
-        });
-
-        if (!result.canceled) {
-            const asset = result.assets[0];
-            const validationError = await validatePickedImage(asset);
-
-            if (validationError) {
-                Alert.alert('Файл слишком большой', validationError);
+            if (!permissionResult.granted) {
+                onError(
+                    'Нужен доступ к галерее',
+                    'Разрешите доступ к галерее, чтобы выбрать изображение.'
+                );
                 return;
             }
 
-            handleUploadPhoto(asset.uri);
+            const result = await ImagePicker.launchImageLibraryAsync({
+                mediaTypes: ['images'],
+                allowsEditing: true,
+                quality: 1,
+            });
+
+            if (!result.canceled) {
+                const asset = result.assets[0];
+                const validationError = await validatePickedImage(asset);
+
+                if (validationError) {
+                    onError('Файл слишком большой', validationError);
+                    return;
+                }
+
+                await handleUploadPhoto(asset.uri);
+            }
+        } catch {
+            onError(
+                'Не удалось загрузить фотографию',
+                'Попробуйте выбрать её ещё раз или сделайте новое фото.'
+            );
         }
     };
 

@@ -1,5 +1,4 @@
 import {
-    Alert,
     FlatList,
     Modal,
     Pressable,
@@ -20,6 +19,7 @@ import { applyPreviewImageRotation } from '@/shared/lib/media/applyPreviewImageR
 const VIEWER_ID = 'image-preview';
 
 const ImagePreview = ({
+    onError,
     uri,
     modalVisible,
     setModalVisible,
@@ -58,7 +58,11 @@ const ImagePreview = ({
             setCurrentRotate(0);
             closeModal();
         } catch {
-            Alert.alert('Не удалось сохранить изменения фотографии');
+            closeModal();
+            onError(
+                'Не удалось сохранить изменения фотографии',
+                'Откройте фото и попробуйте повернуть его ещё раз.'
+            );
         } finally {
             setIsApplying(false);
         }
