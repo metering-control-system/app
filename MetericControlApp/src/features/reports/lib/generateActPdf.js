@@ -16,21 +16,17 @@ export const generateActPdf = async ({ template, values, previousAct }) => {
         templateId: String(templateSnapshot.id),
         signatures: {},
     };
-    const normalizedValues = {
-        ...snapshot,
-        ...getActReportFields(snapshot),
-        actPdf,
-    };
+    const actFields = getActReportFields(snapshot);
     const checksum = await createActChecksum({
         template: templateSnapshot,
-        values: normalizedValues,
+        values: actFields,
     });
     const savedAct = previousAct ?? snapshot.actPdf;
     actPdf.signatures =
         savedAct?.checksum === checksum ? (savedAct.signatures ?? {}) : {};
     const html = fillActTemplate(
         templateSnapshot.html,
-        normalizedValues,
+        { ...actFields, actPdf: { signatures: actPdf.signatures } },
         templateSnapshot.requiredFields
     );
     const { uri } = await printToFileAsync({ html });
