@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
-import { useState } from 'react';
+import Image from '@/shared/components/media/authenticatedImage';
+import { useCallback, useState } from 'react';
+import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import ImagePreview from '@/shared/components/media/imagePreview';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 import { reportStatus } from '@/features/reports/constants/reportStatus';
@@ -25,6 +26,29 @@ const DetailRow = ({ label, value }) => (
     </View>
 );
 
+const ReportFieldTarget = ({
+    name,
+    highlightedField,
+    fillPositions,
+    children,
+}) => {
+    const registerNode = useCallback(
+        (node) => fillPositions?.({ name, node }),
+        [fillPositions, name]
+    );
+    const handleLayout = useCallback(
+        () => fillPositions?.({ name }),
+        [fillPositions, name]
+    );
+    return (
+        <View ref={registerNode} collapsable={false} onLayout={handleLayout}>
+            <HighlightWrap isActive={highlightedField === name}>
+                {children}
+            </HighlightWrap>
+        </View>
+    );
+};
+
 const Section = ({ icon, title, children }) => (
     <View style={styles.section}>
         <View style={styles.sectionHeading}>
@@ -36,13 +60,18 @@ const Section = ({ icon, title, children }) => (
         {children}
     </View>
 );
-
 const AdditionalDetails = ({ rows }) =>
     rows.map(({ key, label, value }) => (
         <DetailRow key={key} label={label} value={value} />
     ));
 
-const ReportDetailsForm = ({ onError, report, task }) => {
+const ReportDetailsForm = ({
+    onError,
+    report,
+    task,
+    highlightedField,
+    fillPositions,
+}) => {
     const [previewUri, setPreviewUri] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
 
@@ -76,6 +105,25 @@ const ReportDetailsForm = ({ onError, report, task }) => {
         return groups;
     }, []);
 
+    const renderTarget = (name, children) => (
+        <ReportFieldTarget
+            name={name}
+            highlightedField={highlightedField}
+            fillPositions={fillPositions}>
+            {children}
+        </ReportFieldTarget>
+    );
+    const renderDetail = (name, label, value) =>
+        renderTarget(name, <DetailRow label={label} value={value} />);
+    const oldMeterNumberField =
+        highlightedField === 'meterBefore.number'
+            ? 'meterBefore.number'
+            : 'meterBefore.actualNumber';
+    const oldMeterTypeField =
+        highlightedField === 'meterBefore.type'
+            ? 'meterBefore.type'
+            : 'meterBefore.actualType';
+
     return (
         <View style={styles.container}>
             <View style={styles.summary}>
@@ -105,10 +153,15 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                     {task?.address?.display_address ||
                         'Отчёт о выполненной работе'}
                 </Text>
-                {task?.address?.account_number && (
-                    <Text style={styles.subtitle}>
-                        Лицевой счёт: {task.address.account_number}
-                    </Text>
+                {renderDetail(
+                    'customerName',
+                    'ФИО потребителя',
+                    task?.consumer?.full_name
+                )}
+                {renderDetail(
+                    'personalAccount',
+                    'Лицевой счёт',
+                    task?.address?.account_number
                 )}
                 {task?.address?.room && (
                     <Text style={styles.subtitle}>
@@ -142,71 +195,97 @@ const ReportDetailsForm = ({ onError, report, task }) => {
             )}
 
             <Section title='Итог работы' icon='clipboard-outline'>
-                <DetailRow
-                    label='Допуск'
-                    value={reportAdmission[admission.status]}
-                />
-                {admission.rejection_reason && (
-                    <DetailRow
-                        label='Причина отказа'
-                        value={
-                            REJECTION_REASON_OPTIONS.find(
-                                ({ value }) =>
-                                    value === admission.rejection_reason
-                            )?.label ?? admission.rejection_reason
-                        }
-                    />
+                {renderDetail(
+                    'admission.status',
+                    'Допуск',
+                    reportAdmission[admission.status]
                 )}
-                {admission.rejection_comment && (
-                    <View style={styles.note}>
-                        <Text style={styles.label}>Комментарий к отказу</Text>
-                        <Text selectable style={styles.noteText}>
-                            {admission.rejection_comment}
-                        </Text>
-                    </View>
+                {renderDetail(
+                    'admission.rejectionReason',
+                    'Причина отказа',
+                    REJECTION_REASON_OPTIONS.find(
+                        ({ value }) => value === admission.rejection_reason
+                    )?.label ?? admission.rejection_reason
+                )}
+                {renderDetail(
+                    'admission.rejectionComment',
+                    'Комментарий к отказу',
+                    admission.rejection_comment
                 )}
                 <AdditionalDetails rows={additionalDetails.admission} />
             </Section>
 
             <Section title='Старый счётчик' icon='speedometer-outline'>
-                <DetailRow
-                    label='Номер'
-                    value={metering.actual_old_meter_number}
-                />
-                <DetailRow label='Тип' value={metering.actual_old_meter_type} />
-                <DetailRow
-                    label='Показание при демонтаже'
-                    value={metering.removal_reading}
-                />
-                <DetailRow
-                    label='Демонтаж выполнен'
-                    value={
-                        typeof metering.dismantling_completed === 'boolean'
-                            ? metering.dismantling_completed
-                                ? 'Да'
-                                : 'Нет'
-                            : null
-                    }
-                />
+                {renderDetail(
+                    oldMeterNumberField,
+                    'Номер',
+                    highlightedField === 'meterBefore.number'
+                        ? task?.meter?.number
+                        : metering.actual_old_meter_number
+                )}
+                {renderDetail(
+                    oldMeterTypeField,
+                    'Тип',
+                    highlightedField === 'meterBefore.type'
+                        ? task?.meter?.type
+                        : metering.actual_old_meter_type
+                )}
+                {renderDetail(
+                    'meterBefore.isActualDifferent',
+                    'Фактический ПУ отличается',
+                    task?.meter
+                        ? metering.actual_old_meter_number !==
+                              task.meter.number ||
+                          metering.actual_old_meter_type !== task.meter.type
+                            ? 'Да'
+                            : 'Нет'
+                        : null
+                )}
+                {renderDetail(
+                    'metering.oldReading',
+                    'Показание при демонтаже',
+                    metering.removal_reading
+                )}
+                {renderDetail(
+                    'metering.dismantlingCompleted',
+                    'Демонтаж выполнен',
+                    typeof metering.dismantling_completed === 'boolean'
+                        ? metering.dismantling_completed
+                            ? 'Да'
+                            : 'Нет'
+                        : null
+                )}
                 <AdditionalDetails rows={additionalDetails.oldMeter} />
             </Section>
 
             <Section title='Новый счётчик' icon='flash-outline'>
-                <DetailRow label='Номер' value={metering.new_meter_number} />
-                <DetailRow label='Тип' value={metering.new_meter_type} />
-                <DetailRow
-                    label='Показание при установке'
-                    value={metering.installation_reading}
-                />
-                <DetailRow label='Номер пломбы' value={metering.seal_number} />
-                <DetailRow
-                    label='Место пломбирования'
-                    value={
-                        SEAL_LOCATION_OPTIONS.find(
-                            ({ value }) => value === metering.seal_location
-                        )?.label ?? metering.seal_location
-                    }
-                />
+                {renderDetail(
+                    'metering.newMeterNumber',
+                    'Номер',
+                    metering.new_meter_number
+                )}
+                {renderDetail(
+                    'metering.newMeterType',
+                    'Тип',
+                    metering.new_meter_type
+                )}
+                {renderDetail(
+                    'metering.installationReading',
+                    'Показание при установке',
+                    metering.installation_reading
+                )}
+                {renderDetail(
+                    'metering.sealNumber',
+                    'Номер пломбы',
+                    metering.seal_number
+                )}
+                {renderDetail(
+                    'metering.sealLocation',
+                    'Место пломбирования',
+                    SEAL_LOCATION_OPTIONS.find(
+                        ({ value }) => value === metering.seal_location
+                    )?.label ?? metering.seal_location
+                )}
                 <AdditionalDetails rows={additionalDetails.newMeter} />
             </Section>
 
@@ -217,32 +296,48 @@ const ReportDetailsForm = ({ onError, report, task }) => {
             )}
 
             <Section title='Контактные данные' icon='person-outline'>
-                {contact.is_refused_contact ? (
-                    <Text style={styles.emptyText}>
-                        Клиент отказался предоставить контакты.
-                    </Text>
-                ) : (
-                    <>
-                        <DetailRow label='ФИО' value={contact.full_name} />
-                        <DetailRow
-                            label='Телефон'
-                            value={contact.phone_number_1}
-                        />
-                        {contact.phone_number_2 && (
-                            <DetailRow
-                                label='Второй телефон'
-                                value={contact.phone_number_2}
-                            />
-                        )}
-                        {contact.email && (
-                            <DetailRow
-                                label='Электронная почта'
-                                value={contact.email}
-                            />
-                        )}
-                    </>
+                {renderDetail(
+                    'consumerContact.isRefusedContact',
+                    'Отказ от контактов',
+                    typeof contact.is_refused_contact === 'boolean'
+                        ? contact.is_refused_contact
+                            ? 'Да'
+                            : 'Нет'
+                        : null
+                )}
+                {renderDetail(
+                    'consumerContact.fullName',
+                    'ФИО',
+                    contact.full_name
+                )}
+                {renderDetail(
+                    'consumerContact.phoneNumber',
+                    'Телефон',
+                    contact.phone_number_1
+                )}
+                {renderDetail(
+                    'consumerContact.phoneNumber2',
+                    'Второй телефон',
+                    contact.phone_number_2
+                )}
+                {renderDetail(
+                    'consumerContact.email',
+                    'Электронная почта',
+                    contact.email
                 )}
             </Section>
+
+            {highlightedField === 'comment' &&
+                renderTarget(
+                    'comment',
+                    <Section
+                        title='Комментарий к отчёту'
+                        icon='chatbubble-outline'>
+                        <Text style={styles.emptyText}>
+                            Комментарии доступны в чате отчёта.
+                        </Text>
+                    </Section>
+                )}
 
             <Section title='Фотографии' icon='images-outline'>
                 {photoGroups.length === 0 ? (
@@ -251,49 +346,84 @@ const ReportDetailsForm = ({ onError, report, task }) => {
                     </Text>
                 ) : (
                     photoGroups.map((group) => (
-                        <View key={group.kind} style={styles.photoGroup}>
-                            <View style={styles.photoHeading}>
-                                <Text style={styles.photoTitle}>
-                                    {group.title}
-                                </Text>
-                                <Text style={styles.photoCount}>
-                                    {group.photos.length}
-                                </Text>
-                            </View>
-                            <View style={styles.photoGrid}>
-                                {group.photos.map((photo, index) => (
-                                    <Pressable
-                                        key={photo.client_image_id ?? index}
-                                        accessibilityRole='button'
-                                        accessibilityLabel={`${group.title}, фото ${index + 1}`}
-                                        disabled={!photo.url}
-                                        onPress={() => {
-                                            setPreviewUri(photo.url);
-                                            setModalVisible(true);
-                                        }}
-                                        style={({ pressed }) => [
-                                            styles.photoTile,
-                                            pressed && styles.pressed,
-                                        ]}>
-                                        <Image
-                                            source={photo.url}
-                                            style={styles.image}
-                                            contentFit='cover'
-                                        />
-                                        <View style={styles.expandIcon}>
-                                            <Ionicons
-                                                name='expand-outline'
-                                                size={16}
-                                                color='#fff'
+                        <ReportFieldTarget
+                            key={group.kind}
+                            name={`photos.${REPORT_PHOTO_CONFIGS.find(({ kind }) => kind === group.kind)?.name}`}
+                            highlightedField={highlightedField}
+                            fillPositions={fillPositions}>
+                            <View style={styles.photoGroup}>
+                                <View style={styles.photoHeading}>
+                                    <Text style={styles.photoTitle}>
+                                        {group.title}
+                                    </Text>
+                                    <Text style={styles.photoCount}>
+                                        {group.photos.length}
+                                    </Text>
+                                </View>
+                                <View style={styles.photoGrid}>
+                                    {group.photos.map((photo, index) => (
+                                        <Pressable
+                                            key={photo.client_image_id ?? index}
+                                            accessibilityRole='button'
+                                            accessibilityLabel={`${group.title}, фото ${index + 1}`}
+                                            disabled={!photo.url}
+                                            onPress={() => {
+                                                setPreviewUri(photo.url);
+                                                setModalVisible(true);
+                                            }}
+                                            style={({ pressed }) => [
+                                                styles.photoTile,
+                                                pressed && styles.pressed,
+                                            ]}>
+                                            <Image
+                                                source={photo.url}
+                                                style={styles.image}
+                                                contentFit='cover'
                                             />
-                                        </View>
-                                    </Pressable>
-                                ))}
+                                            <View style={styles.expandIcon}>
+                                                <Ionicons
+                                                    name='expand-outline'
+                                                    size={16}
+                                                    color='#fff'
+                                                />
+                                            </View>
+                                        </Pressable>
+                                    ))}
+                                </View>
                             </View>
-                        </View>
+                        </ReportFieldTarget>
                     ))
                 )}
+                {highlightedField?.startsWith('photos.') &&
+                    !photoGroups.some(
+                        (group) =>
+                            `photos.${REPORT_PHOTO_CONFIGS.find(({ kind }) => kind === group.kind)?.name}` ===
+                            highlightedField
+                    ) &&
+                    renderTarget(
+                        highlightedField,
+                        <Text style={styles.emptyText}>
+                            {
+                                REPORT_PHOTO_CONFIGS.find(
+                                    ({ name }) =>
+                                        `photos.${name}` === highlightedField
+                                )?.title
+                            }
+                            : фотографии не добавлены.
+                        </Text>
+                    )}
             </Section>
+            {highlightedField === 'actPdf' &&
+                renderTarget(
+                    'actPdf',
+                    <Section title='Акт' icon='document-text-outline'>
+                        <Text style={styles.emptyText}>
+                            {report.act?.url
+                                ? 'Цифровой акт прикреплён к отчёту.'
+                                : 'Цифровой акт не прикреплён.'}
+                        </Text>
+                    </Section>
+                )}
             <ImagePreview
                 onError={onError}
                 uri={previewUri}

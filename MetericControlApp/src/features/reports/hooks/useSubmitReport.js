@@ -11,6 +11,7 @@ import {
     deleteReportImage,
     getReportByTaskId,
     updateReport,
+    submitReport,
     updateReportPdfAct,
     uploadReportImage,
     uploadReportPdfAct,
@@ -68,7 +69,12 @@ const useSubmitReport = () => {
                 return { skipped: true };
             }
             validateReportValues(values, taskId);
-            await validateReportAct({ taskId, values });
+            try {
+                await validateReportAct({ taskId, values });
+            } catch (error) {
+                error.code = 'REPORT_ACT_INVALID';
+                throw error;
+            }
             if (
                 expectedDraft &&
                 !areReportDraftsEqual(
@@ -173,7 +179,7 @@ const useSubmitReport = () => {
             const upsertRequest = buildReportUpsertRequest({
                 reportPayload,
                 existingReport,
-                resubmitRejectedReport: true,
+                resubmitRejectedReport: false,
             });
             let submittedDraft = expectedDraft ?? {
                 ...values,
@@ -281,6 +287,14 @@ const useSubmitReport = () => {
 
                 if (reportCommentPayload) {
                     await addReportComment(reportId, reportCommentPayload);
+                }
+
+                const confirmedReport = await submitReport(reportId);
+                reportResponse = confirmedReport?.id
+                    ? confirmedReport
+                    : await getReportByTaskId(taskId);
+                if (reportResponse?.id !== reportId) {
+                    throw new Error('Не удалось получить подтверждённый отчёт');
                 }
 
                 return {
