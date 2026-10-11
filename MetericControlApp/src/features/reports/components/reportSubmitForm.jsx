@@ -55,6 +55,7 @@ import useReportActStore from '@/features/reports/store/useReportActStore';
 import * as Sharing from 'expo-sharing';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import ActDocumentPanel from '@/features/reports/components/actDocumentPanel';
+import ReportDateField from './reportDateField';
 import {
     REPORT_FORM_STEPS as FORM_STEPS,
     getFirstReportValidationError,
@@ -658,6 +659,32 @@ const ReportSubmitForm = ({
             {fields.map((field) => {
                 const name = `${field.group}.${field.name}`;
                 const error = errors[field.group]?.[field.name];
+                if (field.kind === 'date' || field.kind === 'datetime')
+                    return (
+                        <View
+                            key={name}
+                            onLayout={(e) => fillPositions({ e, name })}>
+                            <HighlightWrap isActive={highlightedField === name}>
+                                <Controller
+                                    control={control}
+                                    name={name}
+                                    render={({
+                                        field: { value, onChange, onBlur },
+                                    }) => (
+                                        <ReportDateField
+                                            label={field.label}
+                                            value={value}
+                                            onChange={onChange}
+                                            onBlur={onBlur}
+                                            dateTime={field.kind === 'datetime'}
+                                            disabled={isReportBusy}
+                                            error={error?.message}
+                                        />
+                                    )}
+                                />
+                            </HighlightWrap>
+                        </View>
+                    );
                 if (field.kind === 'choice' || field.kind === 'boolean')
                     return (
                         <View key={name}>
@@ -691,15 +718,11 @@ const ReportSubmitForm = ({
                             label: field.label,
                             error,
                             placeholder:
-                                field.kind === 'date'
-                                    ? 'ДД.ММ.ГГГГ'
-                                    : field.kind === 'datetime'
-                                      ? 'ДД.ММ.ГГГГ ЧЧ:ММ'
-                                      : field.kind === 'integer'
-                                        ? 'Например, 0'
-                                        : field.kind === 'reading'
-                                          ? 'Введите показания'
-                                          : 'Не указано',
+                                field.kind === 'integer'
+                                    ? 'Например, 0'
+                                    : field.kind === 'reading'
+                                      ? 'Введите показания'
+                                      : 'Не указано',
                             keyboardType:
                                 field.kind === 'integer'
                                     ? 'number-pad'
