@@ -26,7 +26,7 @@ const useMe = () => {
 
     return {
         fullName: data?.full_name ?? cachedFullName,
-        avatar: data?.avatar ?? cachedAvatar,
+        avatar: data ? (data.avatar ?? null) : cachedAvatar,
         isPending,
         error,
     };
