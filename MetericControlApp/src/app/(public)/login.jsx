@@ -11,6 +11,8 @@ const LoginScreen = () => {
     return (
         <DismissKeyboardWrapper style={styles.dismissKeyboard}>
             <ScreenLayout safe centered>
+                <Text style={styles.title}>Войдите в приложение</Text>
+                <LoginForm setError={setError} />
                 {error && (
                     <Notification
                         variant='warning'
@@ -18,8 +20,6 @@ const LoginScreen = () => {
                         handleClose={() => setError(null)}
                     />
                 )}
-                <Text style={styles.title}>Войдите в приложение</Text>
-                <LoginForm setError={setError} />
             </ScreenLayout>
         </DismissKeyboardWrapper>
     );

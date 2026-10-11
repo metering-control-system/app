@@ -1,3 +1,5 @@
+import useErrors from '@/shared/hooks/useErrors';
+import Notification from '@/shared/components/notification/Notification';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
@@ -14,6 +16,8 @@ import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
 
 const ReportSubmitScreen = () => {
+    const { error: errorMessage, handleError, dismissError } = useErrors();
+
     const { id, reference } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
     const reportQuery = useTaskReport(task);
@@ -54,7 +58,10 @@ const ReportSubmitScreen = () => {
             {isPending || reportQuery.isPending ? (
                 <ScreenLoader loading />
             ) : reportQuery.isError ? (
-                <TaskReportLookupError onRetry={reportQuery.refetch} />
+                <TaskReportLookupError
+                    onRetry={reportQuery.refetch}
+                    onClose={() => router.replace('/(authorized)/(tabs)/tasks')}
+                />
             ) : (
                 <KeyboardAvoidingView
                     style={{ flex: 1 }}
@@ -66,6 +73,8 @@ const ReportSubmitScreen = () => {
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
                         <ReportSubmitForm
+                            onError={handleError}
+                            onActionStart={dismissError}
                             key={id}
                             task={task}
                             existingReport={reportQuery.data}
@@ -95,6 +104,11 @@ const ReportSubmitScreen = () => {
                     />
                 </KeyboardAvoidingView>
             )}
+            <Notification
+                variant='warning'
+                message={errorMessage}
+                handleClose={dismissError}
+            />
         </ScreenLayout>
     );
 };

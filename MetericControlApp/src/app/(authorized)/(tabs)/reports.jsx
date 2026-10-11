@@ -21,13 +21,6 @@ const ReportScreen = () => {
 
     return (
         <ScreenLayout safe>
-            {error && (
-                <Notification
-                    variant='warning'
-                    message={error}
-                    handleClose={() => setError(null)}
-                />
-            )}
             <ControlPanel
                 filteringVariants={reportFilteringVariants}
                 sortingVariants={reportSortingVariants}
@@ -44,6 +37,13 @@ const ReportScreen = () => {
                 setError={setError}
                 search={search}
             />
+            {error && (
+                <Notification
+                    variant='warning'
+                    message={error}
+                    handleClose={() => setError(null)}
+                />
+            )}
         </ScreenLayout>
     );
 };

@@ -87,11 +87,6 @@ const MapScreen = () => {
 
     return (
         <ScreenLayout style={{ flex: 1 }}>
-            <Notification
-                variant='warning'
-                message={error}
-                handleClose={dismissError}
-            />
             <ControlPanel
                 filteringVariants={taskFilteringVariants}
                 filtering={filtering}
@@ -151,6 +146,11 @@ const MapScreen = () => {
                     />
                 </View>
             </Modal>
+            <Notification
+                variant='warning'
+                message={error}
+                handleClose={dismissError}
+            />
         </ScreenLayout>
     );
 };

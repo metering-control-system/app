@@ -38,7 +38,13 @@ const TaskRouter = () => {
         report?.status,
     ]);
 
-    if (error) return <TaskReportLookupError onRetry={refetch} />;
+    if (error)
+        return (
+            <TaskReportLookupError
+                onRetry={refetch}
+                onClose={() => router.replace('/(authorized)/(tabs)/tasks')}
+            />
+        );
     if (isReadOnly && !isReportPending) {
         return <Redirect href={`/(authorized)/reportDetails/${report.id}`} />;
     }
