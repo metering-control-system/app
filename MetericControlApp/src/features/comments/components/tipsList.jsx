@@ -7,7 +7,6 @@ import {
     View,
 } from 'react-native';
 import { useEffect, useRef } from 'react';
-import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
 
 const HighlightedText = ({ text, query }) => {
     if (!query) return <Text style={styles.optionKey}>{text}</Text>;
@@ -24,7 +23,12 @@ const HighlightedText = ({ text, query }) => {
     );
 };
 
-export const TipsList = ({ displayedTips, onTipPress, searchQuery }) => {
+export const TipsList = ({
+    displayedTips,
+    onTipPress,
+    searchQuery,
+    references,
+}) => {
     const animValue = useRef(new Animated.Value(0)).current;
 
     useEffect(() => {
@@ -33,7 +37,7 @@ export const TipsList = ({ displayedTips, onTipPress, searchQuery }) => {
             duration: 200,
             useNativeDriver: true,
         }).start();
-    }, []);
+    }, [animValue]);
 
     return (
         <Animated.View style={[styles.selectionZone, { opacity: animValue }]}>
@@ -41,7 +45,7 @@ export const TipsList = ({ displayedTips, onTipPress, searchQuery }) => {
                 data={displayedTips}
                 keyExtractor={(tip) => tip}
                 renderItem={({ item }) => {
-                    const meta = FORM_FIELDS_MAP[item];
+                    const meta = references?.[item];
                     return (
                         <Pressable
                             onPress={() => onTipPress?.(item)}

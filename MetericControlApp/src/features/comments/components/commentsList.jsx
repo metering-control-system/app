@@ -14,6 +14,8 @@ const CommentsList = ({
     userId,
     ref,
     onSelectComment,
+    references,
+    onReferencePress,
 }) => {
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
@@ -86,10 +88,11 @@ const CommentsList = ({
                 isPending={comment?.isPending || comment?.is_deleted}
                 isOwn={comment?.author_id === userId}
                 onPress={onSelectComment}
-                id={id}
+                references={references}
+                onReferencePress={onReferencePress}
             />
         ),
-        [id, userId, onSelectComment]
+        [userId, onSelectComment, references, onReferencePress]
     );
 
     const handleScrolledMessages = useCallback(
