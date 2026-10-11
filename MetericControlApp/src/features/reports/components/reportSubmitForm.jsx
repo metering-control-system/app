@@ -1,5 +1,5 @@
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
-import { FontAwesome, FontAwesome6 } from '@expo/vector-icons';
+import { FontAwesome } from '@expo/vector-icons';
 import { useMutationState } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -42,13 +42,15 @@ import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMeta
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useLoadBrigadeReport from '@/features/reports/hooks/useLoadBrigadeReport';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
-import * as Print from 'expo-print';
-import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
+import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
+import { validateReportAct } from '@/features/reports/lib/validateReportAct';
+import { ensureActFileExists } from '@/features/reports/lib/ensureActFileExists';
+import { generateActPdf } from '@/features/reports/lib/generateActPdf';
+import useReportActStore from '@/features/reports/store/useReportActStore';
 import * as Sharing from 'expo-sharing';
-import ModalPicker from '@/shared/components/picker/modalPicker';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import useActTemplates from '@/features/reports/hooks/useActTemplates';
-import PdfViewer from '@/features/reports/components/pdfViewer';
+import ActDocumentPanel from '@/features/reports/components/actDocumentPanel';
 import {
     REPORT_FORM_STEPS as FORM_STEPS,
     getFirstReportValidationError,
@@ -92,7 +94,16 @@ const ReportSubmitForm = ({
     const pendingOperations = useMutationState({
         filters: getReportOperationFilters(draftId),
     });
-    const isReportBusy = pendingOperations.length > 0;
+    const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
+    const generatingPdfRef = useRef(false);
+    const isReportBusy = pendingOperations.length > 0 || isGeneratingPdf;
+    const signatureResult = useReportActStore((state) => state.result);
+    const startSignatureSession = useReportActStore(
+        (state) => state.startSession
+    );
+    const clearSignatureSession = useReportActStore(
+        (state) => state.clearSession
+    );
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
     );
@@ -126,6 +137,9 @@ const ReportSubmitForm = ({
     const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
+    );
+    const savedAct = useReportActStore(
+        (state) => state.actMetadataByTask[draftId]
     );
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
@@ -162,9 +176,24 @@ const ReportSubmitForm = ({
                 ...taskDefaults.consumerContact,
                 ...draftFormValues?.consumerContact,
             },
-            actPdf: { ...draftValues?.actPdf, isRefused: false },
+            actPdf: {
+                ...reportSubmitFormDefaultValues.actPdf,
+                ...draftValues?.actPdf,
+                signatures: savedAct?.signatures ?? {},
+                checksum: savedAct?.checksum,
+                templateId: savedAct?.templateId,
+                uri:
+                    savedAct?.checksum &&
+                    savedAct.checksum === draftValues?.actPdf?.checksum &&
+                    areReportDraftsEqual(
+                        savedAct.signatures,
+                        draftValues?.actPdf?.signatures ?? {}
+                    )
+                        ? (draftValues?.actPdf?.uri ?? '')
+                        : '',
+            },
         };
-    }, [draftValues, existingReport, task]);
+    }, [draftValues, existingReport, task, savedAct]);
 
     const initialPhotoMetadata = useMemo(
         () =>
@@ -174,12 +203,12 @@ const ReportSubmitForm = ({
         [existingReport?.images, task?.is_team_task]
     );
 
-    const [template, setTemplate] = useState(defaultActTemplate);
-    const [templatesPickerVisible, setTemplatesPickerVisible] = useState(false);
-    const htmlTemplates = templates?.map((template) => [
-        template.id,
-        template.name,
-    ]);
+    const [template, setTemplate] = useState(
+        () =>
+            templates.find(
+                (item) => String(item.id) === initialValues.actPdf.templateId
+            )?.id ?? defaultActTemplate
+    );
 
     const {
         control,
@@ -195,7 +224,7 @@ const ReportSubmitForm = ({
         shouldUnregister: false,
         defaultValues: initialValues,
     });
-    const formValues = useWatch({ control });
+    useWatch({ control });
 
     useEffect(() => {
         if (hydratedDraftIdRef.current === draftId) {
@@ -205,6 +234,15 @@ const ReportSubmitForm = ({
         reset(initialValues);
         hydratedDraftIdRef.current = draftId;
     }, [draftId, initialValues, reset]);
+
+    useEffect(() => {
+        if (signatureResult?.taskId !== draftId) return;
+        setValue('actPdf', signatureResult.actPdf, {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+        clearSignatureSession();
+    }, [signatureResult, draftId, setValue, clearSignatureSession]);
 
     useEffect(() => {
         if (hydratedPhotosIdRef.current === draftId) {
@@ -1002,30 +1040,28 @@ const ReportSubmitForm = ({
             (temp) => temp?.id === template
         );
 
-        const shareFile = async (uri) => {
-            const isAvailable = await Sharing.isAvailableAsync();
-            if (isAvailable) {
-                await Sharing.shareAsync(uri);
-            }
-        };
-
         const printToFile = async () => {
-            if (!selectedTemplate) {
-                Alert.alert('Предупреждение', 'Не выбран не один шаблон акта.');
-                return;
+            if (generatingPdfRef.current) return;
+            generatingPdfRef.current = true;
+            setIsGeneratingPdf(true);
+            try {
+                const actPdf = await generateActPdf({
+                    template: selectedTemplate,
+                    values: getValues(),
+                    previousAct:
+                        useReportActStore.getState().actMetadataByTask[draftId],
+                });
+                useReportActStore.getState().saveAct(draftId, actPdf);
+                setValue('actPdf', actPdf, { shouldDirty: true });
+            } catch (error) {
+                Alert.alert(
+                    'Не удалось подготовить акт',
+                    error.message || 'Попробуйте ещё раз.'
+                );
+            } finally {
+                generatingPdfRef.current = false;
+                setIsGeneratingPdf(false);
             }
-
-            const html = fillActTemplate(
-                selectedTemplate?.html,
-                formValues ?? {},
-                selectedTemplate?.requiredFields ?? []
-            );
-
-            const { uri } = await Print.printToFileAsync({ html }).catch(() =>
-                Promise.reject('ERR_PRINT_TO_FILE')
-            );
-            setValue('actPdf.uri', uri);
-            void shareFile(uri);
         };
 
         return (
@@ -1057,73 +1093,71 @@ const ReportSubmitForm = ({
                         })
                     }
                 />
-                <PdfViewer page={0} source={getValues('actPdf.uri')} />
-                <View style={styles.navigationRow}>
-                    <Pressable
-                        onPress={() => setTemplatesPickerVisible(true)}
-                        style={{
-                            alignSelf: 'center',
-                            paddingVertical: 5,
-                            paddingHorizontal: 8,
-                            borderRadius: '50%',
-                            outlineStyle: 'solid',
-                            outlineOffset: -3,
-                            outlineColor: 'rgba(73,73,73,0.2)',
-                            outlineWidth: 1,
-                            backgroundColor: 'rgb(176,176,176)',
-                        }}>
-                        <FontAwesome6
-                            name='sticky-note'
-                            size={20}
-                            color='#555'
-                        />
-                    </Pressable>
-                    <View style={{ flex: 1, gap: 10 }}>
-                        <FormButton
-                            onPress={printToFile}
-                            message='Сгенерировать акт допуска/замены'
-                            style={styles.pdfButton}
-                            disabled={
-                                getValues('actPdf.isRefused') ||
-                                templates?.length === 0
+                <ActDocumentPanel
+                    templates={templates}
+                    template={template}
+                    onTemplateChange={(update) => {
+                        const nextTemplate =
+                            typeof update === 'function'
+                                ? update(template)
+                                : update;
+                        if (nextTemplate !== template) {
+                            setValue('actPdf.uri', '', { shouldDirty: true });
+                            setTemplate(nextTemplate);
+                        }
+                    }}
+                    actPdf={getValues('actPdf')}
+                    isBusy={isReportBusy}
+                    isGenerating={isGeneratingPdf}
+                    isLoadingTemplates={isPending}
+                    isUpToDated={isUpToDated}
+                    onRefreshTemplates={requestActTemplates}
+                    onGenerate={printToFile}
+                    onShare={async () => {
+                        try {
+                            ensureActFileExists(getValues('actPdf.uri'));
+                            if (await Sharing.isAvailableAsync()) {
+                                await Sharing.shareAsync(
+                                    getValues('actPdf.uri')
+                                );
+                            } else {
+                                Alert.alert(
+                                    'Недоступно',
+                                    'На этом устройстве нельзя поделиться файлом.'
+                                );
                             }
-                        />
-                        <FormButton
-                            onPress={requestActTemplates}
-                            disabled={isUpToDated || isPending}
-                            message={
-                                isPending
-                                    ? 'Загрузка...'
-                                    : 'Загрузить шаблоны акта'
-                            }
-                            style={{
-                                justifyContent: 'center',
-                                alignItems: 'center',
-                                borderRadius: 12,
-                                borderWidth: 1,
-                                borderColor: '#0080ff',
-                                backgroundColor: 'white',
-                                borderStyle: 'dashed',
-                                gap: 15,
-                                flexDirection: 'row',
-                                paddingHorizontal: 10,
-                                paddingVertical: 15,
-                            }}
-                            textStyle={styles.secondaryButtonText}
-                        />
-                    </View>
-                </View>
-                <ModalPicker
-                    variants={htmlTemplates}
-                    state={template}
-                    setState={setTemplate}
-                    label='Выберите шаблон'
-                    visible={templatesPickerVisible}
-                    onClose={() => setTemplatesPickerVisible(false)}>
-                    <Text style={{ fontWeight: 'bold' }}>
-                        {htmlTemplates.find((tmp) => tmp[0] === template)?.[1]}
-                    </Text>
-                </ModalPicker>
+                        } catch (error) {
+                            Alert.alert(
+                                'Не удалось поделиться актом',
+                                error.message || 'Попробуйте ещё раз.'
+                            );
+                        }
+                    }}
+                    onSign={async (role) => {
+                        if (generatingPdfRef.current) return;
+                        generatingPdfRef.current = true;
+                        try {
+                            const values = JSON.parse(
+                                JSON.stringify(getValues())
+                            );
+                            await validateReportAct({
+                                taskId: draftId,
+                                values,
+                            });
+                            startSignatureSession({
+                                taskId: draftId,
+                                role,
+                                template: selectedTemplate,
+                                values,
+                            });
+                            router.push('/(authorized)/signature');
+                        } catch (error) {
+                            Alert.alert('Нужно пересоздать акт', error.message);
+                        } finally {
+                            generatingPdfRef.current = false;
+                        }
+                    }}
+                />
             </View>
         );
     };
@@ -1329,15 +1363,6 @@ const styles = StyleSheet.create({
     },
     secondaryButtonText: { color: '#278cff' },
     buttonSpacer: { flex: 1 },
-    pdfButton: {
-        justifyContent: 'center',
-        alignItems: 'center',
-        borderRadius: 12,
-        gap: 15,
-        flexDirection: 'row',
-        paddingHorizontal: 10,
-        paddingVertical: 15,
-    },
 });
 
 export default ReportSubmitForm;

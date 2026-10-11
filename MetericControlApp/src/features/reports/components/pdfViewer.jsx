@@ -1,5 +1,6 @@
+import { ensureActFileExists } from '@/features/reports/lib/ensureActFileExists';
 import { PdfView } from 'react-native-pdf-light';
-import { Modal, Pressable, StyleSheet } from 'react-native';
+import { Alert, Modal, Pressable, StyleSheet, Text } from 'react-native';
 import { ZoomPdfView } from 'react-native-pdf-light/Zoom';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { useState } from 'react';
@@ -33,13 +34,25 @@ const PdfViewer = ({ source }) => {
     if (!source) {
         return null;
     }
+    try {
+        ensureActFileExists(source);
+    } catch (error) {
+        return <Text>{error.message}</Text>;
+    }
     return (
         <Pressable
             style={({ pressed }) => [
                 styles.overlayButton,
                 { opacity: pressed ? 0.9 : 1 },
             ]}
-            onPress={() => setVisible(true)}
+            onPress={() => {
+                try {
+                    ensureActFileExists(source);
+                    setVisible(true);
+                } catch (error) {
+                    Alert.alert('Акт недоступен', error.message);
+                }
+            }}
             disabled={!source}>
             <PdfView
                 page={0}

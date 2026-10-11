@@ -1,3 +1,4 @@
+import { validateReportAct } from '@/features/reports/lib/validateReportAct';
 import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 import { useCallback } from 'react';
 import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
@@ -21,6 +22,7 @@ import {
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useReportActStore from '@/features/reports/store/useReportActStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
 import { buildReportUpsertRequest } from '@/features/reports/lib/reportUpsert';
 import {
@@ -63,6 +65,18 @@ const useSubmitReport = () => {
             ) {
                 return { skipped: true };
             }
+            await validateReportAct({ taskId, values });
+            if (
+                expectedDraft &&
+                !areReportDraftsEqual(
+                    expectedDraft,
+                    useReportDraftStore.getState().getDraft(draftId)
+                )
+            ) {
+                return { skipped: true };
+            }
+            const actRecord =
+                useReportActStore.getState().actMetadataByTask[draftId];
             const picturesState = useStorePictures.getState();
             const photoMetadata = prepareReportPhotoMetadata({
                 photos: values.photos,
@@ -203,7 +217,7 @@ const useSubmitReport = () => {
                     values,
                     serverActId
                 );
-                if (actPdfUri && reportPdfActPayload) {
+                if (!isRefused && actPdfUri && reportPdfActPayload) {
                     if (serverActId) {
                         reportResponse = await updateReportPdfAct(
                             reportId,
@@ -244,6 +258,7 @@ const useSubmitReport = () => {
                 }
 
                 return {
+                    actRecord,
                     reportId,
                     reportResponse,
                     operation: upsertRequest.operation,
@@ -259,6 +274,9 @@ const useSubmitReport = () => {
         },
         onSuccess: async (_data, variables) => {
             if (_data.skipped || _data.offline) return;
+            useReportActStore
+                .getState()
+                .clearTaskAct(variables.taskId, _data.actRecord);
             const store = useReportDraftStore.getState();
             const draftId = String(variables.taskId);
             if (
