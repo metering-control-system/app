@@ -1,6 +1,6 @@
 export const reportStatus = {
-    ON_REVIEW: 'на проверке',
-    ON_ADMIN: 'на утверждении',
-    ACCEPTED: 'завершена',
-    REJECTED: 'отклонена',
+    ON_REVIEW: 'На проверке',
+    ON_ADMIN: 'На утверждении',
+    ACCEPTED: 'Завершена',
+    REJECTED: 'Отклонена',
 };

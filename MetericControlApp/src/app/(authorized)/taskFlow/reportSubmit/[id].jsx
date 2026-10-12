@@ -45,6 +45,10 @@ const ReportSubmitScreen = () => {
         }
     }, [reference, navigateToElement]);
 
+    useEffect(() => {
+        scrollRef.current?.scrollTo({ y: 0, animated: false });
+    }, [step]);
+
     if (reportQuery.isReadOnly && !reportQuery.isPending) {
         return (
             <Redirect
@@ -54,7 +58,7 @@ const ReportSubmitScreen = () => {
     }
 
     return (
-        <ScreenLayout safe>
+        <ScreenLayout safe style={styles.screen}>
             {isPending || reportQuery.isPending ? (
                 <ScreenLoader loading />
             ) : reportQuery.isError ? (
@@ -114,6 +118,7 @@ const ReportSubmitScreen = () => {
 };
 
 const styles = StyleSheet.create({
+    screen: { backgroundColor: '#f3f6fa' },
     chatDivider: {
         marginBlock: 15,
         height: 1,

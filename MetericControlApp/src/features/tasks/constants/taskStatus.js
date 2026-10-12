@@ -1,6 +1,6 @@
 export const taskStatus = {
-    NEW: 'новая',
-    IN_PROGRESS: 'в работе',
-    COMPLETED: 'завершена',
-    REJECTED: 'отклонена',
+    NEW: 'Новая',
+    IN_PROGRESS: 'В работе',
+    COMPLETED: 'Завершена',
+    REJECTED: 'Отклонена',
 };

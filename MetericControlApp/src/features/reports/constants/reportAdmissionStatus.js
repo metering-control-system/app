@@ -1,4 +1,4 @@
 export const reportAdmission = {
-    ADMITTED: 'допущен',
-    NOT_ADMITTED: 'не допущен',
+    ADMITTED: 'Допущен',
+    NOT_ADMITTED: 'Не допущен',
 };

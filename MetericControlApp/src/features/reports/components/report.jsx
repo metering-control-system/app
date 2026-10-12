@@ -49,7 +49,7 @@ const Report = ({ report }) => {
                                 colors.ordinary,
                         ]}>
                         {reportAdmission[report.admission?.status] ??
-                            'не назначен'}
+                            'Не назначен'}
                     </Text>
                     <Text
                         style={[
@@ -57,7 +57,7 @@ const Report = ({ report }) => {
                             reportStatusColors[report?.status] ??
                                 colors.ordinary,
                         ]}>
-                        {reportStatus[report?.status] ?? 'не назначен'}
+                        {reportStatus[report?.status] ?? 'Не назначен'}
                     </Text>
                 </View>
             </View>
