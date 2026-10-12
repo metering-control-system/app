@@ -1656,13 +1656,15 @@ const styles = StyleSheet.create({
     formBody: { gap: 14 },
     description: { fontSize: 13, lineHeight: 19, color: '#62758f' },
     sectionList: { gap: 16 },
-    control: { marginBottom: 16 },
+    control: { marginBottom: 16, alignSelf: 'stretch', minWidth: 0 },
     label: {
         marginBottom: 8,
         fontSize: 14,
         fontWeight: '500',
         color: '#42536c',
         lineHeight: 20,
+        alignSelf: 'stretch',
+        flexShrink: 1,
     },
     requiredMark: { color: '#c84343' },
     input: {

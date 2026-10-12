@@ -15,10 +15,10 @@ import {
 import { colors } from '@/shared/consts/baseColors';
 import { getAdditionalReportDetails } from '../lib/reportFieldDetails';
 
-const DetailRow = ({ label, value }) => (
-    <View style={styles.detailRow}>
+const DetailRow = ({ label, value, stacked = false }) => (
+    <View style={[styles.detailRow, stacked && styles.stackedDetailRow]}>
         <Text style={styles.label}>{label}</Text>
-        <Text selectable style={styles.value}>
+        <Text selectable style={[styles.value, stacked && styles.stackedValue]}>
             {value === null || value === undefined || value === ''
                 ? 'Не указано'
                 : value}
@@ -60,9 +60,9 @@ const Section = ({ icon, title, children }) => (
         {children}
     </View>
 );
-const AdditionalDetails = ({ rows }) =>
+const AdditionalDetails = ({ rows, stacked = false }) =>
     rows.map(({ key, label, value }) => (
-        <DetailRow key={key} label={label} value={value} />
+        <DetailRow key={key} label={label} value={value} stacked={stacked} />
     ));
 
 const ReportDetailsForm = ({
@@ -190,7 +190,10 @@ const ReportDetailsForm = ({
 
             {additionalDetails.actDetails.length > 0 && (
                 <Section title='Реквизиты отчёта' icon='document-text-outline'>
-                    <AdditionalDetails rows={additionalDetails.actDetails} />
+                    <AdditionalDetails
+                        rows={additionalDetails.actDetails}
+                        stacked
+                    />
                 </Section>
             )}
 
@@ -523,6 +526,12 @@ const styles = StyleSheet.create({
         paddingVertical: 10,
     },
     label: { fontSize: 13, lineHeight: 19, color: '#64748b', flexShrink: 1 },
+    stackedDetailRow: {
+        flexDirection: 'column',
+        alignItems: 'stretch',
+        gap: 4,
+    },
+    stackedValue: { flex: 0, textAlign: 'left' },
     value: {
         fontSize: 14,
         lineHeight: 20,
