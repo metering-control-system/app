@@ -48,16 +48,18 @@ const Task = ({ task, hasPendingTaskReport, needsReportRevision }) => {
                         ]}>
                         {taskStatus[task?.status] ?? 'Не назначен'}
                     </Text>
-                    <Text
-                        numberOfLines={2}
-                        ellipsizeMode='tail'
-                        style={[
-                            styles.badge,
-                            taskPriorityColors[task?.manual_priority] ??
-                                taskPriorityColors.NOT_SPECIFIED,
-                        ]}>
-                        {taskPriority[task?.manual_priority] ?? 'Не назначена'}
-                    </Text>
+                    {taskPriority[task?.manual_priority] && (
+                        <Text
+                            numberOfLines={2}
+                            ellipsizeMode='tail'
+                            style={[
+                                styles.badge,
+                                taskPriorityColors[task?.manual_priority] ??
+                                    taskPriorityColors.NOT_SPECIFIED,
+                            ]}>
+                            {taskPriority[task?.manual_priority]}
+                        </Text>
+                    )}
                     {task.task_data?.has_request && (
                         <Text
                             numberOfLines={2}

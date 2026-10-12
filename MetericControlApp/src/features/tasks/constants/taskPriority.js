@@ -1,5 +1,4 @@
 export const taskPriority = {
-    NOT_SPECIFIED: 'Не назначена',
     LOW: 'Не срочная',
     MEDIUM: 'Средняя срочность',
     HIGH: 'Срочная',

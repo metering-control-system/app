@@ -81,16 +81,16 @@ export const MapTaskList = ({
                             style={styles.listItemAddress}>
                             {item.address?.display_address}
                         </Text>
-                        <Text
-                            style={[
-                                styles.priority,
-                                taskPriorityColors[item.manual_priority] ??
-                                    taskPriorityColors.NOT_SPECIFIED,
-                            ]}>
-                            Срочность:{' '}
-                            {taskPriority[item.manual_priority] ??
-                                taskPriority.NOT_SPECIFIED}
-                        </Text>
+                        {taskPriority[item.manual_priority] && (
+                            <Text
+                                style={[
+                                    styles.priority,
+                                    taskPriorityColors[item.manual_priority] ??
+                                        taskPriorityColors.NOT_SPECIFIED,
+                                ]}>
+                                Срочность: {taskPriority[item.manual_priority]}
+                            </Text>
+                        )}
                         {!item.tileAddress && !tilePressed && (
                             <Text
                                 style={[
