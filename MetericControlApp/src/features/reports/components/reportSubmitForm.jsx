@@ -1,5 +1,5 @@
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
-import { FontAwesome } from '@expo/vector-icons';
+import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useMutationState } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -17,7 +17,6 @@ import {
 } from 'react-native';
 import { useRouter } from 'expo-router';
 
-import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
@@ -57,6 +56,11 @@ import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore'
 import ActDocumentPanel from '@/features/reports/components/actDocumentPanel';
 import ReportDateField from './reportDateField';
 import {
+    ReportFormSection,
+    ReportFieldLayout,
+    ReportFormSteps,
+} from './reportFormLayout';
+import {
     REPORT_FORM_STEPS as FORM_STEPS,
     getFirstReportValidationError,
 } from '@/features/reports/lib/reportFormValidation';
@@ -80,6 +84,7 @@ const ReportSubmitForm = ({
     onValidationError,
 }) => {
     const router = useRouter();
+    const formRef = useRef(null);
     const { isOnline } = useNetwork();
     const hydratedDraftIdRef = useRef(null);
     const hydratedPhotosIdRef = useRef(null);
@@ -498,20 +503,28 @@ const ReportSubmitForm = ({
         numberOfLines = 1,
         error,
         editable = true,
+        required = false,
     }) => (
-        <View
-            onLayout={(e) => {
-                fillPositions({ e, name });
-            }}>
+        <ReportFieldLayout
+            name={name}
+            containerRef={formRef}
+            fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <View style={styles.control}>
-                    <Text style={styles.label}>{label}</Text>
+                    <Text style={styles.label}>
+                        {label}
+                        {required && (
+                            <Text style={styles.requiredMark}> *</Text>
+                        )}
+                    </Text>
                     <Controller
                         control={control}
                         name={name}
                         render={({ field: { onChange, onBlur, value } }) => (
                             <TextInput
                                 placeholder={placeholder}
+                                placeholderTextColor='#8996a9'
+                                accessibilityLabel={label}
                                 value={value}
                                 style={[
                                     styles.input,
@@ -534,7 +547,7 @@ const ReportSubmitForm = ({
                     ) : null}
                 </View>
             </HighlightWrap>
-        </View>
+        </ReportFieldLayout>
     );
 
     const renderSingleOptionGroup = ({
@@ -544,14 +557,20 @@ const ReportSubmitForm = ({
         options,
         name,
         allowEmpty = false,
+        required = false,
     }) => (
-        <View
-            onLayout={(e) => {
-                fillPositions({ e, name });
-            }}>
+        <ReportFieldLayout
+            name={name}
+            containerRef={formRef}
+            fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <View style={styles.control}>
-                    <Text style={styles.label}>{label}</Text>
+                    <Text style={styles.label}>
+                        {label}
+                        {required && (
+                            <Text style={styles.requiredMark}> *</Text>
+                        )}
+                    </Text>
                     <View style={styles.chipsRow}>
                         {options.map((option) => {
                             const isSelected = value === option.value;
@@ -586,7 +605,7 @@ const ReportSubmitForm = ({
                     </View>
                 </View>
             </HighlightWrap>
-        </View>
+        </ReportFieldLayout>
     );
 
     const renderToggleRow = ({
@@ -596,12 +615,18 @@ const ReportSubmitForm = ({
         name,
         disabled = false,
     }) => (
-        <View
-            onLayout={(e) => {
-                fillPositions({ e, name });
-            }}>
+        <ReportFieldLayout
+            name={name}
+            containerRef={formRef}
+            fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <Pressable
+                    accessibilityRole='switch'
+                    accessibilityState={{
+                        checked: Boolean(value),
+                        disabled: disabled || isReportBusy,
+                    }}
+                    disabled={disabled || isReportBusy}
                     onPress={() => onChange(!value)}
                     style={({ pressed }) => [
                         styles.switchRow,
@@ -611,59 +636,34 @@ const ReportSubmitForm = ({
                     <Switch
                         value={value}
                         onValueChange={onChange}
-                        disabled={disabled}
+                        disabled={disabled || isReportBusy}
+                        trackColor={{ false: '#d8e0ec', true: '#b7d5ff' }}
+                        thumbColor={value ? '#2469c9' : '#fff'}
                     />
                 </Pressable>
             </HighlightWrap>
-        </View>
+        </ReportFieldLayout>
     );
 
-    const renderStepIndicators = () => (
-        <View style={styles.stepsWrap}>
-            {FORM_STEPS.map((step, index) => {
-                const isActive = index === stepIndex;
-                const isCompleted = index < stepIndex;
-
-                return (
-                    <Pressable
-                        key={step.key}
-                        onPress={() => setStepIndex(index)}
-                        style={styles.stepItem}>
-                        <View
-                            style={[
-                                styles.stepBadge,
-                                isActive && styles.stepBadgeActive,
-                                isCompleted && styles.stepBadgeCompleted,
-                            ]}>
-                            <Text
-                                style={[
-                                    styles.stepBadgeText,
-                                    (isActive || isCompleted) &&
-                                        styles.stepBadgeTextActive,
-                                ]}>
-                                {index + 1}
-                            </Text>
-                        </View>
-                    </Pressable>
-                );
-            })}
-        </View>
-    );
+    const changeStep = (nextStep) => {
+        Keyboard.dismiss();
+        setStepIndex(nextStep);
+    };
 
     const renderActFields = (fields, title) => (
-        <View style={styles.section}>
-            <Text style={styles.sectionTitle}>{title}</Text>
-            <Text style={styles.hintText}>
-                Дополнительные сведения можно оставить незаполненными.
-            </Text>
+        <ReportFormSection
+            title={title}
+            description='Необязательные сведения — заполните, если они известны.'>
             {fields.map((field) => {
                 const name = `${field.group}.${field.name}`;
                 const error = errors[field.group]?.[field.name];
                 if (field.kind === 'date' || field.kind === 'datetime')
                     return (
-                        <View
+                        <ReportFieldLayout
                             key={name}
-                            onLayout={(e) => fillPositions({ e, name })}>
+                            name={name}
+                            containerRef={formRef}
+                            fillPositions={fillPositions}>
                             <HighlightWrap isActive={highlightedField === name}>
                                 <Controller
                                     control={control}
@@ -683,7 +683,7 @@ const ReportSubmitForm = ({
                                     )}
                                 />
                             </HighlightWrap>
-                        </View>
+                        </ReportFieldLayout>
                     );
                 if (field.kind === 'choice' || field.kind === 'boolean')
                     return (
@@ -736,164 +736,179 @@ const ReportSubmitForm = ({
                     </View>
                 );
             })}
-        </View>
+        </ReportFormSection>
     );
 
     const renderBeforeWorkStep = () => (
-        <View style={styles.section}>
-            {renderTextField({
-                name: 'customerName',
-                label: 'ФИО',
-                placeholder: 'Введите ФИО',
-                error: errors.customerName,
-            })}
-            {renderTextField({
-                name: 'personalAccount',
-                label: 'Лицевой счет',
-                placeholder: 'Введите лицевой счет',
-                keyboardType: 'number-pad',
-                error: errors.personalAccount,
-            })}
-            <View style={styles.control}>
-                <Text style={styles.label}>Адрес из задачи</Text>
-                <Text>
-                    {Object.entries(initialValues.address)
-                        .filter(([, value]) => value)
-                        .map(([key, value]) =>
-                            key === 'room' ? `Помещение: ${value}` : value
-                        )
-                        .join(', ') || 'Не указан'}
-                </Text>
-            </View>
-            {renderTextField({
-                name: 'meterBefore.type',
-                label: 'Тип старого ПУ',
-                placeholder: 'Введите тип старого ПУ',
-                error: errors.meterBefore?.type,
-            })}
-            {renderTextField({
-                name: 'meterBefore.number',
-                label: 'Номер старого ПУ',
-                placeholder: 'Введите номер старого ПУ',
-                error: errors.meterBefore?.number,
-            })}
-            <Controller
-                control={control}
-                name='meterBefore.isActualDifferent'
-                render={({ field: { onChange, value } }) =>
-                    renderToggleRow({
-                        name: 'meterBefore.isActualDifferent',
-                        label: 'Фактический ПУ отличается',
-                        value,
-                        onChange,
-                    })
-                }
-            />
-            {isActualMeterDifferent ? (
-                <>
-                    {renderTextField({
-                        name: 'meterBefore.actualType',
-                        label: 'Фактический тип старого ПУ',
-                        placeholder: 'Введите фактический тип при отличии',
-                        error: errors.meterBefore?.actualType,
-                    })}
-                    {renderTextField({
-                        name: 'meterBefore.actualNumber',
-                        label: 'Фактический номер старого ПУ',
-                        placeholder: 'Введите фактический номер при отличии',
-                        error: errors.meterBefore?.actualNumber,
-                    })}
-                </>
-            ) : null}
-            {renderTextField({
-                name: 'comment',
-                label: 'Комментарий к задаче',
-                placeholder: 'Добавьте комментарий при необходимости',
-                multiline: true,
-                numberOfLines: 4,
-                error: errors.comment,
-            })}
+        <View style={styles.sectionList}>
+            <ReportFormSection title='Данные потребителя' icon='person-outline'>
+                {renderTextField({
+                    name: 'customerName',
+                    required: true,
+                    label: 'ФИО',
+                    placeholder: 'Введите ФИО',
+                    error: errors.customerName,
+                })}
+                {renderTextField({
+                    name: 'personalAccount',
+                    required: true,
+                    label: 'Лицевой счет',
+                    placeholder: 'Введите лицевой счет',
+                    keyboardType: 'number-pad',
+                    error: errors.personalAccount,
+                })}
+            </ReportFormSection>
+            <ReportFormSection
+                title='Старый счётчик'
+                icon='speedometer-outline'>
+                {renderTextField({
+                    name: 'meterBefore.type',
+                    label: 'Тип старого ПУ',
+                    placeholder: 'Введите тип старого ПУ',
+                    error: errors.meterBefore?.type,
+                })}
+                {renderTextField({
+                    name: 'meterBefore.number',
+                    label: 'Номер старого ПУ',
+                    placeholder: 'Введите номер старого ПУ',
+                    error: errors.meterBefore?.number,
+                })}
+                <Controller
+                    control={control}
+                    name='meterBefore.isActualDifferent'
+                    render={({ field: { onChange, value } }) =>
+                        renderToggleRow({
+                            name: 'meterBefore.isActualDifferent',
+                            label: 'Фактический ПУ отличается',
+                            value,
+                            onChange,
+                        })
+                    }
+                />
+                {isActualMeterDifferent ? (
+                    <>
+                        {renderTextField({
+                            name: 'meterBefore.actualType',
+                            label: 'Фактический тип старого ПУ',
+                            placeholder: 'Введите фактический тип при отличии',
+                            error: errors.meterBefore?.actualType,
+                        })}
+                        {renderTextField({
+                            name: 'meterBefore.actualNumber',
+                            label: 'Фактический номер старого ПУ',
+                            placeholder:
+                                'Введите фактический номер при отличии',
+                            error: errors.meterBefore?.actualNumber,
+                        })}
+                    </>
+                ) : null}
+            </ReportFormSection>
             {renderActFields(
                 REPORT_ACT_FIELDS.filter(
                     (field) => field.group === 'meterBefore'
                 ),
                 'Характеристики старого счётчика'
             )}
+            <ReportFormSection
+                title='Заметки по задаче'
+                icon='chatbubble-ellipses-outline'>
+                {renderTextField({
+                    name: 'comment',
+                    label: 'Комментарий к задаче',
+                    placeholder: 'Добавьте комментарий при необходимости',
+                    multiline: true,
+                    numberOfLines: 4,
+                    error: errors.comment,
+                })}
+            </ReportFormSection>
         </View>
     );
 
     const renderMeteringStep = () => (
-        <View style={styles.section}>
-            <Controller
-                control={control}
-                name='metering.dismantlingCompleted'
-                render={({ field: { onChange, value } }) =>
-                    renderToggleRow({
-                        name: 'metering.dismantlingCompleted',
-                        label: 'Демонтаж выполнен',
-                        value,
-                        onChange,
-                    })
-                }
-            />
+        <View style={styles.sectionList}>
+            <ReportFormSection
+                title='Демонтаж старого счётчика'
+                icon='construct-outline'>
+                <Controller
+                    control={control}
+                    name='metering.dismantlingCompleted'
+                    render={({ field: { onChange, value } }) =>
+                        renderToggleRow({
+                            name: 'metering.dismantlingCompleted',
+                            label: 'Демонтаж выполнен',
+                            value,
+                            onChange,
+                        })
+                    }
+                />
 
-            {renderTextField({
-                name: 'metering.oldReading',
-                label: 'Последние показания старого ПУ',
-                placeholder: 'Введите показания',
-                keyboardType: 'decimal-pad',
-                error: errors.metering?.oldReading,
-            })}
+                {renderTextField({
+                    name: 'metering.oldReading',
+                    label: 'Последние показания старого ПУ',
+                    placeholder: 'Введите показания',
+                    keyboardType: 'decimal-pad',
+                    error: errors.metering?.oldReading,
+                })}
+            </ReportFormSection>
             {renderActFields(
                 REPORT_ACT_FIELDS.filter((field) =>
                     ['oldT1', 'oldT2'].includes(field.name)
                 ),
                 'Тарифные показания старого счётчика'
             )}
-            {renderTextField({
-                name: 'metering.newMeterType',
-                label: 'Тип нового ПУ',
-                placeholder: 'Введите тип нового ПУ',
-                error: errors.metering?.newMeterType,
-            })}
-            {renderTextField({
-                name: 'metering.newMeterNumber',
-                label: 'Номер нового ПУ',
-                placeholder: 'Введите номер нового ПУ',
-                error: errors.metering?.newMeterNumber,
-            })}
-            <Controller
-                control={control}
-                name='metering.sealLocation'
-                render={({ field: { onChange, value } }) =>
-                    renderSingleOptionGroup({
-                        name: 'metering.sealLocation',
-                        label: 'Место установки пломбы',
-                        value,
-                        onChange,
-                        options: SEAL_LOCATION_OPTIONS,
-                        allowEmpty: true,
-                    })
-                }
-            />
-            {errors.metering?.sealLocation ? (
-                <Text style={styles.errorText}>
-                    {errors.metering.sealLocation.message}
-                </Text>
-            ) : null}
-            {renderTextField({
-                name: 'metering.sealNumber',
-                label: 'Номер пломбы',
-                placeholder: 'Введите номер пломбы',
-                error: errors.metering?.sealNumber,
-            })}
-            {renderTextField({
-                name: 'metering.installationReading',
-                label: 'Показания при установке',
-                placeholder: 'Введите показания при установке',
-                keyboardType: 'decimal-pad',
-                error: errors.metering?.installationReading,
-            })}
+            <ReportFormSection title='Новый счётчик' icon='flash-outline'>
+                {renderTextField({
+                    name: 'metering.newMeterType',
+                    required: true,
+                    label: 'Тип нового ПУ',
+                    placeholder: 'Введите тип нового ПУ',
+                    error: errors.metering?.newMeterType,
+                })}
+                {renderTextField({
+                    name: 'metering.newMeterNumber',
+                    required: true,
+                    label: 'Номер нового ПУ',
+                    placeholder: 'Введите номер нового ПУ',
+                    error: errors.metering?.newMeterNumber,
+                })}
+                {renderTextField({
+                    name: 'metering.installationReading',
+                    required: true,
+                    label: 'Показания при установке',
+                    placeholder: 'Введите показания при установке',
+                    keyboardType: 'decimal-pad',
+                    error: errors.metering?.installationReading,
+                })}
+            </ReportFormSection>
+            <ReportFormSection
+                title='Пломбирование'
+                icon='shield-checkmark-outline'>
+                <Controller
+                    control={control}
+                    name='metering.sealLocation'
+                    render={({ field: { onChange, value } }) =>
+                        renderSingleOptionGroup({
+                            name: 'metering.sealLocation',
+                            label: 'Место установки пломбы',
+                            value,
+                            onChange,
+                            options: SEAL_LOCATION_OPTIONS,
+                            allowEmpty: true,
+                        })
+                    }
+                />
+                {errors.metering?.sealLocation ? (
+                    <Text style={styles.errorText}>
+                        {errors.metering.sealLocation.message}
+                    </Text>
+                ) : null}
+                {renderTextField({
+                    name: 'metering.sealNumber',
+                    label: 'Номер пломбы',
+                    placeholder: 'Введите номер пломбы',
+                    error: errors.metering?.sealNumber,
+                })}
+            </ReportFormSection>
             {renderActFields(
                 REPORT_ACT_FIELDS.filter(
                     (field) =>
@@ -957,14 +972,20 @@ const ReportSubmitForm = ({
         };
 
         return (
-            <View
+            <ReportFieldLayout
                 key={photoField.name}
-                onLayout={(e) => {
-                    fillPositions({ e, name: photoFieldName });
-                }}>
+                name={photoFieldName}
+                containerRef={formRef}
+                fillPositions={fillPositions}>
                 <HighlightWrap isActive={highlightedField === photoFieldName}>
-                    <View style={styles.control}>
-                        <Text style={styles.label}>{title}</Text>
+                    <ReportFormSection
+                        title={title}
+                        icon='camera-outline'
+                        description={
+                            uris.length
+                                ? `Добавлено фото: ${uris.length}`
+                                : 'Сделайте снимок или выберите фото из галереи.'
+                        }>
                         <MediaBlock
                             onError={onError}
                             uris={uris}
@@ -1030,67 +1051,72 @@ const ReportSubmitForm = ({
                             }}
                             disabled={isReportBusy}
                         />
-                    </View>
+                    </ReportFormSection>
                 </HighlightWrap>
-            </View>
+            </ReportFieldLayout>
         );
     };
 
     const renderPhotosStep = () => (
-        <View style={styles.section}>
+        <View style={styles.sectionList}>
             {REPORT_PHOTO_CONFIGS.map(renderPhotoField)}
         </View>
     );
 
     const renderAdmissionStep = () => (
-        <View style={styles.section}>
-            <Controller
-                control={control}
-                name='admission.status'
-                render={({ field: { onChange, value } }) =>
-                    renderSingleOptionGroup({
-                        name: 'admission.status',
-                        label: 'Статус допуска',
-                        value,
-                        onChange,
-                        options: ADMISSION_STATUS_OPTIONS,
-                    })
-                }
-            />
-            {errors.admission?.status ? (
-                <Text style={styles.errorText}>
-                    {errors.admission.status.message}
-                </Text>
-            ) : null}
-
-            {admissionStatus === 'NOT_ADMITTED' ? (
+        <View style={styles.sectionList}>
+            <ReportFormSection
+                title='Результат работ'
+                icon='checkmark-circle-outline'>
                 <Controller
                     control={control}
-                    name='admission.rejectionReason'
+                    name='admission.status'
                     render={({ field: { onChange, value } }) =>
                         renderSingleOptionGroup({
-                            name: 'admission.rejectionReason',
-                            label: 'Причина недопуска',
+                            name: 'admission.status',
+                            required: true,
+                            label: 'Статус допуска',
                             value,
                             onChange,
-                            options: REJECTION_REASON_OPTIONS,
+                            options: ADMISSION_STATUS_OPTIONS,
                         })
                     }
                 />
-            ) : null}
-            {errors.admission?.rejectionReason ? (
-                <Text style={styles.errorText}>
-                    {errors.admission.rejectionReason.message}
-                </Text>
-            ) : null}
-            {admissionStatus === 'NOT_ADMITTED' &&
-                renderTextField({
-                    name: 'admission.rejectionComment',
-                    label: 'Пояснение причины недопуска',
-                    placeholder: 'Укажите причину недопуска',
-                    multiline: true,
-                    error: errors.admission?.rejectionComment,
-                })}
+                {errors.admission?.status ? (
+                    <Text style={styles.errorText}>
+                        {errors.admission.status.message}
+                    </Text>
+                ) : null}
+
+                {admissionStatus === 'NOT_ADMITTED' ? (
+                    <Controller
+                        control={control}
+                        name='admission.rejectionReason'
+                        render={({ field: { onChange, value } }) =>
+                            renderSingleOptionGroup({
+                                name: 'admission.rejectionReason',
+                                label: 'Причина недопуска',
+                                value,
+                                onChange,
+                                options: REJECTION_REASON_OPTIONS,
+                            })
+                        }
+                    />
+                ) : null}
+                {errors.admission?.rejectionReason ? (
+                    <Text style={styles.errorText}>
+                        {errors.admission.rejectionReason.message}
+                    </Text>
+                ) : null}
+                {admissionStatus === 'NOT_ADMITTED' &&
+                    renderTextField({
+                        name: 'admission.rejectionComment',
+                        label: 'Пояснение причины недопуска',
+                        placeholder: 'Укажите причину недопуска',
+                        multiline: true,
+                        error: errors.admission?.rejectionComment,
+                    })}
+            </ReportFormSection>
             {renderActFields(
                 REPORT_ACT_FIELDS.filter(
                     (field) => field.group === 'admission'
@@ -1101,7 +1127,10 @@ const ReportSubmitForm = ({
     );
 
     const renderContactsStep = () => (
-        <View style={styles.section}>
+        <ReportFormSection
+            title='Контакты потребителя'
+            icon='call-outline'
+            description='Если потребитель отказался, включите переключатель ниже.'>
             <Controller
                 control={control}
                 name='consumerContact.isRefusedContact'
@@ -1176,7 +1205,7 @@ const ReportSubmitForm = ({
                 editable: !isRefusedContact,
                 error: errors.consumerContact?.fullName,
             })}
-        </View>
+        </ReportFormSection>
     );
 
     const hasTemplates = (templates?.length ?? 0) > 0;
@@ -1225,7 +1254,9 @@ const ReportSubmitForm = ({
         };
 
         return (
-            <View style={{ flex: 1, paddingVertical: 20 }}>
+            <ReportFormSection
+                title='Цифровой акт'
+                icon='document-text-outline'>
                 <Controller
                     control={control}
                     name='actPdf.isRefused'
@@ -1311,7 +1342,7 @@ const ReportSubmitForm = ({
                         }
                     }}
                 />
-            </View>
+            </ReportFormSection>
         );
     };
 
@@ -1342,24 +1373,60 @@ const ReportSubmitForm = ({
     };
 
     return (
-        <Card title='Отчет по задаче' style={styles.card}>
-            {task?.is_team_task && (
-                <View style={styles.brigadeBadge}>
-                    <FontAwesome name='users' size={16} color='#245ca6' />
-                    <Text style={styles.brigadeBadgeText}>
-                        Работа в бригаде
+        <View ref={formRef} collapsable={false} style={styles.form}>
+            <View style={styles.header}>
+                <View style={styles.headerTitleRow}>
+                    <View style={styles.headerIcon}>
+                        <Ionicons
+                            name='clipboard-outline'
+                            size={24}
+                            color='#2469c9'
+                        />
+                    </View>
+                    <View style={styles.headerText}>
+                        <Text style={styles.eyebrow}>
+                            ЗАДАЧА №{task?.id ?? id}
+                        </Text>
+                        <Text style={styles.formTitle}>Заполнение отчёта</Text>
+                    </View>
+                </View>
+                <View style={styles.addressRow}>
+                    <Ionicons
+                        name='location-outline'
+                        size={18}
+                        color='#758399'
+                    />
+                    <Text style={styles.addressText}>
+                        {Object.entries(initialValues.address)
+                            .filter(([, value]) => value)
+                            .map(([key, value]) =>
+                                key === 'room' ? `Помещение: ${value}` : value
+                            )
+                            .join(', ') || 'Адрес не указан'}
                     </Text>
                 </View>
-            )}
-            <Text style={styles.description}>
-                Заполните отчет по выполненным работам и отправьте его на
-                проверку.
-            </Text>
+                {task?.is_team_task && (
+                    <View style={styles.brigadeBadge}>
+                        <FontAwesome name='users' size={14} color='#245ca6' />
+                        <Text style={styles.brigadeBadgeText}>
+                            Работа в бригаде
+                        </Text>
+                    </View>
+                )}
+                {!isOnline && (
+                    <Text style={styles.offlineHint}>
+                        Нет интернета. При сохранении отчёт останется в очереди
+                        отправки.
+                    </Text>
+                )}
+            </View>
 
             {task?.is_team_task && (
                 <View style={styles.brigadeActions}>
                     <FormButton
                         message='Загрузить отправленный отчёт'
+                        style={styles.loadButton}
+                        textStyle={styles.secondaryButtonText}
                         onPress={confirmLoadReport}
                         isPending={isLoadingReport}
                         disabled={!isOnline || isReportBusy}
@@ -1376,13 +1443,12 @@ const ReportSubmitForm = ({
             <View
                 pointerEvents={isReportBusy ? 'none' : 'auto'}
                 style={styles.formBody}>
-                {renderStepIndicators()}
-
-                <View style={styles.stepTitleWrap}>
-                    <Text style={styles.stepTitle}>
-                        {FORM_STEPS[stepIndex].title}
-                    </Text>
-                </View>
+                <ReportFormSteps
+                    steps={FORM_STEPS}
+                    activeIndex={stepIndex}
+                    onChange={changeStep}
+                    disabled={isReportBusy}
+                />
 
                 {renderCurrentStep()}
 
@@ -1391,18 +1457,16 @@ const ReportSubmitForm = ({
                         <FormButton
                             message='Назад'
                             onPress={() =>
-                                setStepIndex((currentStep) => currentStep - 1)
+                                changeStep((currentStep) => currentStep - 1)
                             }
                             style={styles.secondaryButton}
                             textStyle={styles.secondaryButtonText}
                         />
-                    ) : (
-                        <View style={styles.buttonSpacer} />
-                    )}
+                    ) : null}
 
                     {isLastStep ? (
                         <FormButton
-                            message='Сохранить отчет'
+                            message='Сохранить отчёт'
                             onPress={() => {
                                 if (isReportBusy) return;
                                 onActionStart();
@@ -1416,123 +1480,185 @@ const ReportSubmitForm = ({
                         <FormButton
                             message='Далее'
                             onPress={() =>
-                                setStepIndex((currentStep) => currentStep + 1)
+                                changeStep((currentStep) => currentStep + 1)
                             }
                             style={styles.primaryButton}
                         />
                     )}
                 </View>
+                <Text style={styles.footerHint}>
+                    {isLastStep
+                        ? 'Проверьте данные перед отправкой на проверку.'
+                        : `Следующий шаг: ${FORM_STEPS[stepIndex + 1].title}`}
+                </Text>
             </View>
-        </Card>
+        </View>
     );
 };
 
 const styles = StyleSheet.create({
-    sectionTitle: {
-        fontSize: 17,
-        fontWeight: '600',
-        color: '#172b4d',
-        marginTop: 12,
+    form: { paddingTop: 14, paddingBottom: 20 },
+    header: {
+        backgroundColor: '#fff',
+        borderRadius: 20,
+        padding: 18,
+        borderWidth: 1,
+        borderColor: '#e4eaf2',
+        gap: 14,
     },
-    card: { gap: 16, marginTop: 16 },
-    brigadeActions: { gap: 10 },
+    headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
+    headerIcon: {
+        width: 48,
+        height: 48,
+        borderRadius: 15,
+        backgroundColor: '#edf4fe',
+        justifyContent: 'center',
+        alignItems: 'center',
+    },
+    headerText: { flex: 1, gap: 4 },
+    eyebrow: {
+        fontSize: 11,
+        fontWeight: '600',
+        letterSpacing: 1,
+        color: '#758399',
+    },
+    formTitle: {
+        fontSize: 20,
+        fontWeight: '700',
+        lineHeight: 27,
+        color: '#1d314c',
+    },
+    addressRow: { flexDirection: 'row', alignItems: 'flex-start', gap: 8 },
+    addressText: { flex: 1, fontSize: 14, lineHeight: 21, color: '#52627a' },
+    offlineHint: {
+        fontSize: 13,
+        lineHeight: 19,
+        color: '#956a20',
+        backgroundColor: '#fff7e7',
+        padding: 12,
+        borderRadius: 10,
+    },
+    brigadeActions: {
+        gap: 10,
+        marginTop: 12,
+        padding: 16,
+        backgroundColor: '#edf4fe',
+        borderRadius: 16,
+    },
     brigadeBadge: {
         flexDirection: 'row',
         alignItems: 'center',
         alignSelf: 'flex-start',
         gap: 8,
-        paddingHorizontal: 12,
-        paddingVertical: 8,
-        borderRadius: 12,
-        backgroundColor: '#edf4ff',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        borderRadius: 8,
+        backgroundColor: '#edf4fe',
     },
-    brigadeBadgeText: { color: '#245ca6', fontSize: 14, fontWeight: '600' },
-    formBody: { gap: 16 },
-    description: { fontSize: 14, lineHeight: 20, color: '#62758f' },
-    stepsWrap: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        gap: 10,
+    brigadeBadgeText: { color: '#245ca6', fontSize: 12, fontWeight: '600' },
+    formBody: { gap: 14 },
+    description: { fontSize: 13, lineHeight: 19, color: '#62758f' },
+    sectionList: { gap: 16 },
+    control: { marginBottom: 16 },
+    label: {
+        marginBottom: 8,
+        fontSize: 14,
+        fontWeight: '500',
+        color: '#42536c',
+        lineHeight: 20,
     },
-    stepItem: { flex: 1, alignItems: 'center' },
-    stepBadge: {
-        width: 34,
-        height: 34,
-        borderRadius: 17,
-        borderWidth: 1,
-        borderColor: '#c8d3df',
-        justifyContent: 'center',
-        alignItems: 'center',
-        backgroundColor: '#fff',
-    },
-    stepBadgeActive: { borderColor: '#278cff', backgroundColor: '#278cff' },
-    stepBadgeCompleted: { borderColor: '#6bbf59', backgroundColor: '#dff6da' },
-    stepBadgeText: { color: '#62758f', fontWeight: '700' },
-    stepBadgeTextActive: { color: '#fff' },
-    stepTitleWrap: { paddingTop: 4 },
-    stepTitle: { fontSize: 18, fontWeight: '700', color: '#183153' },
-    section: { gap: 2 },
-    control: { marginBottom: 14 },
-    label: { marginBottom: 8, fontSize: 13, color: '#4d5f73' },
+    requiredMark: { color: '#c84343' },
     input: {
-        minHeight: 48,
+        minHeight: 52,
         borderWidth: 1,
-        borderColor: '#d5deea',
+        borderColor: '#dce4ef',
         borderRadius: 12,
         paddingHorizontal: 14,
-        paddingVertical: 12,
-        fontSize: 15,
-        color: '#183153',
-        backgroundColor: '#fff',
+        paddingVertical: 13,
+        fontSize: 16,
+        color: '#1d314c',
+        backgroundColor: '#f8fafc',
     },
     textArea: { minHeight: 110 },
-    inputDisabled: { backgroundColor: '#f5f7fa', color: '#97a3b1' },
+    inputDisabled: { backgroundColor: '#f1f4f8', color: '#97a3b1' },
     inputError: { borderColor: '#d84c4c', backgroundColor: '#fff5f5' },
-    errorText: { marginTop: 6, fontSize: 12, color: '#d84c4c' },
+    errorText: {
+        marginTop: 6,
+        marginBottom: 8,
+        fontSize: 13,
+        lineHeight: 18,
+        color: '#c84343',
+    },
     hintText: {
         marginTop: -6,
-        marginBottom: 12,
+        marginBottom: 16,
         fontSize: 12,
         lineHeight: 18,
-        color: '#7b8794',
+        color: '#758399',
     },
-    chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
+    chipsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
     chip: {
+        minHeight: 44,
+        justifyContent: 'center',
+        maxWidth: '100%',
         paddingHorizontal: 14,
-        paddingVertical: 10,
-        borderRadius: 999,
+        paddingVertical: 11,
+        borderRadius: 12,
         borderWidth: 1,
-        borderColor: '#d5deea',
-        backgroundColor: '#fff',
+        borderColor: '#dce4ef',
+        backgroundColor: '#f8fafc',
     },
-    chipSelected: { borderColor: '#278cff', backgroundColor: '#eaf4ff' },
-    chipText: { color: '#4d5f73', fontWeight: '600' },
-    chipTextSelected: { color: '#1a5eb0' },
+    chipSelected: { borderColor: '#2469c9', backgroundColor: '#edf4fe' },
+    chipText: { fontSize: 14, color: '#52627a', fontWeight: '500' },
+    chipTextSelected: { color: '#2469c9', fontWeight: '600' },
     switchRow: {
-        marginBottom: 14,
+        marginBottom: 16,
+        minHeight: 62,
+        paddingHorizontal: 12,
+        paddingVertical: 8,
+        backgroundColor: '#f4f7fc',
+        borderRadius: 12,
         flexDirection: 'row',
         alignItems: 'center',
         justifyContent: 'space-between',
-        gap: 16,
+        gap: 12,
     },
     switchRowPressed: { opacity: 0.8 },
-    switchLabel: { flex: 1, fontSize: 13, color: '#4d5f73' },
-    navigationRow: { flexDirection: 'row', gap: 12, marginTop: 8 },
+    switchLabel: { flex: 1, fontSize: 14, lineHeight: 20, color: '#42536c' },
+    navigationRow: { flexDirection: 'row', gap: 10, marginTop: 6 },
     primaryButton: {
-        flex: 1,
-        backgroundColor: '#278cff',
-        borderWidth: 1,
-        borderColor: '#1a73e8',
+        flex: 2,
+        width: 'auto',
+        minHeight: 54,
+        paddingVertical: 16,
+        borderRadius: 14,
+        backgroundColor: '#2469c9',
     },
     secondaryButton: {
         flex: 1,
-        backgroundColor: '#ffffff',
+        width: 'auto',
+        minHeight: 54,
+        paddingVertical: 16,
+        borderRadius: 14,
+        backgroundColor: '#fff',
         borderWidth: 1,
-        borderColor: '#278cff',
+        borderColor: '#dce4ef',
     },
-    secondaryButtonText: { color: '#278cff' },
-    buttonSpacer: { flex: 1 },
+    secondaryButtonText: { color: '#2469c9', fontWeight: '600', fontSize: 14 },
+    loadButton: {
+        backgroundColor: '#fff',
+        borderWidth: 1,
+        borderColor: '#d3e2f7',
+        paddingVertical: 14,
+        borderRadius: 12,
+    },
+    footerHint: {
+        fontSize: 12,
+        lineHeight: 18,
+        textAlign: 'center',
+        color: '#758399',
+        paddingBottom: 8,
+    },
 });
 
 export default ReportSubmitForm;
