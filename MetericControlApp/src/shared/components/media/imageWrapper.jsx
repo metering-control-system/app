@@ -1,6 +1,6 @@
 import { TouchableOpacity, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { Image } from 'expo-image';
+import Image from '@/shared/components/media/authenticatedImage';
 
 const PictureWrapper = ({ uri, onPress }) => {
     return (

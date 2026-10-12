@@ -166,8 +166,12 @@ export const buildReportImagesPayload = (
             .map((image) => image?.['client_image_id'])
             .filter(Boolean)
     );
+    const existingImageUrls = new Set(
+        existingImages.map((image) => image?.url).filter(Boolean)
+    );
     const files = REPORT_PHOTO_CONFIGS.flatMap(({ kind, name, fileName }) =>
         normalizePhotoUris(formValues.photos?.[name]).map((uri, index) => {
+            if (existingImageUrls.has(uri)) return null;
             const file = buildReportImageFile(uri, fileName);
             const metadata = photoMetadata[name]?.[index];
             const clientImageId =
@@ -179,6 +183,15 @@ export const buildReportImagesPayload = (
                 existingImageIds.has(clientImageId)
             ) {
                 return null;
+            }
+
+            if (/^https?:\/\//i.test(uri)) {
+                throw Object.assign(
+                    new Error(
+                        'Фотография с сервера больше не найдена в отчёте. Загрузите актуальный отчёт или добавьте фотографию заново.'
+                    ),
+                    { code: 'REPORT_PHOTO_UNAVAILABLE' }
+                );
             }
 
             const fileKey = `${fileName}_${index + 1}`;

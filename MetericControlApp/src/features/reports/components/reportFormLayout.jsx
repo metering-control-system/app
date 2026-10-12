@@ -34,37 +34,14 @@ export const ReportFormSection = ({
     </View>
 );
 
-export const ReportFieldLayout = ({
-    name,
-    containerRef,
-    fillPositions,
-    children,
-}) => {
-    const fieldRef = useRef(null);
-    return (
-        <View
-            ref={fieldRef}
-            collapsable={false}
-            onLayout={(e) => {
-                const record = (y) =>
-                    fillPositions({
-                        name,
-                        e: { nativeEvent: { layout: { y } } },
-                    });
-                const localY = e.nativeEvent.layout.y;
-                const fallback = () => record(localY);
-                if (fieldRef.current && containerRef.current) {
-                    fieldRef.current.measureLayout(
-                        containerRef.current,
-                        (_x, y) => record(y),
-                        fallback
-                    );
-                } else fallback();
-            }}>
-            {children}
-        </View>
-    );
-};
+export const ReportFieldLayout = ({ name, fillPositions, children }) => (
+    <View
+        ref={(node) => fillPositions({ name, node })}
+        collapsable={false}
+        onLayout={() => fillPositions({ name })}>
+        {children}
+    </View>
+);
 
 export const ReportFormSteps = ({ steps, activeIndex, onChange, disabled }) => {
     const scrollRef = useRef(null);

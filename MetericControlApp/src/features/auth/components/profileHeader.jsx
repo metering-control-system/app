@@ -2,22 +2,28 @@ import { StyleSheet, Text, View } from 'react-native';
 import { Image } from 'expo-image';
 import useAuth from '@/features/auth/store/useAuth';
 import useMe from '@/features/settings/hooks/useMe';
+import { useCallback, useState } from 'react';
 
 const ProfileHeader = () => {
     const login = useAuth((state) => state.login);
     const { fullName, avatar } = useMe();
 
-    const displayName = fullName ?? login ?? 'Пользователь';
+    const [failedAvatar, setFailedAvatar] = useState(null);
+    const handleAvatarError = useCallback(() => {
+        setFailedAvatar(avatar);
+    }, [avatar]);
+    const displayName = fullName?.trim() || login?.trim() || 'Пользователь';
     const initials = displayName[0]?.toUpperCase();
 
     return (
         <View style={styles.container}>
             <View style={styles.avatar}>
-                {avatar ? (
+                {avatar && avatar !== failedAvatar ? (
                     <Image
                         source={{ uri: avatar }}
                         style={styles.avatarImage}
                         contentFit='cover'
+                        onError={handleAvatarError}
                         transition={150}
                     />
                 ) : (

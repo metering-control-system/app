@@ -1,6 +1,8 @@
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
 import { useLocalSearchParams } from 'expo-router';
+import { REPORT_FIELD_REFERENCES } from '@/features/reports/constants/reportFieldReferences';
+import useReportCommentNavigation from '@/features/reports/hooks/useReportCommentNavigation';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import useCommentsStore from '@/features/comments/store/useCommentsStore';
 import CommentsList from '@/features/comments/components/commentsList';
@@ -14,6 +16,7 @@ const CommentsScreen = () => {
     const { error: errorMessage, handleError, dismissError } = useErrors();
 
     const { id } = useLocalSearchParams();
+    const onReferencePress = useReportCommentNavigation(id);
     const comments = useCommentsStore(
         (state) => state.comments[Number(id) === 0 ? null : +id]
     );
@@ -33,6 +36,8 @@ const CommentsScreen = () => {
                 behavior={'translate-with-padding'}>
                 <CommentsList
                     onError={handleError}
+                    references={REPORT_FIELD_REFERENCES}
+                    onReferencePress={onReferencePress}
                     comments={comments}
                     id={id}
                     userId={user?.user_id}
@@ -43,6 +48,7 @@ const CommentsScreen = () => {
                     onError={handleError}
                     chatId={Number(id) === 0 ? null : +id}
                     userId={user?.user_id}
+                    references={REPORT_FIELD_REFERENCES}
                     listRef={scrollRef}
                 />
             </KeyboardAvoidingView>

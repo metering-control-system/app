@@ -95,140 +95,158 @@ const actFieldsSchema = (group) =>
         )
     );
 
-export const reportSubmitFormSchema = z.object({
-    clientReportId: z
-        .string()
-        .trim()
-        .refine(
-            (value) => !value || z.guid().safeParse(value).success,
-            'Некорректный идентификатор отчёта'
-        )
-        .optional(),
-
-    customerName: z
-        .string()
-        .trim()
-        .min(1, 'Введите ФИО')
-        .max(150, 'ФИО слишком длинное'),
-
-    personalAccount: z
-        .string()
-        .trim()
-        .min(1, 'Введите лицевой счет')
-        .regex(/^\d{1,20}$/, 'Лицевой счет должен содержать только цифры'),
-
-    comment: reportTextSchema(),
-    address: z
-        .object(
-            Object.fromEntries(
-                [
-                    'locality',
-                    'street',
-                    'house',
-                    'building',
-                    'apartment',
-                    'room',
-                ].map((name) => [name, z.string().default('')])
-            )
-        )
-        .prefault({}),
-    actDetails: z.object(actFieldsSchema('actDetails')).prefault({}),
-
-    meterBefore: z.object({
-        ...actFieldsSchema('meterBefore'),
-        type: optionalTrimmedString(
-            40,
-            'Тип старого ПУ слишком длинный'
-        ).default(''),
-        number: optionalTrimmedString(
-            40,
-            'Номер старого ПУ слишком длинный'
-        ).default(''),
-        isActualDifferent: z.boolean().default(false),
-        actualType: optionalTrimmedString(
-            40,
-            'Фактический тип ПУ слишком длинный'
-        ).default(''),
-        actualNumber: optionalTrimmedString(
-            40,
-            'Фактический номер ПУ слишком длинный'
-        ).default(''),
-    }),
-
-    metering: z.object({
-        ...actFieldsSchema('metering'),
-        dismantlingCompleted: z.boolean({
-            error: 'Укажите, выполнен ли демонтаж',
-        }),
-        oldReading: reportReadingSchema().default(''),
-        newMeterType: requiredTrimmedString(
-            40,
-            'Введите тип нового ПУ',
-            'Тип нового ПУ слишком длинный'
-        ),
-        newMeterNumber: requiredTrimmedString(
-            40,
-            'Введите номер нового ПУ',
-            'Номер нового ПУ слишком длинный'
-        ),
-        sealLocation: reportChoiceSchema(SEAL_LOCATION_OPTIONS).default(''),
-        sealNumber: optionalTrimmedString(
-            40,
-            'Номер пломбы слишком длинный'
-        ).default(''),
-        installationReading: reportReadingSchema(
-            'Введите показания при установке'
-        ),
-    }),
-    photos: z.object(reportPhotoFields),
-    admission: z.object({
-        ...actFieldsSchema('admission'),
-        status: reportChoiceSchema(
-            [{ value: 'ADMITTED' }, { value: 'NOT_ADMITTED' }],
-            'Выберите статус допуска'
-        ),
-        rejectionReason: reportChoiceSchema(REJECTION_REASON_OPTIONS).default(
-            ''
-        ),
-        rejectionComment: reportTextSchema().default(''),
-    }),
-
-    consumerContact: z.object({
-        isRefusedContact: z
-            .boolean({ error: 'Укажите отказ от контактов' })
-            .default(false),
-        phoneNumber: optionalPhoneField.default(''),
-        phoneNumber2: optionalPhoneField.default(''),
-        email: optionalEmailField.default(''),
-        fullName: reportTextSchema()
+export const reportSubmitFormSchema = z
+    .object({
+        clientReportId: z
+            .string()
+            .trim()
             .refine(
-                (value) =>
-                    Object.values(splitReportContactName(value)).every(
-                        (part) => [...part].length <= 40
-                    ),
-                'Фамилия, имя и отчество: не более 40 символов в каждом поле'
+                (value) => !value || z.guid().safeParse(value).success,
+                'Некорректный идентификатор отчёта'
             )
-            .default(''),
-    }),
-
-    actPdf: z.object({
-        checksum: z.string().optional(),
-        templateId: z.string().optional(),
-        uri: z.string().trim().optional(),
-        id: z.string().trim().optional(),
-        isRefused: z.boolean(),
-        signatures: z
-            .object({
-                client: z
-                    .array(z.array(z.object({ x: z.number(), y: z.number() })))
-                    .optional(),
-                utilityRepresentative: z
-                    .array(z.array(z.object({ x: z.number(), y: z.number() })))
-                    .optional(),
-                master: z
-                    .array(z.array(z.object({ x: z.number(), y: z.number() })))
-                    .optional(),
-            })
             .optional(),
-    }),
-});
+
+        customerName: z
+            .string()
+            .trim()
+            .min(1, 'Введите ФИО')
+            .max(150, 'ФИО слишком длинное'),
+
+        personalAccount: z
+            .string()
+            .trim()
+            .max(20, 'Лицевой счет слишком длинный')
+            .regex(/^\d*$/, 'Лицевой счет должен содержать только цифры')
+            .default(''),
+
+        comment: reportTextSchema(),
+        address: z
+            .object(
+                Object.fromEntries(
+                    [
+                        'locality',
+                        'street',
+                        'house',
+                        'building',
+                        'apartment',
+                        'room',
+                    ].map((name) => [name, z.string().default('')])
+                )
+            )
+            .prefault({}),
+        actDetails: z.object(actFieldsSchema('actDetails')).prefault({}),
+
+        meterBefore: z.object({
+            ...actFieldsSchema('meterBefore'),
+            type: optionalTrimmedString(
+                40,
+                'Тип старого ПУ слишком длинный'
+            ).default(''),
+            number: optionalTrimmedString(
+                40,
+                'Номер старого ПУ слишком длинный'
+            ).default(''),
+            isActualDifferent: z.boolean().default(false),
+            actualType: optionalTrimmedString(
+                40,
+                'Фактический тип ПУ слишком длинный'
+            ).default(''),
+            actualNumber: optionalTrimmedString(
+                40,
+                'Фактический номер ПУ слишком длинный'
+            ).default(''),
+        }),
+
+        metering: z.object({
+            ...actFieldsSchema('metering'),
+            dismantlingCompleted: z.boolean({
+                error: 'Укажите, выполнен ли демонтаж',
+            }),
+            oldReading: reportReadingSchema().default(''),
+            newMeterType: requiredTrimmedString(
+                40,
+                'Введите тип нового ПУ',
+                'Тип нового ПУ слишком длинный'
+            ),
+            newMeterNumber: requiredTrimmedString(
+                40,
+                'Введите номер нового ПУ',
+                'Номер нового ПУ слишком длинный'
+            ),
+            sealLocation: reportChoiceSchema(SEAL_LOCATION_OPTIONS).default(''),
+            sealNumber: optionalTrimmedString(
+                40,
+                'Номер пломбы слишком длинный'
+            ).default(''),
+            installationReading: reportReadingSchema(
+                'Введите показания при установке'
+            ),
+        }),
+        photos: z.object(reportPhotoFields),
+        admission: z.object({
+            ...actFieldsSchema('admission'),
+            status: reportChoiceSchema(
+                [{ value: 'ADMITTED' }, { value: 'NOT_ADMITTED' }],
+                'Выберите статус допуска'
+            ),
+            rejectionReason: reportChoiceSchema(
+                REJECTION_REASON_OPTIONS
+            ).default(''),
+            rejectionComment: reportTextSchema().default(''),
+        }),
+
+        consumerContact: z.object({
+            isRefusedContact: z
+                .boolean({ error: 'Укажите отказ от контактов' })
+                .default(false),
+            phoneNumber: optionalPhoneField.default(''),
+            phoneNumber2: optionalPhoneField.default(''),
+            email: optionalEmailField.default(''),
+            fullName: reportTextSchema()
+                .refine(
+                    (value) =>
+                        Object.values(splitReportContactName(value)).every(
+                            (part) => [...part].length <= 40
+                        ),
+                    'Фамилия, имя и отчество: не более 40 символов в каждом поле'
+                )
+                .default(''),
+        }),
+
+        actPdf: z.object({
+            checksum: z.string().optional(),
+            templateId: z.string().optional(),
+            uri: z.string().trim().optional(),
+            id: z.string().trim().optional(),
+            isRefused: z.boolean(),
+            signatures: z
+                .object({
+                    client: z
+                        .array(
+                            z.array(z.object({ x: z.number(), y: z.number() }))
+                        )
+                        .optional(),
+                    utilityRepresentative: z
+                        .array(
+                            z.array(z.object({ x: z.number(), y: z.number() }))
+                        )
+                        .optional(),
+                    master: z
+                        .array(
+                            z.array(z.object({ x: z.number(), y: z.number() }))
+                        )
+                        .optional(),
+                })
+                .optional(),
+        }),
+    })
+    .superRefine((values, ctx) => {
+        if (!values.actPdf.isRefused && !values.actPdf.uri) {
+            ctx.addIssue({
+                code: 'custom',
+                path: ['actPdf', 'uri'],
+                message:
+                    'Сгенерируйте акт перед отправкой отчёта. После доработки данных акт нужно создать и подписать заново.',
+            });
+        }
+    });

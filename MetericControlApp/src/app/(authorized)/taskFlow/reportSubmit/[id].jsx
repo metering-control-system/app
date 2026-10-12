@@ -1,16 +1,13 @@
+import useReportSubmitNavigation from '@/features/reports/hooks/useReportSubmitNavigation';
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { ScrollView, StyleSheet, View } from 'react-native';
+import { ScrollView, StyleSheet } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
-import { ShrinkedChat } from '@/features/comments/components/shrinkedChat';
-import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
-import { useEffect, useRef, useState } from 'react';
-import { FORM_FIELDS_MAP } from '@/features/comments/constants/formFieldsMap';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
@@ -18,48 +15,36 @@ import TaskReportLookupError from '@/features/reports/components/taskReportLooku
 const ReportSubmitScreen = () => {
     const { error: errorMessage, handleError, dismissError } = useErrors();
 
-    const { id, reference } = useLocalSearchParams();
+    const { id, reference, sourceReportId } = useLocalSearchParams();
     const { task, isPending } = useTaskById(+id);
     const reportQuery = useTaskReport(task);
-    const [highlightedField, setHighlightedField] = useState(null);
+    const {
+        scrollRef,
+        fillPositions,
+        step,
+        setStep,
+        highlightedField,
+        onValidationError,
+        isResolvingSource,
+        redirect,
+    } = useReportSubmitNavigation({
+        id,
+        task,
+        reportQuery,
+        isPending,
+        reference,
+        sourceReportId,
+    });
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
     );
     const router = useRouter();
 
-    const scrollRef = useRef();
-    const [step, setStep] = useState(0);
-
-    const [navigateToElement, fillPositions] = useNavigateToElement(
-        scrollRef,
-        setStep
-    );
-
-    useEffect(() => {
-        if (reference) {
-            navigateToElement({
-                elements: FORM_FIELDS_MAP,
-                scrollableEl: reference,
-            });
-            setHighlightedField(FORM_FIELDS_MAP[reference]?.field ?? null);
-        }
-    }, [reference, navigateToElement]);
-
-    useEffect(() => {
-        scrollRef.current?.scrollTo({ y: 0, animated: false });
-    }, [step]);
-
-    if (reportQuery.isReadOnly && !reportQuery.isPending) {
-        return (
-            <Redirect
-                href={`/(authorized)/reportDetails/${reportQuery.report.id}`}
-            />
-        );
-    }
+    if (redirect) return <Redirect href={redirect} />;
 
     return (
         <ScreenLayout safe style={styles.screen}>
-            {isPending || reportQuery.isPending ? (
+            {isPending || reportQuery.isPending || isResolvingSource ? (
                 <ScreenLoader loading />
             ) : reportQuery.isError ? (
                 <TaskReportLookupError
@@ -88,24 +73,9 @@ const ReportSubmitScreen = () => {
                             setStepIndex={setStep}
                             highlightedField={highlightedField}
                             defaultActTemplate={defaultActTemplate}
-                            onValidationError={(field) => {
-                                setHighlightedField(field);
-                                scrollRef.current?.scrollTo({
-                                    y: 0,
-                                    animated: true,
-                                });
-                            }}
+                            onValidationError={onValidationError}
                         />
                     </ScrollView>
-                    <View style={styles.chatDivider} />
-                    <ShrinkedChat
-                        taskId={task.id}
-                        onPress={() =>
-                            router.push(
-                                `/(authorized)/commentsScreen/${task.id}`
-                            )
-                        }
-                    />
                 </KeyboardAvoidingView>
             )}
             <Notification
@@ -117,14 +87,6 @@ const ReportSubmitScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({
-    screen: { backgroundColor: '#f3f6fa' },
-    chatDivider: {
-        marginBlock: 15,
-        height: 1,
-        backgroundColor: '#e0e0e0',
-        marginHorizontal: 8,
-    },
-});
+const styles = StyleSheet.create({ screen: { backgroundColor: '#f3f6fa' } });
 
 export default ReportSubmitScreen;

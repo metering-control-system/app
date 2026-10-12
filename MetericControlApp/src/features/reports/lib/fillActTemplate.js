@@ -60,7 +60,30 @@ export const fillActTemplate = (html, data, requiredFields = []) => {
             : value === expected;
     };
 
-    const withCheckboxes = html.replace(
+    const signerRoles = {
+        supplierSignerName: 'master',
+        utilitySignerName: 'utilityRepresentative',
+        consumerSignerName: 'client',
+    };
+    const withSignatures = html.replace(
+        /<tr\b[^>]*>[\s\S]*?<\/tr>/gi,
+        (row) => {
+            const signer = Object.keys(signerRoles).find((field) =>
+                row.includes(`{{act.${field}}}`)
+            );
+            if (!signer) return row;
+            const svg = createSignatureSvg(
+                data.actPdf?.signatures?.[signerRoles[signer]]
+            );
+            if (!svg) return row;
+            return row.replace(
+                /(<span\b[^>]*\bstyle=["'][^"']*height:\s*24px[^"']*["'][^>]*>)(\s*)(<\/span>)/i,
+                (_, opening, space, closing) =>
+                    `${opening}${svg.replace('height="26"', 'height="24"')}${closing}`
+            );
+        }
+    );
+    const withCheckboxes = withSignatures.replace(
         /<input\b(?:[^>"']|"[^"]*"|'[^']*')*>/gi,
         (input) => {
             if (

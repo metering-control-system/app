@@ -4,9 +4,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { useMemo } from 'react';
 import { sortMessages } from '@/features/comments/lib/sortMessages';
 
-export const ShrinkedChat = ({ taskId, onPress }) => {
+export const ShrinkedChat = ({ reportId, onPress }) => {
     const comments = useCommentsStore(
-        (state) => state.comments[Number(taskId) === 0 ? null : +taskId]
+        (state) => state.comments[Number(reportId) === 0 ? null : +reportId]
     );
 
     const displayedComments = useMemo(() => {

@@ -74,6 +74,7 @@ export default function MediaBlock({
                                 styles.deleteButton,
                                 pressed && styles.deleteButtonPressed,
                             ]}
+                            disabled={disabled}
                             onPress={() => handleDeletePhoto(index)}>
                             <Entypo
                                 name='circle-with-cross'
@@ -89,6 +90,7 @@ export default function MediaBlock({
             <ImagePreview
                 onError={onError}
                 uri={selectedUri}
+                editable={!disabled && !/^https?:\/\//i.test(selectedUri ?? '')}
                 handleUpdatePhoto={(nextUri) =>
                     handleUpdatePhoto(nextUri, selectedIndex)
                 }

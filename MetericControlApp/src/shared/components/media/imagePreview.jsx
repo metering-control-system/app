@@ -6,17 +6,15 @@ import {
     Text,
     View,
 } from 'react-native';
-import { Image } from 'expo-image';
+import Image from '@/shared/components/media/authenticatedImage';
 import { FontAwesome6, Ionicons } from '@expo/vector-icons';
 import {
     GestureViewer,
     useGestureViewerController,
     useGestureViewerEvent,
 } from 'react-native-gesture-image-viewer';
-import { useEffect, useState } from 'react';
+import { useEffect, useId, useState } from 'react';
 import { applyPreviewImageRotation } from '@/shared/lib/media/applyPreviewImageRotation';
-
-const VIEWER_ID = 'image-preview';
 
 const ImagePreview = ({
     onError,
@@ -24,8 +22,11 @@ const ImagePreview = ({
     modalVisible,
     setModalVisible,
     handleUpdatePhoto,
+    editable = true,
 }) => {
-    const { rotate } = useGestureViewerController(VIEWER_ID);
+    const viewerId = useId();
+    const canEdit = editable && typeof handleUpdatePhoto === 'function';
+    const { rotate } = useGestureViewerController(viewerId);
     const [currentRotate, setCurrentRotate] = useState(0);
     const [isApplying, setIsApplying] = useState(false);
 
@@ -35,14 +36,14 @@ const ImagePreview = ({
         }
     }, [modalVisible]);
 
-    useGestureViewerEvent(VIEWER_ID, 'rotationChange', (data) => {
+    useGestureViewerEvent(viewerId, 'rotationChange', (data) => {
         if (Number.isInteger(data.rotation / 90)) {
             setCurrentRotate(data.rotation);
         }
     });
 
     const applyChanges = async () => {
-        if (!uri || isApplying) {
+        if (!uri || !canEdit || isApplying) {
             return;
         }
 
@@ -72,7 +73,7 @@ const ImagePreview = ({
         setModalVisible(false);
     };
 
-    if (!uri) {
+    if (!uri || !modalVisible) {
         return null;
     }
 
@@ -84,7 +85,8 @@ const ImagePreview = ({
             animationType='fade'
             onRequestClose={closeModal}>
             <GestureViewer
-                id={VIEWER_ID}
+                key={uri}
+                id={viewerId}
                 data={[uri]}
                 ListComponent={FlatList}
                 onDismiss={closeModal}
@@ -93,6 +95,13 @@ const ImagePreview = ({
                         source={{ uri: item }}
                         style={styles.image}
                         contentFit='contain'
+                        onError={() => {
+                            closeModal();
+                            onError?.(
+                                'Не удалось открыть фотографию',
+                                'Файл недоступен. Проверьте подключение или загрузите отчёт заново.'
+                            );
+                        }}
                     />
                 )}
                 renderContainer={(children) => (
@@ -107,45 +116,49 @@ const ImagePreview = ({
                                 ]}>
                                 <Ionicons name='close' size={24} color='#fff' />
                             </Pressable>
-                            <Pressable
-                                disabled={isApplying}
-                                onPress={applyChanges}
-                                style={({ pressed }) => [
-                                    styles.applyButton,
-                                    (pressed || isApplying) &&
-                                        styles.buttonPressed,
-                                ]}>
-                                <Text style={styles.applyButtonText}>
-                                    {isApplying ? 'Сохраняем' : 'Применить'}
-                                </Text>
-                            </Pressable>
+                            {canEdit && (
+                                <Pressable
+                                    disabled={isApplying}
+                                    onPress={applyChanges}
+                                    style={({ pressed }) => [
+                                        styles.applyButton,
+                                        (pressed || isApplying) &&
+                                            styles.buttonPressed,
+                                    ]}>
+                                    <Text style={styles.applyButtonText}>
+                                        {isApplying ? 'Сохраняем' : 'Применить'}
+                                    </Text>
+                                </Pressable>
+                            )}
                         </View>
-                        <View style={styles.bottomBar}>
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.toolbarButton,
-                                    pressed && styles.buttonPressed,
-                                ]}
-                                onPress={() => rotate(90, false)}>
-                                <FontAwesome6
-                                    name='rotate-left'
-                                    size={24}
-                                    color='#fff'
-                                />
-                            </Pressable>
-                            <Pressable
-                                style={({ pressed }) => [
-                                    styles.toolbarButton,
-                                    pressed && styles.buttonPressed,
-                                ]}
-                                onPress={() => rotate(90, true)}>
-                                <FontAwesome6
-                                    name='rotate-right'
-                                    size={24}
-                                    color='#fff'
-                                />
-                            </Pressable>
-                        </View>
+                        {canEdit && (
+                            <View style={styles.bottomBar}>
+                                <Pressable
+                                    style={({ pressed }) => [
+                                        styles.toolbarButton,
+                                        pressed && styles.buttonPressed,
+                                    ]}
+                                    onPress={() => rotate(90, false)}>
+                                    <FontAwesome6
+                                        name='rotate-left'
+                                        size={24}
+                                        color='#fff'
+                                    />
+                                </Pressable>
+                                <Pressable
+                                    style={({ pressed }) => [
+                                        styles.toolbarButton,
+                                        pressed && styles.buttonPressed,
+                                    ]}
+                                    onPress={() => rotate(90, true)}>
+                                    <FontAwesome6
+                                        name='rotate-right'
+                                        size={24}
+                                        color='#fff'
+                                    />
+                                </Pressable>
+                            </View>
+                        )}
                     </View>
                 )}
             />

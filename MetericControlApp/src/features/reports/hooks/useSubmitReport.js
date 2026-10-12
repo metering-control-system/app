@@ -1,5 +1,9 @@
 import { validateReportValues } from '@/features/reports/lib/validateReportValues';
 import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
+import {
+    finalizeReportSubmission,
+    isConfirmedReportSubmission,
+} from '@/features/reports/lib/finalizeReportSubmission';
 import { validateReportAct } from '@/features/reports/lib/validateReportAct';
 import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 import { useCallback } from 'react';
@@ -67,8 +71,38 @@ const useSubmitReport = () => {
             ) {
                 return { skipped: true };
             }
+            if (previousDraft?.submissionFinalization && isOnline) {
+                const recoveryActRecord =
+                    useReportActStore.getState().actMetadataByTask[draftId];
+                let report;
+                try {
+                    report = await getReportByTaskId(taskId);
+                } catch (error) {
+                    error.submittedDraft = previousDraft;
+                    throw error;
+                }
+                if (
+                    isConfirmedReportSubmission(report, {
+                        ...previousDraft.submissionFinalization,
+                        taskId,
+                    })
+                ) {
+                    return {
+                        actRecord: recoveryActRecord,
+                        reportId: report.id,
+                        reportResponse: report,
+                        operation: 'update',
+                        submittedDraft: previousDraft,
+                    };
+                }
+            }
             validateReportValues(values, taskId);
-            await validateReportAct({ taskId, values });
+            try {
+                await validateReportAct({ taskId, values });
+            } catch (error) {
+                error.code = 'REPORT_ACT_INVALID';
+                throw error;
+            }
             if (
                 expectedDraft &&
                 !areReportDraftsEqual(
@@ -173,7 +207,7 @@ const useSubmitReport = () => {
             const upsertRequest = buildReportUpsertRequest({
                 reportPayload,
                 existingReport,
-                resubmitRejectedReport: true,
+                resubmitRejectedReport: false,
             });
             let submittedDraft = expectedDraft ?? {
                 ...values,
@@ -283,15 +317,33 @@ const useSubmitReport = () => {
                     await addReportComment(reportId, reportCommentPayload);
                 }
 
+                const submissionFinalization = {
+                    reportId,
+                    taskId,
+                    clientReportId:
+                        reportResponse.client_report_id ??
+                        reportPayload.client_report_id,
+                };
+                const nextDraft = { ...submittedDraft, submissionFinalization };
+                if (
+                    areReportDraftsEqual(
+                        submittedDraft,
+                        useReportDraftStore.getState().getDraft(draftId)
+                    )
+                ) {
+                    setDraft({ draftId, values: nextDraft });
+                }
+                submittedDraft = nextDraft;
+                reportResponse = await finalizeReportSubmission(
+                    submissionFinalization
+                );
+
                 return {
                     actRecord,
                     reportId,
                     reportResponse,
                     operation: upsertRequest.operation,
-                    submittedDraft:
-                        !expectedDraft || task.is_team_task
-                            ? submittedDraft
-                            : null,
+                    submittedDraft,
                 };
             } catch (error) {
                 error.submittedDraft = submittedDraft;

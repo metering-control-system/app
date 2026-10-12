@@ -5,7 +5,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { filterDetectedReferences } from '@/features/comments/lib/detectReference';
 import { TipsList } from '@/features/comments/components/tipsList';
 
-const SendMessagePanel = ({ onError, chatId, userId, listRef }) => {
+const SendMessagePanel = ({ onError, chatId, userId, listRef, references }) => {
     const [message, setMessage] = useState('');
     const { handleComment } = useSendComment(userId);
     const [tips, setTips] = useState([]);
@@ -14,9 +14,9 @@ const SendMessagePanel = ({ onError, chatId, userId, listRef }) => {
     const lastWord = message.split(/\s+/).at(-1).trim();
 
     useEffect(() => {
-        const filteredTips = filterDetectedReferences(lastWord);
+        const filteredTips = filterDetectedReferences(lastWord, references);
         setTips(filteredTips?.length ? filteredTips : []);
-    }, [lastWord]);
+    }, [lastWord, references]);
 
     const handleTipPress = (tip) => {
         const words = message.split(/\s+/);
@@ -28,6 +28,7 @@ const SendMessagePanel = ({ onError, chatId, userId, listRef }) => {
         <View style={{ position: 'relative' }}>
             {deferredTips?.length !== 0 && (
                 <TipsList
+                    references={references}
                     displayedTips={deferredTips}
                     onTipPress={handleTipPress}
                     searchQuery={lastWord}

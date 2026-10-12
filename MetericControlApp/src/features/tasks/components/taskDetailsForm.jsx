@@ -80,7 +80,7 @@ const TaskDetailsForm = ({ onError, task }) => {
                 onPress={handleSubmit(onSubmit, () =>
                     onError(
                         'Проверьте данные задачи',
-                        'Заполните выделенные поля: ФИО, телефон, лицевой счёт и сведения о счётчике.'
+                        'Заполните выделенные поля: ФИО, телефон и сведения о счётчике.'
                     )
                 )}
                 disabled={isPending || disabled}

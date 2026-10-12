@@ -1,3 +1,4 @@
+import { REPORT_API_FIELDS } from '@/features/reports/constants/reportFieldReferences';
 import { buildReportImageFile } from '@/features/reports/lib/buildReportPayload';
 import {
     REPORT_IMAGE_MAX_BYTES,
@@ -89,7 +90,32 @@ const ReportSubmitForm = ({
     onValidationError,
 }) => {
     const router = useRouter();
-    const formRef = useRef(null);
+    const [clearedRemarks, setClearedRemarks] = useState(null);
+    const renderRemark = (name) => {
+        if (
+            existingReport?.status !== 'REJECTED' ||
+            clearedRemarks === existingReport
+        )
+            return null;
+        const messages = (existingReport.rejected_fields ?? [])
+            .filter((remark) => {
+                let field = REPORT_API_FIELDS[remark.field];
+                if (!getValues('meterBefore.isActualDifferent')) {
+                    if (field === 'meterBefore.actualNumber')
+                        field = 'meterBefore.number';
+                    if (field === 'meterBefore.actualType')
+                        field = 'meterBefore.type';
+                }
+                return field === name;
+            })
+            .map((remark) => remark.comment)
+            .filter(Boolean);
+        return messages.length ? (
+            <Text style={styles.errorText}>
+                {[...new Set(messages)].join('\n')}
+            </Text>
+        ) : null;
+    };
     const { isOnline } = useNetwork();
     const hydratedDraftIdRef = useRef(null);
     const hydratedPhotosIdRef = useRef(null);
@@ -156,6 +182,8 @@ const ReportSubmitForm = ({
         if (draftFormValues) {
             delete draftFormValues.photoMetadata;
             delete draftFormValues.removedPhotoIds;
+            delete draftFormValues.act;
+            delete draftFormValues.address;
         }
 
         return {
@@ -447,6 +475,7 @@ const ReportSubmitForm = ({
                     'Отчет сохранен и будет отправлен при появлении интернета.'
                 );
             } else {
+                setClearedRemarks(existingReport);
                 clearDraft(draftId);
                 clearEntityPhotos({ entity: 'report', entityId: id });
                 const nextValues = mapReportToFormValues(
@@ -490,6 +519,12 @@ const ReportSubmitForm = ({
                 onInvalid(error.validationErrors);
                 return;
             }
+            if (error.code === 'REPORT_ACT_INVALID') {
+                setStepIndex(
+                    FORM_STEPS.findIndex((step) => step.key === 'act')
+                );
+                onValidationError?.('actPdf');
+            }
             onError(
                 'Ошибка отправки',
                 getApiErrorMessage(
@@ -527,10 +562,7 @@ const ReportSubmitForm = ({
         editable = true,
         required = false,
     }) => (
-        <ReportFieldLayout
-            name={name}
-            containerRef={formRef}
-            fillPositions={fillPositions}>
+        <ReportFieldLayout name={name} fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <View style={styles.control}>
                     <Text style={styles.label}>
@@ -568,6 +600,7 @@ const ReportSubmitForm = ({
                         <Text style={styles.errorText}>{error.message}</Text>
                     ) : null}
                 </View>
+                {renderRemark(name)}
             </HighlightWrap>
         </ReportFieldLayout>
     );
@@ -582,10 +615,7 @@ const ReportSubmitForm = ({
         allowEmpty = false,
         required = false,
     }) => (
-        <ReportFieldLayout
-            name={name}
-            containerRef={formRef}
-            fillPositions={fillPositions}>
+        <ReportFieldLayout name={name} fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <View style={styles.control}>
                     <Text style={styles.label}>
@@ -628,6 +658,7 @@ const ReportSubmitForm = ({
                         })}
                     </View>
                 </View>
+                {renderRemark(name)}
             </HighlightWrap>
         </ReportFieldLayout>
     );
@@ -640,10 +671,7 @@ const ReportSubmitForm = ({
         name,
         disabled = false,
     }) => (
-        <ReportFieldLayout
-            name={name}
-            containerRef={formRef}
-            fillPositions={fillPositions}>
+        <ReportFieldLayout name={name} fillPositions={fillPositions}>
             <HighlightWrap isActive={highlightedField === name}>
                 <Pressable
                     accessibilityRole='switch'
@@ -672,6 +700,7 @@ const ReportSubmitForm = ({
                         thumbColor={value ? '#2469c9' : '#fff'}
                     />
                 </Pressable>
+                {renderRemark(name)}
             </HighlightWrap>
         </ReportFieldLayout>
     );
@@ -688,7 +717,6 @@ const ReportSubmitForm = ({
                         <ReportFieldLayout
                             key={name}
                             name={name}
-                            containerRef={formRef}
                             fillPositions={fillPositions}>
                             <HighlightWrap isActive={highlightedField === name}>
                                 <Controller
@@ -708,6 +736,7 @@ const ReportSubmitForm = ({
                                         />
                                     )}
                                 />
+                                {renderRemark(name)}
                             </HighlightWrap>
                         </ReportFieldLayout>
                     );
@@ -1012,7 +1041,6 @@ const ReportSubmitForm = ({
             <ReportFieldLayout
                 key={photoField.name}
                 name={photoFieldName}
-                containerRef={formRef}
                 fillPositions={fillPositions}>
                 <HighlightWrap isActive={highlightedField === photoFieldName}>
                     <ReportFormSection
@@ -1109,6 +1137,7 @@ const ReportSubmitForm = ({
                                 {errors.photos[photoField.name].message}
                             </Text>
                         )}
+                        {renderRemark(photoFieldName)}
                     </ReportFormSection>
                 </HighlightWrap>
             </ReportFieldLayout>
@@ -1318,96 +1347,103 @@ const ReportSubmitForm = ({
         };
 
         return (
-            <ReportFormSection
-                title='Цифровой акт'
-                icon='document-text-outline'>
-                <Controller
-                    control={control}
-                    name='actPdf.isRefused'
-                    disabled={templates?.length === 0}
-                    render={({ field: { onChange, onBlur, value } }) =>
-                        renderToggleRow({
-                            name: 'actPdf.isRefused',
-                            label: 'Пропустить генерацию цифрового акта',
-                            value,
-                            disabled: !hasTemplates,
-                            onBlur,
-                            onChange: (nextValue) => {
-                                onChange(nextValue);
-                                if (nextValue) {
-                                    setValue(
-                                        'actPdf.uri',
-                                        reportSubmitFormDefaultValues.actPdf
-                                            .uri,
-                                        {
-                                            shouldDirty: true,
-                                            shouldValidate: false,
+            <ReportFieldLayout name='actPdf' fillPositions={fillPositions}>
+                <HighlightWrap isActive={highlightedField === 'actPdf'}>
+                    {renderRemark('actPdf')}
+                    <ReportFormSection
+                        title='Цифровой акт'
+                        icon='document-text-outline'>
+                        <Controller
+                            control={control}
+                            name='actPdf.isRefused'
+                            disabled={templates?.length === 0}
+                            render={({ field: { onChange, onBlur, value } }) =>
+                                renderToggleRow({
+                                    name: 'actPdf.isRefused',
+                                    label: 'Пропустить генерацию цифрового акта',
+                                    value,
+                                    disabled: !hasTemplates,
+                                    onBlur,
+                                    onChange: (nextValue) => {
+                                        onChange(nextValue);
+                                        if (nextValue) {
+                                            setValue(
+                                                'actPdf.uri',
+                                                reportSubmitFormDefaultValues
+                                                    .actPdf.uri,
+                                                {
+                                                    shouldDirty: true,
+                                                    shouldValidate: false,
+                                                }
+                                            );
                                         }
+                                    },
+                                })
+                            }
+                        />
+                        <ActDocumentPanel
+                            onError={onError}
+                            templates={templates}
+                            template={template}
+                            actPdf={getValues('actPdf')}
+                            isBusy={isReportBusy}
+                            isGenerating={isGeneratingPdf}
+                            onGenerate={printToFile}
+                            onShare={async () => {
+                                onActionStart();
+                                try {
+                                    ensureActFileExists(
+                                        getValues('actPdf.uri')
+                                    );
+                                    if (await Sharing.isAvailableAsync()) {
+                                        await Sharing.shareAsync(
+                                            getValues('actPdf.uri')
+                                        );
+                                    } else {
+                                        onError(
+                                            'Недоступно',
+                                            'На этом устройстве нельзя поделиться файлом.'
+                                        );
+                                    }
+                                } catch {
+                                    onError(
+                                        'Не удалось поделиться актом',
+                                        'Попробуйте ещё раз. Если ошибка повторится, пересоздайте акт.'
                                     );
                                 }
-                            },
-                        })
-                    }
-                />
-                <ActDocumentPanel
-                    onError={onError}
-                    templates={templates}
-                    template={template}
-                    actPdf={getValues('actPdf')}
-                    isBusy={isReportBusy}
-                    isGenerating={isGeneratingPdf}
-                    onGenerate={printToFile}
-                    onShare={async () => {
-                        onActionStart();
-                        try {
-                            ensureActFileExists(getValues('actPdf.uri'));
-                            if (await Sharing.isAvailableAsync()) {
-                                await Sharing.shareAsync(
-                                    getValues('actPdf.uri')
-                                );
-                            } else {
-                                onError(
-                                    'Недоступно',
-                                    'На этом устройстве нельзя поделиться файлом.'
-                                );
-                            }
-                        } catch {
-                            onError(
-                                'Не удалось поделиться актом',
-                                'Попробуйте ещё раз. Если ошибка повторится, пересоздайте акт.'
-                            );
-                        }
-                    }}
-                    onSign={async (role) => {
-                        if (generatingPdfRef.current) return;
-                        onActionStart();
-                        generatingPdfRef.current = true;
-                        try {
-                            const values = JSON.parse(
-                                JSON.stringify(getValues())
-                            );
-                            await validateReportAct({
-                                taskId: draftId,
-                                values,
-                            });
-                            startSignatureSession({
-                                taskId: draftId,
-                                role,
-                                template: selectedTemplate,
-                                values,
-                            });
-                            router.push('/(authorized)/signature');
-                        } catch {
-                            onError(
-                                'Нужно пересоздать акт',
-                                'Данные отчёта изменились или файл акта недоступен. Сгенерируйте акт заново и повторите подписание.'
-                            );
-                        } finally {
-                            generatingPdfRef.current = false;
-                        }
-                    }}
-                />
-            </ReportFormSection>
+                            }}
+                            onSign={async (role) => {
+                                if (generatingPdfRef.current) return;
+                                onActionStart();
+                                generatingPdfRef.current = true;
+                                try {
+                                    const values = JSON.parse(
+                                        JSON.stringify(getValues())
+                                    );
+                                    await validateReportAct({
+                                        taskId: draftId,
+                                        values,
+                                    });
+                                    startSignatureSession({
+                                        taskId: draftId,
+                                        role,
+                                        template: selectedTemplate,
+                                        values,
+                                    });
+                                    router.push('/(authorized)/signature');
+                                } catch {
+                                    onError(
+                                        'Нужно пересоздать акт',
+                                        'Данные отчёта изменились или файл акта недоступен. Сгенерируйте акт заново и повторите подписание.'
+                                    );
+                                } finally {
+                                    generatingPdfRef.current = false;
+                                }
+                            }}
+                        />
+                    </ReportFormSection>
+                </HighlightWrap>
+            </ReportFieldLayout>
         );
     };
 
@@ -1438,7 +1474,7 @@ const ReportSubmitForm = ({
     };
 
     return (
-        <View ref={formRef} collapsable={false} style={styles.form}>
+        <View collapsable={false} style={styles.form}>
             <View style={styles.header}>
                 <View style={styles.headerTitleRow}>
                     <View style={styles.headerIcon}>
@@ -1620,13 +1656,15 @@ const styles = StyleSheet.create({
     formBody: { gap: 14 },
     description: { fontSize: 13, lineHeight: 19, color: '#62758f' },
     sectionList: { gap: 16 },
-    control: { marginBottom: 16 },
+    control: { marginBottom: 16, alignSelf: 'stretch', minWidth: 0 },
     label: {
         marginBottom: 8,
         fontSize: 14,
         fontWeight: '500',
         color: '#42536c',
         lineHeight: 20,
+        alignSelf: 'stretch',
+        flexShrink: 1,
     },
     requiredMark: { color: '#c84343' },
     input: {

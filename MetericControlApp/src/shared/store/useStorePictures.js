@@ -1,3 +1,4 @@
+import { cleanupGalleryPhotos } from '@/shared/lib/media/cleanupGalleryPhotos';
 import { create } from 'zustand/react';
 import { normalizePhotos } from '@/shared/lib/media/normalizePhotos';
 import { createJSONStorage, persist } from 'zustand/middleware';
@@ -356,5 +357,11 @@ const useStorePictures = create(
         }
     )
 );
+
+useStorePictures.subscribe((state, previousState) => {
+    if (state.photos !== previousState.photos) {
+        cleanupGalleryPhotos(previousState.photos, state.photos);
+    }
+});
 
 export default useStorePictures;

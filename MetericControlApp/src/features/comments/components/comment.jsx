@@ -1,40 +1,52 @@
 import Card from '@/shared/components/wrapper/card';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { MaterialIcons } from '@expo/vector-icons';
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { detectReference } from '@/features/comments/lib/detectReference';
-import { useRouter } from 'expo-router';
 
-const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
-    const router = useRouter();
-
-    const getCommentText = useCallback((message) => {
-        const content = message?.split(/\s+/).filter(Boolean);
-
-        return (
-            <Text>
-                {content?.reduce((prev, curr) => {
-                    if (detectReference(curr))
-                        return (
-                            <>
-                                <Text>{`${prev} `}</Text>
-                                <Text
-                                    onPress={() =>
-                                        router.push({
-                                            pathname: `/(authorized)/taskFlow/${id}`,
-                                            params: { reference: curr },
-                                        })
-                                    }
-                                    style={{ fontWeight: 'bold' }}>
-                                    <Text>{curr}</Text>
-                                </Text>
-                            </>
-                        );
-                    return `${prev} ${curr}`;
-                }, '')}
-            </Text>
+const Comment = ({
+    comment,
+    isPending,
+    isOwn,
+    onPress,
+    references,
+    onReferencePress,
+}) => {
+    const referencePattern = useMemo(() => {
+        const tags = Object.keys(references ?? {});
+        if (!tags.length) return null;
+        return new RegExp(
+            `(${tags
+                .sort((first, second) => second.length - first.length)
+                .map((tag) => tag.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+                .join('|')})(?=$|[\\s.,!?;:»”)])`,
+            'gi'
         );
-    }, []);
+    }, [references]);
+
+    const getCommentText = useCallback(
+        (message) => {
+            const parts = referencePattern
+                ? (message?.split(referencePattern) ?? [])
+                : [message ?? ''];
+            return parts.map((part, index) => {
+                const reference = part.replace(/[.,!?;:»”)]*$/, '');
+                if (!detectReference(reference, references)) return part;
+                return (
+                    <Text
+                        key={`${index}-${part}`}
+                        onPress={(event) => {
+                            event.stopPropagation();
+                            onReferencePress?.(reference);
+                        }}
+                        style={styles.reference}>
+                        {part}
+                    </Text>
+                );
+            });
+        },
+        [referencePattern, references, onReferencePress]
+    );
 
     return (
         <Pressable
@@ -53,7 +65,7 @@ const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
                 )}
                 <View style={styles.contentFlex}>
                     <Card style={isOwn ? styles.ownCard : styles.otherCard}>
-                        {getCommentText(comment.content)}
+                        <Text>{getCommentText(comment.content)}</Text>
                     </Card>
                     {isPending && (
                         <View style={styles.pendingWrapper}>
@@ -71,6 +83,7 @@ const Comment = ({ comment, isPending, isOwn, onPress, id }) => {
 };
 
 const styles = StyleSheet.create({
+    reference: { fontWeight: 'bold', color: '#0076a5' },
     commentSection: {
         width: '100%',
         paddingHorizontal: 5,
