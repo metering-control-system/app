@@ -11,6 +11,7 @@ export const api = {
     updateError: null,
     onLookup: null,
     actCalls: [],
+    fileValidationError: null,
 };
 export const useNetwork = create(() => ({ isChecked: true, isOnline: true }));
 export const useTasksStore = create(() => ({ tasks: [] }));
@@ -107,6 +108,9 @@ export const addReportComment = async () => {
 };
 export const uploadReportImage = async () => api.report;
 export const deleteReportImage = async () => {};
+export const validateReportUploadFiles = async () => {
+    if (api.fileValidationError) throw api.fileValidationError;
+};
 export const validateReportAct = async () => {};
 export const useReportActStore = create(() => ({
     actMetadataByTask: {},
@@ -136,7 +140,12 @@ export const savePdfToDocuments = async ({ sourceUri }) => sourceUri;
 export const createValues = () => ({
     clientReportId: '9d9e7f4a-0e8c-4f9c-b8ec-123456789abc',
     meterBefore: { number: 'old', type: 'meter' },
-    metering: { newMeterNumber: 'new', newMeterType: 'meter' },
+    metering: {
+        newMeterNumber: 'new',
+        newMeterType: 'meter',
+        dismantlingCompleted: false,
+        installationReading: '0',
+    },
     admission: { status: 'ADMITTED' },
     consumerContact: { isRefusedContact: true },
     photos: {},

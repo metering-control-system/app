@@ -1,6 +1,8 @@
 import { createClientReportId } from './createClientReportId.js';
 import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
 import { buildReportActFieldsPayload } from './reportActFieldValues.js';
+import { normalizeReportPhone } from './reportContactValidation.js';
+import { splitReportContactName } from './reportContactValues.js';
 
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
@@ -22,26 +24,16 @@ const toReadingValue = (value) => {
     return String(normalizedValue).replace(',', '.');
 };
 
-const splitFullName = (fullName) => {
-    const normalizedFullName = toNullableValue(fullName);
-
-    if (!normalizedFullName) {
-        return { firstName: '', middleName: '', lastName: '' };
-    }
-
-    const [lastName = '', firstName = '', middleName = ''] =
-        normalizedFullName.split(/\s+/);
-
-    return { firstName, middleName, lastName };
-};
-
-const buildReactNativeFile = (uri, kind) => {
+export const buildReportImageFile = (uri, kind) => {
     if (!uri) {
         return null;
     }
 
-    const uriParts = uri.split('.');
-    const extension = uriParts.at(-1)?.toLowerCase() || 'jpg';
+    const extension =
+        uri
+            .split(/[?#]/)[0]
+            .match(/\.([a-z0-9]+)$/i)?.[1]
+            ?.toLowerCase() ?? 'jpg';
     const normalizedExtension = extension === 'jpg' ? 'jpeg' : extension;
 
     return {
@@ -67,7 +59,9 @@ export const buildReportPayload = (
     formValues,
     { includeEmptyOptionalFields = false } = {}
 ) => {
-    const contactNameParts = splitFullName(formValues.consumerContact.fullName);
+    const contactNameParts = splitReportContactName(
+        formValues.consumerContact.fullName
+    );
     const rejectionReason = toNullableValue(
         formValues.admission.rejectionReason
     );
@@ -82,7 +76,9 @@ export const buildReportPayload = (
           toNullableValue(formValues.meterBefore.type));
 
     const payload = {
-        ['client_report_id']: formValues.clientReportId,
+        ...(formValues.clientReportId?.trim() && {
+            ['client_report_id']: formValues.clientReportId.trim(),
+        }),
         ['task_id']: Number(formValues.taskId),
         ['act_details']: actFields['act_details'],
         metering: {
@@ -119,10 +115,10 @@ export const buildReportPayload = (
             ['middle_name']: contactNameParts.middleName,
             ['last_name']: contactNameParts.lastName,
             ['phone_number_1']: toNullableValue(
-                formValues.consumerContact.phoneNumber
+                normalizeReportPhone(formValues.consumerContact.phoneNumber)
             ),
             ['phone_number_2']: toNullableValue(
-                formValues.consumerContact.phoneNumber2
+                normalizeReportPhone(formValues.consumerContact.phoneNumber2)
             ),
             email: toNullableValue(formValues.consumerContact.email),
         },
@@ -172,7 +168,7 @@ export const buildReportImagesPayload = (
     );
     const files = REPORT_PHOTO_CONFIGS.flatMap(({ kind, name, fileName }) =>
         normalizePhotoUris(formValues.photos?.[name]).map((uri, index) => {
-            const file = buildReactNativeFile(uri, fileName);
+            const file = buildReportImageFile(uri, fileName);
             const metadata = photoMetadata[name]?.[index];
             const clientImageId =
                 metadata?.uri === uri ? metadata.clientImageId : null;

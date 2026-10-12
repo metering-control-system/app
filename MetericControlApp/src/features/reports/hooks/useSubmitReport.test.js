@@ -29,6 +29,7 @@ const apiModules = new Set([
     '@/features/tasks/api/getTaskByIdApi',
     '@/features/reports/lib/savePdfToDocuments',
     '@/features/reports/lib/validateReportAct',
+    '@/features/reports/lib/validateReportUploadFiles',
 ]);
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -66,6 +67,7 @@ const setup = async (
     fixtures.api.updateError = null;
     fixtures.api.onLookup = null;
     fixtures.api.actCalls = [];
+    fixtures.api.fileValidationError = null;
     fixtures.useNetwork.setState({ isChecked: true, isOnline: online });
     fixtures.useTasksStore.setState({
         tasks: [{ id: 1, ['is_team_task']: brigade }],
@@ -568,4 +570,49 @@ test('a comment failure after a successful act upload keeps the current brigade 
     assert.equal(result.reportId, 10);
     assert.equal(fixtures.api.lookupCount, 2);
     assert.deepEqual(result.reportResponse.act, fixtures.api.report.act);
+});
+
+test('invalid fields prevent both interactive and queued drafts from making API requests', async (t) => {
+    const { submit } = await setup(t);
+    const values = fixtures.createValues();
+    values.metering.installationReading = '1.1234';
+    await assert.rejects(submit(values), (error) => {
+        assert.equal(error.code, 'REPORT_VALIDATION_ERROR');
+        assert.equal(
+            error.validationErrors.metering.installationReading.message,
+            'Введите показания: до 9 цифр до запятой и до 3 после'
+        );
+        return true;
+    });
+    assert.equal(fixtures.api.lookupCount, 0);
+    assert.equal(fixtures.api.calls.length, 0);
+    assert.equal(
+        fixtures.useReportDraftStore.getState().getDraft('1').metering
+            .installationReading,
+        '1.1234'
+    );
+    const queued = { ...values, reportState: 'pending' };
+    fixtures.useReportDraftStore
+        .getState()
+        .setDraft({ draftId: '1', values: queued });
+    await assert.rejects(submit(queued, queued), {
+        code: 'REPORT_VALIDATION_ERROR',
+    });
+    assert.equal(fixtures.api.calls.length, 0);
+});
+
+test('invalid files fail before saving server data and retain the entered report', async (t) => {
+    const { submit } = await setup(t);
+    fixtures.api.fileValidationError = Object.assign(
+        new Error('Файл повреждён'),
+        { code: 'REPORT_VALIDATION_ERROR' }
+    );
+    const values = fixtures.createValues();
+    values.comment = 'Сохранить мой комментарий';
+    await assert.rejects(submit(values), { code: 'REPORT_VALIDATION_ERROR' });
+    assert.equal(fixtures.api.calls.length, 0);
+    assert.equal(
+        fixtures.useReportDraftStore.getState().getDraft('1').comment,
+        values.comment
+    );
 });

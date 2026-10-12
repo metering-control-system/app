@@ -1,8 +1,5 @@
 import { File } from 'expo-file-system';
-import {
-    MAX_PICKED_IMAGE_SIZE_BYTES,
-    MAX_PICKED_IMAGE_SIZE_MB,
-} from '@/shared/lib/media/imageCompressionSizes';
+import { MAX_PICKED_IMAGE_SIZE_BYTES } from '@/shared/lib/media/imageCompressionSizes';
 
 const getAssetFileSize = async (asset) => {
     if (asset?.fileSize) {
@@ -19,7 +16,10 @@ const getAssetFileSize = async (asset) => {
     return fileInfo.size ?? null;
 };
 
-export const validatePickedImage = async (asset) => {
+export const validatePickedImage = async (
+    asset,
+    maxSizeBytes = MAX_PICKED_IMAGE_SIZE_BYTES
+) => {
     if (!asset?.uri) {
         return 'Не удалось получить изображение из галереи.';
     }
@@ -30,8 +30,8 @@ export const validatePickedImage = async (asset) => {
         return 'Не удалось определить размер изображения.';
     }
 
-    if (fileSize > MAX_PICKED_IMAGE_SIZE_BYTES) {
-        return `Размер файла не должен превышать ${MAX_PICKED_IMAGE_SIZE_MB} МБ.`;
+    if (fileSize > maxSizeBytes) {
+        return `Размер файла не должен превышать ${Math.round(maxSizeBytes / (1024 * 1024))} МБ.`;
     }
 
     return null;

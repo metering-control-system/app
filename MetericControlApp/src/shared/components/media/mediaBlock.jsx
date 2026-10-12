@@ -36,6 +36,7 @@ export default function MediaBlock({
     handleUploadPhoto,
     handleUpdatePhoto,
     disabled,
+    maxSizeBytes,
 }) {
     const [modalVisible, setModalVisible] = useState(false);
     const [selectedIndex, setSelectedIndex] = useState(0);
@@ -53,6 +54,7 @@ export default function MediaBlock({
                     onError={onError}
                     handleUploadPhoto={handleUploadPhoto}
                     disabled={disabled}
+                    maxSizeBytes={maxSizeBytes}
                 />
             </View>
             {imageUris.length ? (

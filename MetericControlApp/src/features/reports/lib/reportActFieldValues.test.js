@@ -86,7 +86,7 @@ test('optional fields survive validation with zeros, decimal commas, dates and e
 test('invalid optional values point to the concrete field', () => {
     for (const [group, name, value] of [
         ['meterBefore', 'verificationDate', '31.02.2026'],
-        ['metering', 'newT1', '-1'],
+        ['metering', 'newT1', '1.1234'],
         ['meterBefore', 'digitsBefore', '2.5'],
         ['actDetails', 'compiledAt', '12.10.2026 25:00'],
         ['metering', 'replacementReason', 'INVALID'],
@@ -153,4 +153,34 @@ test('every new field can be saved and restored using its API type', () => {
             input[field.group][field.name],
             `${field.group}.${field.name}`
         );
+});
+
+test('contact fields are optional and validate international phones, email length and each name part', () => {
+    const input = validValues();
+    input.consumerContact = {};
+    assert.equal(reportSubmitFormSchema.safeParse(input).success, true);
+    input.consumerContact = { phoneNumber: null, email: null };
+    assert.equal(reportSubmitFormSchema.safeParse(input).success, true);
+    for (const [field, value] of [
+        ['phoneNumber', '89211234567'],
+        ['phoneNumber2', '+123'],
+        ['email', `${'a'.repeat(243)}@example.com`],
+        ['fullName', `${'a'.repeat(41)} Иван Петрович`],
+        ['isRefusedContact', null],
+    ]) {
+        input.consumerContact = { [field]: value };
+        const result = reportSubmitFormSchema.safeParse(input);
+        assert.equal(result.success, false, field);
+        assert.ok(
+            result.error.issues.some(
+                (issue) => issue.path.join('.') === `consumerContact.${field}`
+            )
+        );
+    }
+    input.consumerContact = {
+        phoneNumber: '+7 (921) 123-45-67',
+        email: `${'a'.repeat(242)}@example.com`,
+        fullName: `${'Я'.repeat(40)} Иван Петрович Оглы`,
+    };
+    assert.equal(reportSubmitFormSchema.safeParse(input).success, true);
 });

@@ -1,3 +1,8 @@
+import { buildReportImageFile } from '@/features/reports/lib/buildReportPayload';
+import {
+    REPORT_IMAGE_MAX_BYTES,
+    validateReportPhoto,
+} from '@/features/reports/lib/validateReportUploadFiles';
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useMutationState } from '@tanstack/react-query';
@@ -214,13 +219,15 @@ const ReportSubmitForm = ({
         control,
         handleSubmit,
         getValues,
+        setError,
         watch,
         setValue,
         reset,
         formState: { errors },
     } = useForm({
         resolver: zodResolver(reportSubmitFormSchema),
-        mode: 'onChange',
+        mode: 'onTouched',
+        reValidateMode: 'onChange',
         shouldUnregister: false,
         defaultValues: initialValues,
     });
@@ -474,6 +481,15 @@ const ReportSubmitForm = ({
                 );
             }
         } catch (error) {
+            if (error.code === 'REPORT_VALIDATION_ERROR') {
+                for (const issue of error.issues)
+                    setError(issue.path.join('.'), {
+                        type: 'validate',
+                        message: issue.message,
+                    });
+                onInvalid(error.validationErrors);
+                return;
+            }
             onError(
                 'Ошибка отправки',
                 getApiErrorMessage(
@@ -492,6 +508,12 @@ const ReportSubmitForm = ({
         }
         onValidationError?.(error.field);
         onError('Проверьте отчёт', error.message);
+    };
+
+    const goToStep = (nextStep) => {
+        if (isReportBusy) return;
+        Keyboard.dismiss();
+        setStepIndex(nextStep);
     };
 
     const renderTextField = ({
@@ -554,6 +576,7 @@ const ReportSubmitForm = ({
         label,
         value,
         onChange,
+        onBlur,
         options,
         name,
         allowEmpty = false,
@@ -580,13 +603,14 @@ const ReportSubmitForm = ({
                                     key={String(option.value)}
                                     accessibilityRole='radio'
                                     accessibilityState={{ checked: isSelected }}
-                                    onPress={() =>
+                                    onPress={() => {
                                         onChange(
                                             allowEmpty && isSelected
                                                 ? ''
                                                 : option.value
-                                        )
-                                    }
+                                        );
+                                        onBlur?.();
+                                    }}
                                     style={[
                                         styles.chip,
                                         isSelected && styles.chipSelected,
@@ -612,6 +636,7 @@ const ReportSubmitForm = ({
         label,
         value,
         onChange,
+        onBlur,
         name,
         disabled = false,
     }) => (
@@ -627,7 +652,10 @@ const ReportSubmitForm = ({
                         disabled: disabled || isReportBusy,
                     }}
                     disabled={disabled || isReportBusy}
-                    onPress={() => onChange(!value)}
+                    onPress={() => {
+                        onChange(!value);
+                        onBlur?.();
+                    }}
                     style={({ pressed }) => [
                         styles.switchRow,
                         pressed && !disabled && styles.switchRowPressed,
@@ -635,7 +663,10 @@ const ReportSubmitForm = ({
                     <Text style={styles.switchLabel}>{label}</Text>
                     <Switch
                         value={value}
-                        onValueChange={onChange}
+                        onValueChange={(nextValue) => {
+                            onChange(nextValue);
+                            onBlur?.();
+                        }}
                         disabled={disabled || isReportBusy}
                         trackColor={{ false: '#d8e0ec', true: '#b7d5ff' }}
                         thumbColor={value ? '#2469c9' : '#fff'}
@@ -644,11 +675,6 @@ const ReportSubmitForm = ({
             </HighlightWrap>
         </ReportFieldLayout>
     );
-
-    const changeStep = (nextStep) => {
-        Keyboard.dismiss();
-        setStepIndex(nextStep);
-    };
 
     const renderActFields = (fields, title) => (
         <ReportFormSection
@@ -691,12 +717,15 @@ const ReportSubmitForm = ({
                             <Controller
                                 control={control}
                                 name={name}
-                                render={({ field: { value, onChange } }) =>
+                                render={({
+                                    field: { value, onChange, onBlur },
+                                }) =>
                                     renderSingleOptionGroup({
                                         name,
                                         label: field.label,
                                         value,
                                         onChange,
+                                        onBlur,
                                         options:
                                             field.options ??
                                             OPTIONAL_BOOLEAN_OPTIONS,
@@ -776,12 +805,13 @@ const ReportSubmitForm = ({
                 <Controller
                     control={control}
                     name='meterBefore.isActualDifferent'
-                    render={({ field: { onChange, value } }) =>
+                    render={({ field: { onChange, onBlur, value } }) =>
                         renderToggleRow({
                             name: 'meterBefore.isActualDifferent',
                             label: 'Фактический ПУ отличается',
                             value,
                             onChange,
+                            onBlur,
                         })
                     }
                 />
@@ -832,16 +862,22 @@ const ReportSubmitForm = ({
                 <Controller
                     control={control}
                     name='metering.dismantlingCompleted'
-                    render={({ field: { onChange, value } }) =>
+                    render={({ field: { onChange, onBlur, value } }) =>
                         renderToggleRow({
                             name: 'metering.dismantlingCompleted',
                             label: 'Демонтаж выполнен',
                             value,
                             onChange,
+                            onBlur,
                         })
                     }
                 />
 
+                {errors.metering?.dismantlingCompleted && (
+                    <Text style={styles.errorText}>
+                        {errors.metering.dismantlingCompleted.message}
+                    </Text>
+                )}
                 {renderTextField({
                     name: 'metering.oldReading',
                     label: 'Последние показания старого ПУ',
@@ -886,12 +922,13 @@ const ReportSubmitForm = ({
                 <Controller
                     control={control}
                     name='metering.sealLocation'
-                    render={({ field: { onChange, value } }) =>
+                    render={({ field: { onChange, onBlur, value } }) =>
                         renderSingleOptionGroup({
                             name: 'metering.sealLocation',
                             label: 'Место установки пломбы',
                             value,
                             onChange,
+                            onBlur,
                             options: SEAL_LOCATION_OPTIONS,
                             allowEmpty: true,
                         })
@@ -989,6 +1026,7 @@ const ReportSubmitForm = ({
                         <MediaBlock
                             onError={onError}
                             uris={uris}
+                            maxSizeBytes={REPORT_IMAGE_MAX_BYTES}
                             handleOpenCamera={() => {
                                 router.push({
                                     pathname: '/(authorized)/camera',
@@ -999,7 +1037,22 @@ const ReportSubmitForm = ({
                                     },
                                 });
                             }}
-                            handleUploadPhoto={(uriValue) => {
+                            handleUploadPhoto={async (uriValue) => {
+                                try {
+                                    await validateReportPhoto(
+                                        buildReportImageFile(
+                                            uriValue,
+                                            photoField.fileName
+                                        ),
+                                        ['photos', photoField.name]
+                                    );
+                                } catch (error) {
+                                    onError(
+                                        'Некорректная фотография',
+                                        error.message
+                                    );
+                                    return;
+                                }
                                 appendPhoto({
                                     entity: 'report',
                                     entityId: id,
@@ -1051,6 +1104,11 @@ const ReportSubmitForm = ({
                             }}
                             disabled={isReportBusy}
                         />
+                        {errors.photos?.[photoField.name]?.message && (
+                            <Text style={styles.errorText}>
+                                {errors.photos[photoField.name].message}
+                            </Text>
+                        )}
                     </ReportFormSection>
                 </HighlightWrap>
             </ReportFieldLayout>
@@ -1060,6 +1118,9 @@ const ReportSubmitForm = ({
     const renderPhotosStep = () => (
         <View style={styles.sectionList}>
             {REPORT_PHOTO_CONFIGS.map(renderPhotoField)}
+            {errors.photos?.message && (
+                <Text style={styles.errorText}>{errors.photos.message}</Text>
+            )}
         </View>
     );
 
@@ -1071,13 +1132,14 @@ const ReportSubmitForm = ({
                 <Controller
                     control={control}
                     name='admission.status'
-                    render={({ field: { onChange, value } }) =>
+                    render={({ field: { onChange, onBlur, value } }) =>
                         renderSingleOptionGroup({
                             name: 'admission.status',
                             required: true,
                             label: 'Статус допуска',
                             value,
                             onChange,
+                            onBlur,
                             options: ADMISSION_STATUS_OPTIONS,
                         })
                     }
@@ -1092,12 +1154,13 @@ const ReportSubmitForm = ({
                     <Controller
                         control={control}
                         name='admission.rejectionReason'
-                        render={({ field: { onChange, value } }) =>
+                        render={({ field: { onChange, onBlur, value } }) =>
                             renderSingleOptionGroup({
                                 name: 'admission.rejectionReason',
                                 label: 'Причина недопуска',
                                 value,
                                 onChange,
+                                onBlur,
                                 options: REJECTION_REASON_OPTIONS,
                             })
                         }
@@ -1134,11 +1197,12 @@ const ReportSubmitForm = ({
             <Controller
                 control={control}
                 name='consumerContact.isRefusedContact'
-                render={({ field: { onChange, value } }) =>
+                render={({ field: { onChange, onBlur, value } }) =>
                     renderToggleRow({
                         name: 'consumerContact.isRefusedContact',
                         label: 'Отказ от предоставления контактов',
                         value,
+                        onBlur,
                         onChange: (nextValue) => {
                             onChange(nextValue);
 
@@ -1261,12 +1325,13 @@ const ReportSubmitForm = ({
                     control={control}
                     name='actPdf.isRefused'
                     disabled={templates?.length === 0}
-                    render={({ field: { onChange, value } }) =>
+                    render={({ field: { onChange, onBlur, value } }) =>
                         renderToggleRow({
                             name: 'actPdf.isRefused',
                             label: 'Пропустить генерацию цифрового акта',
                             value,
                             disabled: !hasTemplates,
+                            onBlur,
                             onChange: (nextValue) => {
                                 onChange(nextValue);
                                 if (nextValue) {
@@ -1446,7 +1511,7 @@ const ReportSubmitForm = ({
                 <ReportFormSteps
                     steps={FORM_STEPS}
                     activeIndex={stepIndex}
-                    onChange={changeStep}
+                    onChange={goToStep}
                     disabled={isReportBusy}
                 />
 
@@ -1456,9 +1521,7 @@ const ReportSubmitForm = ({
                     {!isFirstStep ? (
                         <FormButton
                             message='Назад'
-                            onPress={() =>
-                                changeStep((currentStep) => currentStep - 1)
-                            }
+                            onPress={() => goToStep(stepIndex - 1)}
                             style={styles.secondaryButton}
                             textStyle={styles.secondaryButtonText}
                         />
@@ -1479,9 +1542,7 @@ const ReportSubmitForm = ({
                     ) : (
                         <FormButton
                             message='Далее'
-                            onPress={() =>
-                                changeStep((currentStep) => currentStep + 1)
-                            }
+                            onPress={() => goToStep(stepIndex + 1)}
                             style={styles.primaryButton}
                         />
                     )}

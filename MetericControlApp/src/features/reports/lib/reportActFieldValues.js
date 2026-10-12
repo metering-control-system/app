@@ -6,14 +6,16 @@ export const parseReportDate = (value) => {
     const match = value?.trim().match(/^(\d{2})\.(\d{2})\.(\d{4})$/);
     if (!match) return null;
     const [, day, month, year] = match.map(Number);
-    const date = new Date(year, month - 1, day);
+    if (year < 1) return null;
+    const date = new Date(0);
+    date.setUTCFullYear(year, month - 1, day);
     if (
-        date.getFullYear() !== year ||
-        date.getMonth() !== month - 1 ||
-        date.getDate() !== day
+        date.getUTCFullYear() !== year ||
+        date.getUTCMonth() !== month - 1 ||
+        date.getUTCDate() !== day
     )
         return null;
-    return `${year}-${pad(month)}-${pad(day)}`;
+    return `${String(year).padStart(4, '0')}-${pad(month)}-${pad(day)}`;
 };
 
 export const formatReportDate = (value) => {
@@ -26,7 +28,7 @@ export const formatReportDateTime = (value) => {
     if (!value) return '';
     const date = new Date(value);
     if (!Number.isFinite(date.getTime())) return String(value);
-    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${date.getFullYear()} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
+    return `${pad(date.getDate())}.${pad(date.getMonth() + 1)}.${String(date.getFullYear()).padStart(4, '0')} ${pad(date.getHours())}:${pad(date.getMinutes())}`;
 };
 
 export const parseReportDateTime = (value) => {
@@ -38,7 +40,9 @@ export const parseReportDateTime = (value) => {
     const hour = Number(match[2]);
     const minute = Number(match[3]);
     if (hour > 23 || minute > 59) return null;
-    const date = new Date(year, month - 1, day, hour, minute);
+    const date = new Date(0);
+    date.setFullYear(year, month - 1, day);
+    date.setHours(hour, minute, 0, 0);
     if (date.getHours() !== hour || date.getMinutes() !== minute) return null;
     return date.toISOString();
 };
