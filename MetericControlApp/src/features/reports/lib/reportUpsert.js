@@ -31,13 +31,14 @@ export const buildReportUpsertRequest = ({
         operation: 'update',
         reportId: existingReport.id,
         payload: {
-            ...reportPayload,
+            ...Object.fromEntries(
+                Object.entries(reportPayload).filter(
+                    ([key]) => !['task_id', 'client_report_id'].includes(key)
+                )
+            ),
             ...(resubmitRejectedReport && existingReport.status === 'REJECTED'
                 ? { status: 'ON_REVIEW' }
                 : {}),
-            ['client_report_id']:
-                existingReport['client_report_id'] ??
-                reportPayload['client_report_id'],
         },
     };
 };

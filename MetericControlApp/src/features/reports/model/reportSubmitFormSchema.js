@@ -80,7 +80,17 @@ const actFieldsSchema = (group) =>
                         (value) => !value || parseReportDateTime(value),
                         'Введите дату и время в формате ДД.ММ.ГГГГ ЧЧ:ММ'
                     );
-                return [field.name, schema.default('')];
+                return [
+                    field.name,
+                    ['date', 'datetime'].includes(field.kind)
+                        ? z
+                              .preprocess(
+                                  (value) => (value === null ? '' : value),
+                                  schema
+                              )
+                              .default('')
+                        : schema.default(''),
+                ];
             }
         )
     );

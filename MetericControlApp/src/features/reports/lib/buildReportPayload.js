@@ -24,13 +24,16 @@ const toReadingValue = (value) => {
     return String(normalizedValue).replace(',', '.');
 };
 
-const buildReactNativeFile = (uri, kind) => {
+export const buildReportImageFile = (uri, kind) => {
     if (!uri) {
         return null;
     }
 
-    const uriParts = uri.split('.');
-    const extension = uriParts.at(-1)?.toLowerCase() || 'jpg';
+    const extension =
+        uri
+            .split(/[?#]/)[0]
+            .match(/\.([a-z0-9]+)$/i)?.[1]
+            ?.toLowerCase() ?? 'jpg';
     const normalizedExtension = extension === 'jpg' ? 'jpeg' : extension;
 
     return {
@@ -73,7 +76,9 @@ export const buildReportPayload = (
           toNullableValue(formValues.meterBefore.type));
 
     const payload = {
-        ['client_report_id']: formValues.clientReportId,
+        ...(formValues.clientReportId?.trim() && {
+            ['client_report_id']: formValues.clientReportId.trim(),
+        }),
         ['task_id']: Number(formValues.taskId),
         ['act_details']: actFields['act_details'],
         metering: {
@@ -163,7 +168,7 @@ export const buildReportImagesPayload = (
     );
     const files = REPORT_PHOTO_CONFIGS.flatMap(({ kind, name, fileName }) =>
         normalizePhotoUris(formValues.photos?.[name]).map((uri, index) => {
-            const file = buildReactNativeFile(uri, fileName);
+            const file = buildReportImageFile(uri, fileName);
             const metadata = photoMetadata[name]?.[index];
             const clientImageId =
                 metadata?.uri === uri ? metadata.clientImageId : null;

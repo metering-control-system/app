@@ -244,3 +244,28 @@ test('submits new act fields and allows explicitly missing old meter and seal', 
     assert.equal(payload.act_details.power_of_attorney_date, '2026-10-12');
     assert.equal(payload.act_details.representative_name, 'Представитель');
 });
+
+test('normalizes formatted phone numbers and omits an absent optional report id', () => {
+    const values = {
+        taskId: 12,
+        clientReportId: '',
+        meterBefore: {},
+        metering: {
+            dismantlingCompleted: false,
+            newMeterType: 'Меркурий',
+            newMeterNumber: 'A-12',
+            installationReading: '0',
+        },
+        admission: { status: 'ADMITTED' },
+        consumerContact: {
+            phoneNumber: '+7 (921) 123-45-67',
+            phoneNumber2: '+1 202-555-0123',
+        },
+    };
+    const payload = buildReportPayload(values);
+    assert.equal(payload.consumer_contact.phone_number_1, '+79211234567');
+    assert.equal(payload.consumer_contact.phone_number_2, '+12025550123');
+    assert.equal(Object.hasOwn(payload, 'client_report_id'), false);
+    assert.equal(payload.metering.installation_reading, '0');
+    assert.equal(payload.metering.dismantling_completed, false);
+});

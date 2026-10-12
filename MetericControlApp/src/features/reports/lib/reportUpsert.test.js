@@ -21,7 +21,7 @@ test('creates a report when the task has no report', () => {
     );
 });
 
-test('updates an existing report and preserves its client id', () => {
+test('updates an existing report without sending immutable task and client ids', () => {
     const request = buildReportUpsertRequest({
         reportPayload: {
             ['client_report_id']: 'new-client-report-id',
@@ -36,10 +36,8 @@ test('updates an existing report and preserves its client id', () => {
 
     assert.equal(request.operation, 'update');
     assert.equal(request.reportId, 7);
-    assert.equal(
-        request.payload['client_report_id'],
-        'existing-client-report-id'
-    );
+    assert.equal(Object.hasOwn(request.payload, 'client_report_id'), false);
+    assert.equal(Object.hasOwn(request.payload, 'task_id'), false);
 });
 
 test('selects the newest matching report without mixing tasks', () => {

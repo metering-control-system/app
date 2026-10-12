@@ -1,3 +1,5 @@
+import { validateReportValues } from '@/features/reports/lib/validateReportValues';
+import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
 import { validateReportAct } from '@/features/reports/lib/validateReportAct';
 import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 import { useCallback } from 'react';
@@ -65,6 +67,7 @@ const useSubmitReport = () => {
             ) {
                 return { skipped: true };
             }
+            validateReportValues(values, taskId);
             await validateReportAct({ taskId, values });
             if (
                 expectedDraft &&
@@ -96,6 +99,17 @@ const useSubmitReport = () => {
                 throw new Error('Отсутствует цифровой акт');
             }
             if (!isOnline && isChecked) {
+                await validateReportUploadFiles({
+                    imagesPayload: buildReportImagesPayload(
+                        values,
+                        [],
+                        photoMetadata
+                    ),
+                    actPayload: !isRefused
+                        ? buildReportPdfActPayload(values)
+                        : null,
+                    offline: true,
+                });
                 const offlineValues = !isRefused
                     ? {
                           ...values,
@@ -136,6 +150,21 @@ const useSubmitReport = () => {
                     { code: 'REPORT_READ_ONLY' }
                 );
             }
+            const reportPdfActPayload = !isRefused
+                ? buildReportPdfActPayload(
+                      values,
+                      existingReport?.act?.client_act_id
+                  )
+                : null;
+            await validateReportUploadFiles({
+                imagesPayload: buildReportImagesPayload(
+                    values,
+                    existingReport?.images,
+                    photoMetadata
+                ),
+                actPayload: reportPdfActPayload,
+                isExistingAct: Boolean(existingReport?.act?.client_act_id),
+            });
             const reportPayload = buildReportPayload(
                 { ...values, taskId },
                 { includeEmptyOptionalFields: Boolean(existingReport) }
@@ -213,10 +242,7 @@ const useSubmitReport = () => {
                 }
 
                 const serverActId = reportResponse?.act?.client_act_id;
-                const reportPdfActPayload = buildReportPdfActPayload(
-                    values,
-                    serverActId
-                );
+
                 if (!isRefused && actPdfUri && reportPdfActPayload) {
                     if (serverActId) {
                         reportResponse = await updateReportPdfAct(
