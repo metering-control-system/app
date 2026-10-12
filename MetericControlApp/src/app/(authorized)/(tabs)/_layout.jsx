@@ -12,7 +12,7 @@ const DashboardLayout = () => {
             <Tabs.Screen
                 name='tasks'
                 options={{
-                    title: 'Задачи',
+                    title: 'Работа',
                     tabBarBadge: pendingCount > 0 ? pendingCount : undefined,
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
@@ -27,7 +27,7 @@ const DashboardLayout = () => {
             <Tabs.Screen
                 name='reports'
                 options={{
-                    title: 'Отчёты',
+                    title: 'История отчётов',
                     headerShown: false,
                     tabBarIcon: ({ focused }) => (
                         <AntDesign

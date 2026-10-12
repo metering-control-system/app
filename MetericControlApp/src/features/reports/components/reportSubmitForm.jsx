@@ -776,11 +776,9 @@ const ReportSubmitForm = ({
                             label: field.label,
                             error,
                             placeholder:
-                                field.kind === 'integer'
-                                    ? 'Например, 0'
-                                    : field.kind === 'reading'
-                                      ? 'Введите показания'
-                                      : 'Не указано',
+                                field.kind === 'reading'
+                                    ? 'Введите показания'
+                                    : 'Не указано',
                             keyboardType:
                                 field.kind === 'integer'
                                     ? 'number-pad'
