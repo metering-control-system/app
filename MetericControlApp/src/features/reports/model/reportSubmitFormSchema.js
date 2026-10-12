@@ -5,6 +5,10 @@ import {
     REJECTION_REASON_OPTIONS,
     SEAL_LOCATION_OPTIONS,
 } from '../constants/reportFieldOptions.js';
+import {
+    isValidReportEmail,
+    isValidReportPhone,
+} from '../lib/reportContactValidation.js';
 import { splitReportContactName } from '../lib/reportContactValues.js';
 import {
     reportTextSchema,
@@ -21,21 +25,20 @@ const optionalTrimmedString = (max, message) => reportTextSchema(max, message);
 const requiredTrimmedString = (max, requiredMessage, maxMessage) =>
     reportTextSchema(max, maxMessage).min(1, requiredMessage);
 
-const optionalPhoneField = z
-    .string()
-    .trim()
-    .refine(
-        (value) => !value || /^[+\d\s()-]{6,20}$/.test(value),
-        'Введите корректный телефон'
-    );
-
-const optionalEmailField = z
-    .string()
-    .trim()
-    .refine(
-        (value) => !value || z.email().safeParse(value).success,
+const nullableContactText = (schema) =>
+    z.preprocess((value) => (value === null ? '' : value), schema);
+const optionalPhoneField = nullableContactText(
+    reportTextSchema(128, 'Телефон: не более 128 символов').refine(
+        isValidReportPhone,
+        'Введите телефон в международном формате, например +7 921 123-45-67'
+    )
+);
+const optionalEmailField = nullableContactText(
+    reportTextSchema(254, 'Электронная почта: не более 254 символов').refine(
+        isValidReportEmail,
         'Введите корректный адрес электронной почты'
-    );
+    )
+);
 
 const photoArrayField = z.array(z.string().trim()).default([]);
 const reportPhotoFields = createReportPhotoSlotRecord(() => photoArrayField);

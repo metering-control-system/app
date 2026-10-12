@@ -1,6 +1,7 @@
 import { createClientReportId } from './createClientReportId.js';
 import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
 import { buildReportActFieldsPayload } from './reportActFieldValues.js';
+import { normalizeReportPhone } from './reportContactValidation.js';
 import { splitReportContactName } from './reportContactValues.js';
 
 const toNullableValue = (value) => {
@@ -109,10 +110,10 @@ export const buildReportPayload = (
             ['middle_name']: contactNameParts.middleName,
             ['last_name']: contactNameParts.lastName,
             ['phone_number_1']: toNullableValue(
-                formValues.consumerContact.phoneNumber
+                normalizeReportPhone(formValues.consumerContact.phoneNumber)
             ),
             ['phone_number_2']: toNullableValue(
-                formValues.consumerContact.phoneNumber2
+                normalizeReportPhone(formValues.consumerContact.phoneNumber2)
             ),
             email: toNullableValue(formValues.consumerContact.email),
         },
