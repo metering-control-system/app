@@ -46,7 +46,7 @@ const Task = ({ task, hasPendingTaskReport, needsReportRevision }) => {
                             taskStatusColors[task?.status] ??
                                 taskStatusColors.NEW,
                         ]}>
-                        {taskStatus[task?.status] ?? 'не назначен'}
+                        {taskStatus[task?.status] ?? 'Не назначен'}
                     </Text>
                     <Text
                         numberOfLines={2}
@@ -56,7 +56,7 @@ const Task = ({ task, hasPendingTaskReport, needsReportRevision }) => {
                             taskPriorityColors[task?.manual_priority] ??
                                 taskPriorityColors.NOT_SPECIFIED,
                         ]}>
-                        {taskPriority[task?.manual_priority] ?? 'не назначена'}
+                        {taskPriority[task?.manual_priority] ?? 'Не назначена'}
                     </Text>
                     {task.task_data?.has_request && (
                         <Text
