@@ -17,7 +17,9 @@ import { getAdditionalReportDetails } from '../lib/reportFieldDetails';
 
 const DetailRow = ({ label, value, stacked = false }) => (
     <View style={[styles.detailRow, stacked && styles.stackedDetailRow]}>
-        <Text style={styles.label}>{label}</Text>
+        <Text style={[styles.label, stacked && styles.stackedLabel]}>
+            {label}
+        </Text>
         <Text selectable style={[styles.value, stacked && styles.stackedValue]}>
             {value === null || value === undefined || value === ''
                 ? 'Не указано'
@@ -60,9 +62,20 @@ const Section = ({ icon, title, children }) => (
         {children}
     </View>
 );
-const AdditionalDetails = ({ rows, stacked = false }) =>
-    rows.map(({ key, label, value }) => (
-        <DetailRow key={key} label={label} value={value} stacked={stacked} />
+const AdditionalDetails = ({
+    rows,
+    stacked = false,
+    highlightedField,
+    fillPositions,
+}) =>
+    rows.map(({ key, field, label, value }) => (
+        <ReportFieldTarget
+            key={key}
+            name={field}
+            highlightedField={highlightedField}
+            fillPositions={fillPositions}>
+            <DetailRow label={label} value={value} stacked={stacked} />
+        </ReportFieldTarget>
     ));
 
 const ReportDetailsForm = ({
@@ -191,6 +204,8 @@ const ReportDetailsForm = ({
             {additionalDetails.actDetails.length > 0 && (
                 <Section title='Реквизиты отчёта' icon='document-text-outline'>
                     <AdditionalDetails
+                        highlightedField={highlightedField}
+                        fillPositions={fillPositions}
                         rows={additionalDetails.actDetails}
                         stacked
                     />
@@ -215,7 +230,11 @@ const ReportDetailsForm = ({
                     'Комментарий к отказу',
                     admission.rejection_comment
                 )}
-                <AdditionalDetails rows={additionalDetails.admission} />
+                <AdditionalDetails
+                    highlightedField={highlightedField}
+                    fillPositions={fillPositions}
+                    rows={additionalDetails.admission}
+                />
             </Section>
 
             <Section title='Старый счётчик' icon='speedometer-outline'>
@@ -258,7 +277,11 @@ const ReportDetailsForm = ({
                             : 'Нет'
                         : null
                 )}
-                <AdditionalDetails rows={additionalDetails.oldMeter} />
+                <AdditionalDetails
+                    highlightedField={highlightedField}
+                    fillPositions={fillPositions}
+                    rows={additionalDetails.oldMeter}
+                />
             </Section>
 
             <Section title='Новый счётчик' icon='flash-outline'>
@@ -289,12 +312,20 @@ const ReportDetailsForm = ({
                         ({ value }) => value === metering.seal_location
                     )?.label ?? metering.seal_location
                 )}
-                <AdditionalDetails rows={additionalDetails.newMeter} />
+                <AdditionalDetails
+                    highlightedField={highlightedField}
+                    fillPositions={fillPositions}
+                    rows={additionalDetails.newMeter}
+                />
             </Section>
 
             {additionalDetails.replacement.length > 0 && (
                 <Section title='Причина замены' icon='construct-outline'>
-                    <AdditionalDetails rows={additionalDetails.replacement} />
+                    <AdditionalDetails
+                        highlightedField={highlightedField}
+                        fillPositions={fillPositions}
+                        rows={additionalDetails.replacement}
+                    />
                 </Section>
             )}
 
@@ -525,12 +556,19 @@ const styles = StyleSheet.create({
         gap: 16,
         paddingVertical: 10,
     },
-    label: { fontSize: 13, lineHeight: 19, color: '#64748b', flexShrink: 1 },
+    label: {
+        fontSize: 13,
+        lineHeight: 19,
+        color: '#64748b',
+        flex: 1,
+        minWidth: 0,
+    },
     stackedDetailRow: {
         flexDirection: 'column',
         alignItems: 'stretch',
         gap: 4,
     },
+    stackedLabel: { flex: 0 },
     stackedValue: { flex: 0, textAlign: 'left' },
     value: {
         fontSize: 14,
@@ -539,6 +577,7 @@ const styles = StyleSheet.create({
         color: '#1e293b',
         textAlign: 'right',
         flex: 1,
+        minWidth: 0,
     },
     note: {
         backgroundColor: '#f8fafc',

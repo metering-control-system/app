@@ -1,3 +1,6 @@
+import { REPORT_ACT_FIELDS } from './reportActFields';
+import { REPORT_FORM_STEPS } from '../lib/reportFormValidation';
+
 export const FORM_FIELDS_MAP = {
     '@METERIC_CUSTOMER_NAME': {
         step: 0,
@@ -239,6 +242,28 @@ export const REPORT_API_FIELDS = {
     'images.REFUSAL_PROOF': 'photos.refusalProof',
     act: 'actPdf',
 };
+
+for (const field of REPORT_ACT_FIELDS) {
+    const block =
+        field.group === 'actDetails'
+            ? 'act_details'
+            : field.group === 'meterBefore'
+              ? 'metering'
+              : field.group;
+    const name = `${field.group}.${field.name}`;
+    REPORT_API_FIELDS[`${block}.${field.api}`] = name;
+    const step = REPORT_FORM_STEPS.findIndex((item) =>
+        item.fields.includes(field.group)
+    );
+    REPORT_FIELD_REFERENCES[
+        `@${block.toUpperCase()}.${field.api.toUpperCase()}`
+    ] = {
+        field: name,
+        label: field.label,
+        step: Math.max(0, step),
+        stepLabel: REPORT_FORM_STEPS[step]?.title ?? '',
+    };
+}
 
 for (const [path, field] of Object.entries(REPORT_API_FIELDS)) {
     const reference = Object.values(REPORT_FIELD_REFERENCES).find(

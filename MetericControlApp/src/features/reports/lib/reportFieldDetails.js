@@ -25,6 +25,7 @@ export const getAdditionalReportDetails = (report) => {
 
         sections[section].push({
             key: field.api,
+            field: `${field.group}.${field.name}`,
             label: field.label,
             value:
                 field.kind === 'boolean'
