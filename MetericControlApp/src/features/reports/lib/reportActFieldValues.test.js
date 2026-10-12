@@ -86,7 +86,7 @@ test('optional fields survive validation with zeros, decimal commas, dates and e
 test('invalid optional values point to the concrete field', () => {
     for (const [group, name, value] of [
         ['meterBefore', 'verificationDate', '31.02.2026'],
-        ['metering', 'newT1', '-1'],
+        ['metering', 'newT1', '1.1234'],
         ['meterBefore', 'digitsBefore', '2.5'],
         ['actDetails', 'compiledAt', '12.10.2026 25:00'],
         ['metering', 'replacementReason', 'INVALID'],

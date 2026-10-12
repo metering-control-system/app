@@ -86,24 +86,16 @@ test('missing admission selection opens the admission step with its concrete err
     });
 });
 
-test('conditional rejection validation points to the rejection reason', async () => {
+test('rejection reasons and contacts are optional as in the report API', async () => {
     const input = values();
     input.admission.status = 'NOT_ADMITTED';
-    assert.deepEqual(await firstError(input), {
-        stepIndex: 3,
-        field: 'admission.rejectionReason',
-        message: 'Выберите хотя бы одну причину недопуска',
-    });
-});
-
-test('missing contacts without a refusal opens the contacts step', async () => {
-    const input = values();
     input.consumerContact.isRefusedContact = false;
-    assert.deepEqual(await firstError(input), {
-        stepIndex: 4,
-        field: 'consumerContact.phoneNumber',
-        message: 'Укажите хотя бы один контактный способ или отметьте отказ',
-    });
+    const result = await validate(
+        input,
+        {},
+        { criteriaMode: 'firstError', shouldUseNativeValidation: false }
+    );
+    assert.deepEqual(result.errors, {});
 });
 
 test('the first invalid step follows form order rather than object key order', () => {

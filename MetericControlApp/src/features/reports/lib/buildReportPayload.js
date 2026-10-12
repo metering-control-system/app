@@ -1,6 +1,7 @@
 import { createClientReportId } from './createClientReportId.js';
 import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
 import { buildReportActFieldsPayload } from './reportActFieldValues.js';
+import { splitReportContactName } from './reportContactValues.js';
 
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {
@@ -20,19 +21,6 @@ const toReadingValue = (value) => {
     }
 
     return String(normalizedValue).replace(',', '.');
-};
-
-const splitFullName = (fullName) => {
-    const normalizedFullName = toNullableValue(fullName);
-
-    if (!normalizedFullName) {
-        return { firstName: '', middleName: '', lastName: '' };
-    }
-
-    const [lastName = '', firstName = '', middleName = ''] =
-        normalizedFullName.split(/\s+/);
-
-    return { firstName, middleName, lastName };
 };
 
 const buildReactNativeFile = (uri, kind) => {
@@ -67,7 +55,9 @@ export const buildReportPayload = (
     formValues,
     { includeEmptyOptionalFields = false } = {}
 ) => {
-    const contactNameParts = splitFullName(formValues.consumerContact.fullName);
+    const contactNameParts = splitReportContactName(
+        formValues.consumerContact.fullName
+    );
     const rejectionReason = toNullableValue(
         formValues.admission.rejectionReason
     );
