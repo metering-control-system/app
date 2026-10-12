@@ -92,7 +92,6 @@ const ReportSubmitForm = ({
     const formRef = useRef(null);
     const { isOnline } = useNetwork();
     const hydratedDraftIdRef = useRef(null);
-    const changingStepRef = useRef(false);
     const hydratedPhotosIdRef = useRef(null);
     const draftId = String(task?.id ?? id);
     const pendingOperations = useMutationState({
@@ -220,8 +219,6 @@ const ReportSubmitForm = ({
         control,
         handleSubmit,
         getValues,
-        trigger,
-        getFieldState,
         setError,
         watch,
         setValue,
@@ -513,31 +510,10 @@ const ReportSubmitForm = ({
         onError('Проверьте отчёт', error.message);
     };
 
-    const goToStep = async (nextStep) => {
-        if (isReportBusy || changingStepRef.current) return;
-        if (nextStep <= stepIndex) {
-            setStepIndex(nextStep);
-            return;
-        }
-        changingStepRef.current = true;
-        try {
-            const fields = FORM_STEPS[stepIndex].fields;
-            if (!(await trigger(fields))) {
-                onInvalid(
-                    Object.fromEntries(
-                        fields.map((field) => [
-                            field,
-                            getFieldState(field).error,
-                        ])
-                    )
-                );
-                return;
-            }
-            Keyboard.dismiss();
-            setStepIndex(nextStep);
-        } finally {
-            changingStepRef.current = false;
-        }
+    const goToStep = (nextStep) => {
+        if (isReportBusy) return;
+        Keyboard.dismiss();
+        setStepIndex(nextStep);
     };
 
     const renderTextField = ({

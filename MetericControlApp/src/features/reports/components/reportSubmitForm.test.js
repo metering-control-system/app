@@ -193,44 +193,49 @@ test('field errors appear on blur and clear while the installer corrects input',
     assert.equal(state.submissions.length, 0);
 });
 
-test('next checks only the current step, blocks invalid data and preserves values when navigating back', async (t) => {
+test('next and back remain available with invalid or missing fields and preserve inline errors', async (t) => {
     const form = await setup(t);
     await act(async () => form.button('Далее').props.onPress());
     assert.equal(form.step(), 1);
-    await act(async () => form.button('Далее').props.onPress());
-    assert.equal(form.step(), 1);
-    assert.match(state.errors.at(-1)[1], /тип нового ПУ/);
     await act(async () =>
-        form.input('Введите тип нового ПУ').props.onChangeText('Меркурий')
+        form.input('Введите номер нового ПУ').props.onChangeText('A'.repeat(41))
     );
+    await act(async () => form.input('Введите номер нового ПУ').props.onBlur());
+    assert.ok(form.text().includes('Номер нового ПУ слишком длинный'));
+    await act(async () => form.button('Далее').props.onPress());
+    assert.equal(form.step(), 2);
+    assert.equal(state.errors.length, 0);
+    await act(async () => form.button('Назад').props.onPress());
+    assert.equal(form.step(), 1);
+    assert.equal(
+        form.input('Введите номер нового ПУ').props.value,
+        'A'.repeat(41)
+    );
+    assert.equal(form.input('Введите показания при установке').props.value, '');
+    assert.ok(form.text().includes('Номер нового ПУ слишком длинный'));
     await act(async () =>
         form.input('Введите номер нового ПУ').props.onChangeText('ABC-123')
     );
-    await act(async () =>
-        form.input('Введите показания при установке').props.onChangeText('0')
-    );
-    await act(async () => form.button('Далее').props.onPress());
-    assert.equal(form.step(), 2);
-    await act(async () => form.button('Назад').props.onPress());
-    assert.equal(form.input('Введите номер нового ПУ').props.value, 'ABC-123');
-    assert.equal(
-        form.input('Введите показания при установке').props.value,
-        '0'
-    );
+    assert.ok(!form.text().includes('Номер нового ПУ слишком длинный'));
     assert.equal(state.submissions.length, 0);
 });
 
-test('forward tabs cannot bypass errors on the current step and saving still validates every step', async (t) => {
+test('tabs allow freely jumping over incomplete steps while saving still checks the entire report', async (t) => {
     const form = await setup(t);
     await act(async () => form.tab(1).props.onPress());
     await act(async () => form.tab(6).props.onPress());
-    assert.equal(form.step(), 1);
-    await act(async () => form.tab(0).props.onPress());
-    await act(async () => form.tab(6).props.onPress());
     assert.equal(form.step(), 6);
+    assert.equal(state.errors.length, 0);
+    await act(async () => form.tab(0).props.onPress());
+    assert.equal(form.step(), 0);
+    await act(async () => form.tab(6).props.onPress());
     await act(async () => form.button('Сохранить отчёт').props.onPress());
     assert.equal(form.step(), 1);
+    assert.match(state.errors.at(-1)[1], /тип нового ПУ/);
     assert.equal(state.submissions.length, 0);
+    await act(async () => form.tab(6).props.onPress());
+    assert.equal(form.step(), 6);
+    assert.equal(state.errors.length, 1);
 });
 
 test('gallery rejects invalid files without storing them and accepts files within the report limit', async (t) => {
@@ -274,7 +279,7 @@ test('a pre-upload file error returns the installer to its step with the entered
             photos: { oldMeter: { message: 'Файл повреждён' } },
         },
     });
-    await act(async () => form.button('Сохранить отчет').props.onPress());
+    await act(async () => form.button('Сохранить отчёт').props.onPress());
     assert.equal(form.step(), 2);
     assert.ok(form.text().includes('Файл повреждён'));
     await act(async () => form.tab(1).props.onPress());
