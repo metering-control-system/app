@@ -1,3 +1,8 @@
+import { buildReportImageFile } from '@/features/reports/lib/buildReportPayload';
+import {
+    REPORT_IMAGE_MAX_BYTES,
+    validateReportPhoto,
+} from '@/features/reports/lib/validateReportUploadFiles';
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { useMutationState } from '@tanstack/react-query';
@@ -1045,6 +1050,7 @@ const ReportSubmitForm = ({
                         <MediaBlock
                             onError={onError}
                             uris={uris}
+                            maxSizeBytes={REPORT_IMAGE_MAX_BYTES}
                             handleOpenCamera={() => {
                                 router.push({
                                     pathname: '/(authorized)/camera',
@@ -1055,7 +1061,22 @@ const ReportSubmitForm = ({
                                     },
                                 });
                             }}
-                            handleUploadPhoto={(uriValue) => {
+                            handleUploadPhoto={async (uriValue) => {
+                                try {
+                                    await validateReportPhoto(
+                                        buildReportImageFile(
+                                            uriValue,
+                                            photoField.fileName
+                                        ),
+                                        ['photos', photoField.name]
+                                    );
+                                } catch (error) {
+                                    onError(
+                                        'Некорректная фотография',
+                                        error.message
+                                    );
+                                    return;
+                                }
                                 appendPhoto({
                                     entity: 'report',
                                     entityId: id,
@@ -1107,6 +1128,11 @@ const ReportSubmitForm = ({
                             }}
                             disabled={isReportBusy}
                         />
+                        {errors.photos?.[photoField.name]?.message && (
+                            <Text style={styles.errorText}>
+                                {errors.photos[photoField.name].message}
+                            </Text>
+                        )}
                     </ReportFormSection>
                 </HighlightWrap>
             </ReportFieldLayout>
@@ -1116,6 +1142,9 @@ const ReportSubmitForm = ({
     const renderPhotosStep = () => (
         <View style={styles.sectionList}>
             {REPORT_PHOTO_CONFIGS.map(renderPhotoField)}
+            {errors.photos?.message && (
+                <Text style={styles.errorText}>{errors.photos.message}</Text>
+            )}
         </View>
     );
 

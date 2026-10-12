@@ -46,6 +46,10 @@ const loader = registerHooks({
             return stub(
                 `export default ()=>({loadReport(){},isLoading:false});`
             );
+        if (specifier.endsWith('/validateReportUploadFiles'))
+            return stub(
+                `export const REPORT_IMAGE_MAX_BYTES=20*1024*1024;export {validateReportPhoto} from '${fixtures}';`
+            );
         if (specifier.endsWith('/validateReportAct'))
             return stub(`export const validateReportAct=async()=>{};`);
         if (specifier.endsWith('/ensureActFileExists'))
@@ -63,10 +67,11 @@ const loader = registerHooks({
             return stub(
                 `import {createElement} from '${reactUrl}';export default props=>createElement('FormButton',props);`
             );
-        if (
-            specifier.endsWith('/mediaBlock') ||
-            specifier.endsWith('/actDocumentPanel')
-        )
+        if (specifier.endsWith('/mediaBlock'))
+            return stub(
+                `import {createElement} from '${reactUrl}';export default props=>createElement('MediaBlock',props);`
+            );
+        if (specifier.endsWith('/actDocumentPanel'))
             return stub(`export default ()=>null;`);
         if (specifier === './reportFormLayout')
             return {
@@ -108,6 +113,9 @@ const setup = async (t) => {
     globalThis.IS_REACT_ACT_ENVIRONMENT = true;
     state.errors = [];
     state.submissions = [];
+    state.addedPhotos = [];
+    state.fileValidationError = null;
+    state.submissionError = null;
     const task = {
         id: 1,
         consumer: { ['full_name']: 'Иванов Иван' },
@@ -158,6 +166,15 @@ const setup = async (t) => {
                 .flat()
                 .filter((value) => typeof value === 'string'),
         step: () => currentStep,
+        media: () => root.root.findAllByType('MediaBlock'),
+        radio: (label) =>
+            root.root
+                .findAllByType('Pressable')
+                .find(
+                    (node) =>
+                        node.props.accessibilityRole === 'radio' &&
+                        node.props.children?.props?.children === label
+                ),
     };
 };
 
@@ -214,4 +231,52 @@ test('forward tabs cannot bypass errors on the current step and saving still val
     await act(async () => form.button('Сохранить отчёт').props.onPress());
     assert.equal(form.step(), 1);
     assert.equal(state.submissions.length, 0);
+});
+
+test('gallery rejects invalid files without storing them and accepts files within the report limit', async (t) => {
+    const form = await setup(t);
+    await act(async () => form.tab(2).props.onPress());
+    assert.equal(form.media()[0].props.maxSizeBytes, 20 * 1024 * 1024);
+    state.fileValidationError = new Error(
+        'Фотография должна быть в формате JPEG, PNG или WebP'
+    );
+    await act(async () =>
+        form.media()[0].props.handleUploadPhoto('file:///bad.heic')
+    );
+    assert.equal(state.addedPhotos.length, 0);
+    assert.match(state.errors.at(-1)[1], /JPEG, PNG или WebP/);
+    state.fileValidationError = null;
+    await act(async () =>
+        form.media()[0].props.handleUploadPhoto('file:///good.jpg')
+    );
+    assert.equal(state.addedPhotos[0].uri, 'file:///good.jpg');
+});
+
+test('a pre-upload file error returns the installer to its step with the entered values intact', async (t) => {
+    const form = await setup(t);
+    await act(async () => form.tab(1).props.onPress());
+    await act(async () =>
+        form.input('Введите тип нового ПУ').props.onChangeText('Меркурий')
+    );
+    await act(async () =>
+        form.input('Введите номер нового ПУ').props.onChangeText('ABC-123')
+    );
+    await act(async () =>
+        form.input('Введите показания при установке').props.onChangeText('0')
+    );
+    await act(async () => form.tab(3).props.onPress());
+    await act(async () => form.radio('Допущен').props.onPress());
+    await act(async () => form.tab(6).props.onPress());
+    state.submissionError = Object.assign(new Error('Файл повреждён'), {
+        code: 'REPORT_VALIDATION_ERROR',
+        issues: [{ path: ['photos', 'oldMeter'], message: 'Файл повреждён' }],
+        validationErrors: {
+            photos: { oldMeter: { message: 'Файл повреждён' } },
+        },
+    });
+    await act(async () => form.button('Сохранить отчет').props.onPress());
+    assert.equal(form.step(), 2);
+    assert.ok(form.text().includes('Файл повреждён'));
+    await act(async () => form.tab(1).props.onPress());
+    assert.equal(form.input('Введите номер нового ПУ').props.value, 'ABC-123');
 });

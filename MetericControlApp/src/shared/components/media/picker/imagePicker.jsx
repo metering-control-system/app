@@ -7,6 +7,7 @@ export default function ImagePickerButton({
     onError,
     handleUploadPhoto,
     disabled,
+    maxSizeBytes,
 }) {
     const pickImage = async () => {
         try {
@@ -29,7 +30,10 @@ export default function ImagePickerButton({
 
             if (!result.canceled) {
                 const asset = result.assets[0];
-                const validationError = await validatePickedImage(asset);
+                const validationError = await validatePickedImage(
+                    asset,
+                    maxSizeBytes
+                );
 
                 if (validationError) {
                     onError('Файл слишком большой', validationError);
