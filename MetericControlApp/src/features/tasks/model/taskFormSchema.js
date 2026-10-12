@@ -24,8 +24,9 @@ export const taskFormSchema = z.object({
         account_number: z
             .string()
             .trim()
-            .min(1, 'Введите лицевой счет')
-            .regex(/^\d*$/, 'Лицевой счет должен содержать только цифры'),
+            .max(50, 'Лицевой счет слишком длинный')
+            .regex(/^\d*$/, 'Лицевой счет должен содержать только цифры')
+            .default(''),
     }),
 
     meter: z.object({

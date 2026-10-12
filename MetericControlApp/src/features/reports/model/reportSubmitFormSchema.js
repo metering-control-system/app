@@ -115,8 +115,9 @@ export const reportSubmitFormSchema = z
         personalAccount: z
             .string()
             .trim()
-            .min(1, 'Введите лицевой счет')
-            .regex(/^\d{1,20}$/, 'Лицевой счет должен содержать только цифры'),
+            .max(20, 'Лицевой счет слишком длинный')
+            .regex(/^\d*$/, 'Лицевой счет должен содержать только цифры')
+            .default(''),
 
         comment: reportTextSchema(),
         address: z
