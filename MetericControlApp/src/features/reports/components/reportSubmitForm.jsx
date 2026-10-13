@@ -6,7 +6,7 @@ import {
 } from '@/features/reports/lib/validateReportUploadFiles';
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { useMutationState } from '@tanstack/react-query';
+import { useMutationState, useQueryClient } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -88,8 +88,10 @@ const ReportSubmitForm = ({
     highlightedField,
     defaultActTemplate,
     onValidationError,
+    readOnly = false,
 }) => {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [clearedRemarks, setClearedRemarks] = useState(null);
     const renderRemark = (name) => {
         if (
@@ -168,7 +170,24 @@ const ReportSubmitForm = ({
         (state) => state.drafts?.[draftId] ?? null
     );
     const isQueued = draftValues?.reportState === 'pending';
-    const isEditingDisabled = isReportBusy || isQueued;
+    const isReadOnly = readOnly || isQueued;
+    const isEditingDisabled = isReportBusy || isReadOnly;
+    const canReturnToDraft = ['pending', 'error'].includes(
+        draftValues?.reportState
+    );
+    const returnToDraft = useReportDraftStore((state) => state.returnToDraft);
+    const handleReturnToDraft = () => {
+        if (
+            isReportBusy ||
+            queryClient.isMutating(getReportOperationFilters(draftId))
+        )
+            return;
+        returnToDraft(draftId);
+        router.replace({
+            pathname: '/(authorized)/taskFlow/reportSubmit/[id]',
+            params: { id: draftId },
+        });
+    };
     const savedAct = useReportActStore(
         (state) => state.actMetadataByTask[draftId]
     );
@@ -273,13 +292,13 @@ const ReportSubmitForm = ({
     }, [draftId, initialValues, reset]);
 
     useEffect(() => {
-        if (isQueued || signatureResult?.taskId !== draftId) return;
+        if (isReadOnly || signatureResult?.taskId !== draftId) return;
         setValue('actPdf', signatureResult.actPdf, {
             shouldDirty: true,
             shouldValidate: true,
         });
         clearSignatureSession();
-    }, [signatureResult, draftId, setValue, clearSignatureSession, isQueued]);
+    }, [signatureResult, draftId, setValue, clearSignatureSession, isReadOnly]);
 
     useEffect(() => {
         if (hydratedPhotosIdRef.current === draftId) {
@@ -330,7 +349,7 @@ const ReportSubmitForm = ({
     ]);
 
     useEffect(() => {
-        if (isQueued || watch('clientReportId')) {
+        if (isReadOnly || watch('clientReportId')) {
             return;
         }
 
@@ -338,7 +357,7 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: false,
         });
-    }, [setValue, watch, isQueued]);
+    }, [setValue, watch, isReadOnly]);
 
     const admissionStatus = watch('admission.status');
     const isRefusedContact = watch('consumerContact.isRefusedContact');
@@ -347,7 +366,7 @@ const ReportSubmitForm = ({
     const isFirstStep = stepIndex === 0;
 
     useEffect(() => {
-        if (isQueued || admissionStatus === 'NOT_ADMITTED') {
+        if (isReadOnly || admissionStatus === 'NOT_ADMITTED') {
             return;
         }
 
@@ -359,10 +378,10 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: true,
         });
-    }, [admissionStatus, setValue, isQueued]);
+    }, [admissionStatus, setValue, isReadOnly]);
 
     useEffect(() => {
-        if (isQueued || isActualMeterDifferent) {
+        if (isReadOnly || isActualMeterDifferent) {
             return;
         }
 
@@ -374,17 +393,17 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: true,
         });
-    }, [isActualMeterDifferent, setValue, isQueued]);
+    }, [isActualMeterDifferent, setValue, isReadOnly]);
 
     useEffect(() => {
-        if (isQueued) return;
+        if (isReadOnly) return;
         Object.entries(reportPhotos).forEach(([slot, uris]) => {
             setValue(`photos.${slot}`, Array.isArray(uris) ? uris : [uris], {
                 shouldDirty: true,
                 shouldValidate: false,
             });
         });
-    }, [reportPhotos, setValue, isQueued]);
+    }, [reportPhotos, setValue, isReadOnly]);
 
     const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
         onError,
@@ -1306,7 +1325,7 @@ const ReportSubmitForm = ({
     const hasTemplates = (templates?.length ?? 0) > 0;
 
     useEffect(() => {
-        if (!isQueued && !hasTemplates) {
+        if (!isReadOnly && !hasTemplates) {
             setValue('actPdf.isRefused', true, {
                 shouldDirty: true,
                 shouldValidate: false,
@@ -1316,7 +1335,7 @@ const ReportSubmitForm = ({
                 shouldValidate: false,
             });
         }
-    }, [hasTemplates, setValue, isQueued]);
+    }, [hasTemplates, setValue, isReadOnly]);
 
     const renderPdfStep = () => {
         const selectedTemplate = templates.find(
@@ -1546,6 +1565,15 @@ const ReportSubmitForm = ({
                               : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}
                     </Text>
                 </View>
+            )}
+            {canReturnToDraft && (
+                <FormButton
+                    message='Вернуть в черновик'
+                    onPress={handleReturnToDraft}
+                    disabled={isReportBusy}
+                    style={styles.secondaryButton}
+                    textStyle={styles.secondaryButtonText}
+                />
             )}
             <View
                 pointerEvents={isReportBusy ? 'none' : 'auto'}

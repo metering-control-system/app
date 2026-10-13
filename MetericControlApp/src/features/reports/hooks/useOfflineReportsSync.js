@@ -21,7 +21,7 @@ export const useOfflineReportsSync = () => {
         select: (mutation) => String(mutation.state.variables?.taskId),
     });
     const syncReportsRecords = useCallback(
-        async (automatic = false) => {
+        async ({ automatic = false, includeErrors = false } = {}) => {
             if (syncingRef.current || !isChecked || !isOnline) return;
             syncingRef.current = true;
             setIsSyncing(true);
@@ -30,7 +30,9 @@ export const useOfflineReportsSync = () => {
                     useReportDraftStore.getState().drafts ?? {}
                 ).filter(
                     ([taskId, draft]) =>
-                        draft?.reportState === 'pending' &&
+                        (draft?.reportState === 'pending' ||
+                            (includeErrors &&
+                                draft?.reportState === 'error')) &&
                         (!automatic || !attemptedTaskIdsRef.current.has(taskId))
                 )
             );
@@ -73,7 +75,7 @@ export const useOfflineReportsSync = () => {
             return;
         }
         for (const taskId of attemptedTaskIdsRef.current) {
-            if (drafts?.[taskId]?.reportState !== 'pending')
+            if (!['pending', 'error'].includes(drafts?.[taskId]?.reportState))
                 attemptedTaskIdsRef.current.delete(taskId);
         }
         const hasReadyDraft = Object.entries(drafts ?? {}).some(
@@ -83,7 +85,7 @@ export const useOfflineReportsSync = () => {
                 !attemptedTaskIdsRef.current.has(taskId)
         );
         if (!hasReadyDraft || isSyncing) return;
-        void syncReportsRecords(true);
+        void syncReportsRecords({ automatic: true });
     }, [
         isChecked,
         isOnline,
