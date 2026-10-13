@@ -83,6 +83,7 @@ const useReportSubmitNavigation = ({
             reportQuery.data?.status !== 'REJECTED');
 
     const redirect =
+        draft?.reportState !== 'pending' &&
         !reportQuery.isPending &&
         !isResolvingSource &&
         (reportQuery.isReadOnly || sourceReportChanged)

@@ -12,15 +12,19 @@ const TaskRouter = () => {
     const {
         report,
         isReadOnly,
+        isQueued,
         isPending: isReportPending,
         error,
         refetch,
     } = useTaskReport(task);
 
     useEffect(() => {
-        if (!task || isReportPending || error || isReadOnly) return;
+        if (!task || isReportPending || error || (isReadOnly && !isQueued))
+            return;
         const basePath =
-            task.status === 'IN_PROGRESS' || report?.status === 'REJECTED'
+            isQueued ||
+            task.status === 'IN_PROGRESS' ||
+            report?.status === 'REJECTED'
                 ? `/(authorized)/taskFlow/reportSubmit/${id}`
                 : `/(authorized)/taskFlow/taskDetails/${id}`;
 
@@ -35,6 +39,7 @@ const TaskRouter = () => {
         isReportPending,
         error,
         isReadOnly,
+        isQueued,
         report?.status,
     ]);
 
@@ -45,7 +50,7 @@ const TaskRouter = () => {
                 onClose={() => router.replace('/(authorized)/(tabs)/tasks')}
             />
         );
-    if (isReadOnly && !isReportPending) {
+    if (isReadOnly && !isQueued && !isReportPending) {
         return <Redirect href={`/(authorized)/reportDetails/${report.id}`} />;
     }
 
