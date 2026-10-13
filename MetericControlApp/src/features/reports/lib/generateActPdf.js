@@ -19,7 +19,7 @@ export const generateActPdf = async ({ template, values, previousAct }) => {
     const actFields = getActReportFields(snapshot);
     const checksum = await createActChecksum({
         template: templateSnapshot,
-        values: actFields,
+        values: snapshot,
     });
     const savedAct = previousAct ?? snapshot.actPdf;
     actPdf.signatures =

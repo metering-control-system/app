@@ -1,7 +1,8 @@
 import {
     INSTALLATION_LOCATION_OPTIONS,
     REPLACEMENT_REASON_OPTIONS,
-} from '../constants/reportActFields';
+} from '../constants/reportActFields.js';
+import { REJECTION_REASON_OPTIONS } from '../constants/reportFieldOptions.js';
 
 const normalizeValue = (value) => {
     if (typeof value === 'string') return value.trim();
@@ -18,7 +19,7 @@ const normalizeValue = (value) => {
 };
 
 const dateParts = (value = '') => {
-    const [date = '', time = ''] = value.split(' ');
+    const [date = '', time = ''] = (value ?? '').split(' ');
     const [day = '', month = '', year = ''] = date.split('.');
     const [hour = '', minute = ''] = time.split(':');
     return { day, month, year, hour, minute };
@@ -32,6 +33,14 @@ export const getActReportFields = (values) => {
     const admission = values.admission ?? {};
     const compiled = dateParts(details.compiledAt);
     const attorney = dateParts(details.powerOfAttorneyDate);
+    const rejectionReason =
+        admission.rejectionComment ||
+        REJECTION_REASON_OPTIONS.find(
+            ({ value }) => value === admission.rejectionReason
+        )?.label ||
+        '';
+    const customerName =
+        values.consumerContact?.fullName || values.customerName || '';
     const act = {
         ...compiled,
         powerOfAttorneyNumber: details.powerOfAttorneyNumber ?? '',
@@ -46,11 +55,9 @@ export const getActReportFields = (values) => {
             .join(', '),
         supplierSignerName: details.representativeName ?? '',
         utilitySignerName: details.utilityRepresentativeName ?? '',
-        consumerSignerName:
-            values.consumerContact?.fullName || values.customerName || '',
+        consumerSignerName: customerName,
         notificationEmail: values.consumerContact?.email ?? '',
-        nonAdmissionReason:
-            admission.rejectionComment || admission.rejectionReason || '',
+        nonAdmissionReason: rejectionReason,
         signatureRefusalReason: admission.refusalReason ?? '',
         conformityDecision:
             typeof admission.isCompliant === 'boolean'
@@ -120,17 +127,51 @@ export const getActReportFields = (values) => {
         address: values.address ?? {},
         actDetails: details,
         act,
-        customerName: values.customerName ?? '',
+        actDay: compiled.day,
+        actMonth: compiled.month,
+        actYear: compiled.year,
+        actHour: compiled.hour,
+        actMinute: compiled.minute,
+        powerOfAttorneyNumber: details.powerOfAttorneyNumber ?? '',
+        powerOfAttorneyDay: attorney.day,
+        powerOfAttorneyMonth: attorney.month,
+        powerOfAttorneyYear: attorney.year,
+        representativePosition: details.representativePosition ?? '',
+        representativeName: details.representativeName ?? '',
+        utilityRepresentativeName: details.utilityRepresentativeName ?? '',
+        customerName,
         personalAccount: values.personalAccount ?? '',
         meterBefore: {
             ...old,
+            locationapartment: old.installationLocation === 'APARTMENT',
+            locationstaircase: old.installationLocation === 'STAIRCASE',
             ...(old.isActualDifferent && {
                 number: old.actualNumber,
                 type: old.actualType,
             }),
         },
-        metering,
-        admission,
+        metering: {
+            ...metering,
+            locationapartment: metering.newInstallationLocation === 'APARTMENT',
+            locationstaircase: metering.newInstallationLocation === 'STAIRCASE',
+            reasonfailure: metering.replacementReason === 'FAILURE',
+            reasonverificationexpired:
+                metering.replacementReason === 'VERIFICATION_EXPIRED',
+            reasonmetermissing: metering.replacementReason === 'METER_MISSING',
+            reasonother: metering.replacementReason === 'OTHER',
+            replacementReason: metering.replacementReasonComment ?? '',
+            sealOrganization: metering.newSealOrganization ?? '',
+        },
+        admission: {
+            ...admission,
+            accepted: admission.status === 'ADMITTED',
+            rejected: admission.status === 'NOT_ADMITTED',
+            compliant: admission.isCompliant === true,
+            notcompliant: admission.isCompliant === false,
+            smartsystemconnected: admission.isSmartSystemConnected === true,
+            smartsystemnotconnected: admission.isSmartSystemConnected === false,
+            rejectionReason,
+        },
         consumerContact: values.consumerContact ?? {},
     });
 };
