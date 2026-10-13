@@ -11,12 +11,20 @@ import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const ReportSubmitScreen = () => {
     const { error: errorMessage, handleError, dismissError } = useErrors();
 
-    const { id, reference, sourceReportId } = useLocalSearchParams();
-    const { task, isPending } = useTaskById(+id);
+    const { id, reference, sourceReportId, queueView } = useLocalSearchParams();
+    const draft = useReportDraftStore((state) => state.drafts?.[id]);
+    const isQueueView =
+        queueView === '1' && ['pending', 'error'].includes(draft?.reportState);
+    const { task: loadedTask, isPending: isTaskPending } = useTaskById(+id);
+    const task =
+        loadedTask ??
+        (isQueueView ? { id: Number(id), address: draft?.address } : null);
+    const isPending = isTaskPending && !isQueueView;
     const reportQuery = useTaskReport(task);
     const {
         scrollRef,
@@ -34,6 +42,7 @@ const ReportSubmitScreen = () => {
         isPending,
         reference,
         sourceReportId,
+        queueView: isQueueView,
     });
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
@@ -44,9 +53,11 @@ const ReportSubmitScreen = () => {
 
     return (
         <ScreenLayout safe style={styles.screen}>
-            {isPending || reportQuery.isPending || isResolvingSource ? (
+            {isPending ||
+            (!isQueueView && reportQuery.isPending) ||
+            isResolvingSource ? (
                 <ScreenLoader loading />
-            ) : reportQuery.isError ? (
+            ) : reportQuery.isError && !isQueueView ? (
                 <TaskReportLookupError
                     onRetry={reportQuery.refetch}
                     onClose={() => router.replace('/(authorized)/(tabs)/tasks')}
@@ -62,6 +73,7 @@ const ReportSubmitScreen = () => {
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
                         <ReportSubmitForm
+                            readOnly={isQueueView}
                             onError={handleError}
                             onActionStart={dismissError}
                             key={id}

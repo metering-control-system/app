@@ -4,7 +4,7 @@ import Task from '@/features/tasks/components/task';
 import useTasks from '@/features/tasks/hooks/useTasks';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useUpdateTasks from '@/features/tasks/hooks/useUpdateTasks';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import { sortBy } from '@/features/tasks/lib/sortTasks';
@@ -17,7 +17,7 @@ import useTaskReports from '@/features/reports/hooks/useTaskReports';
 import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
 import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 
-const TasksList = ({
+const ConnectedTasksList = ({
     setError,
     filtering,
     sorting,
@@ -137,55 +137,111 @@ const TasksList = ({
     }
 
     return (
-        <View
-            style={styles.container}
-            onLayout={(event) => {
-                setListHeight(event.nativeEvent.layout.height);
-            }}>
-            <FlatList
-                data={displayedTasks}
-                style={styles.list}
-                renderItem={({ item: task }) => (
-                    <Task
-                        task={task}
-                        hasPendingTaskReport={!!syncingRecords[task.id]}
-                        needsReportRevision={
-                            selectReportForTask(reports, task.id)?.status ===
-                            'REJECTED'
-                        }
-                    />
-                )}
-                keyExtractor={(item) => item.id}
-                contentContainerStyle={styles.list}
-                ListEmptyComponent={<Text>Задачи не найдены</Text>}
-                refreshing={
-                    isRefreshingList || isRefrehsing || isReportsFetching
+        <TaskListView
+            tasks={displayedTasks}
+            syncingRecords={syncingRecords}
+            revisionTaskIds={
+                new Set(
+                    (reports ?? [])
+                        .filter((report) => report.status === 'REJECTED')
+                        .filter(
+                            (report) =>
+                                selectReportForTask(reports, report.task_id)
+                                    ?.id === report.id
+                        )
+                        .map((report) => String(report.task_id))
+                )
+            }
+            refreshing={isRefreshingList || isRefrehsing || isReportsFetching}
+            onRefresh={onRefresh}
+            onLayout={(event) => setListHeight(event.nativeEvent.layout.height)}
+            onContentSizeChange={(_, height) => setContentHeight(height)}
+            onEndReached={() => {
+                if (hasNextPage && !isFetching && !isFetchingNextPage) {
+                    fetchNextPage({ cancelRefetch: false });
                 }
+            }}
+            isFetchingNextPage={isFetchingNextPage}
+        />
+    );
+};
+
+const TaskListItem = ({
+    task,
+    onTaskPress,
+    hasPendingTaskReport,
+    needsReportRevision,
+}) => {
+    const handlePress = useCallback(
+        () => onTaskPress?.(task),
+        [onTaskPress, task]
+    );
+    return (
+        <Task
+            task={task}
+            onPress={onTaskPress ? handlePress : undefined}
+            hasPendingTaskReport={hasPendingTaskReport}
+            needsReportRevision={needsReportRevision}
+        />
+    );
+};
+
+const keyExtractor = (task) => String(task.id);
+
+const TaskListView = ({
+    tasks,
+    onTaskPress,
+    syncingRecords,
+    revisionTaskIds,
+    refreshing = false,
+    onRefresh,
+    emptyMessage = 'Задачи не найдены',
+    onLayout,
+    onContentSizeChange,
+    onEndReached,
+    isFetchingNextPage = false,
+}) => {
+    const renderItem = useCallback(
+        ({ item }) => (
+            <TaskListItem
+                task={item}
+                onTaskPress={onTaskPress}
+                hasPendingTaskReport={!!syncingRecords?.[item.id]}
+                needsReportRevision={revisionTaskIds?.has(String(item.id))}
+            />
+        ),
+        [onTaskPress, syncingRecords, revisionTaskIds]
+    );
+    return (
+        <View style={styles.container} onLayout={onLayout}>
+            <FlatList
+                data={tasks}
+                style={styles.list}
+                renderItem={renderItem}
+                keyExtractor={keyExtractor}
+                contentContainerStyle={styles.list}
+                ListEmptyComponent={<Text>{emptyMessage}</Text>}
+                refreshing={refreshing}
                 onRefresh={onRefresh}
-                onContentSizeChange={(_, height) => {
-                    setContentHeight(height);
-                }}
-                onEndReached={() => {
-                    if (hasNextPage && !isFetching && !isFetchingNextPage) {
-                        fetchNextPage({ cancelRefetch: false });
-                    }
-                }}
+                onContentSizeChange={onContentSizeChange}
+                onEndReached={onEndReached}
                 onEndReachedThreshold={0.5}
+                maxToRenderPerBatch={10}
+                windowSize={7}
                 ListFooterComponent={
-                    isFetchingNextPage && (
-                        <Text
-                            style={{
-                                alignSelf: 'center',
-                                marginHorizontal: 10,
-                            }}>
-                            Идет загрузка...
-                        </Text>
-                    )
+                    isFetchingNextPage ? <Text>Идет загрузка...</Text> : null
                 }
             />
         </View>
     );
 };
+
+const TasksList = (props) =>
+    props.tasks !== undefined ? (
+        <TaskListView {...props} />
+    ) : (
+        <ConnectedTasksList {...props} />
+    );
 
 const styles = StyleSheet.create({
     container: { flex: 1, minWidth: '100%' },
