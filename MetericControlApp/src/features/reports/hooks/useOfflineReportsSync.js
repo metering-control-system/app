@@ -13,48 +13,85 @@ export const useOfflineReportsSync = () => {
     const { submitTaskReport } = useSubmitReport();
     const { isChecked, isOnline } = useNetwork();
     const syncingRef = useRef(false);
+    const attemptedTaskIdsRef = useRef(new Set());
     const [isSyncing, setIsSyncing] = useState(false);
     const drafts = useReportDraftStore((state) => state.drafts);
     const pendingOperations = useMutationState({
         filters: { mutationKey: REPORT_OPERATION_KEY, status: 'pending' },
         select: (mutation) => String(mutation.state.variables?.taskId),
     });
-    const hasReadyDraft = Object.entries(drafts ?? {}).some(
-        ([taskId, draft]) =>
-            draft?.reportState === 'pending' &&
-            !pendingOperations.includes(taskId)
+    const syncReportsRecords = useCallback(
+        async (automatic = false) => {
+            if (syncingRef.current || !isChecked || !isOnline) return;
+            syncingRef.current = true;
+            setIsSyncing(true);
+            const drafts = Object.fromEntries(
+                Object.entries(
+                    useReportDraftStore.getState().drafts ?? {}
+                ).filter(
+                    ([taskId, draft]) =>
+                        draft?.reportState === 'pending' &&
+                        (!automatic || !attemptedTaskIdsRef.current.has(taskId))
+                )
+            );
+            const failedSyncCount = await syncOfflineReportsRecords(
+                drafts,
+                async (submission) => {
+                    const taskId = String(submission.taskId);
+                    attemptedTaskIdsRef.current.add(taskId);
+                    const result = await submitTaskReport(submission);
+                    if (result?.skipped || result?.offline)
+                        attemptedTaskIdsRef.current.delete(taskId);
+                    return result;
+                },
+                (id, expectedDraft) => {
+                    const store = useReportDraftStore.getState();
+                    if (
+                        !areReportDraftsEqual(expectedDraft, store.getDraft(id))
+                    )
+                        return;
+                    store.clearDraft(id);
+                    useStorePictures
+                        .getState()
+                        .clearEntityPhotos({ entity: 'report', entityId: id });
+                    deleteAct(expectedDraft.actPdf?.uri);
+                }
+            ).finally(() => {
+                syncingRef.current = false;
+                setIsSyncing(false);
+            });
+
+            return failedSyncCount;
+        },
+        [isChecked, isOnline, submitTaskReport]
     );
 
-    const syncReportsRecords = useCallback(async () => {
-        if (syncingRef.current || !isChecked || !isOnline) return;
-        syncingRef.current = true;
-        setIsSyncing(true);
-        const drafts = useReportDraftStore.getState().drafts ?? {};
-        const failedSyncCount = await syncOfflineReportsRecords(
-            drafts,
-            submitTaskReport,
-            (id, expectedDraft) => {
-                const store = useReportDraftStore.getState();
-                if (!areReportDraftsEqual(expectedDraft, store.getDraft(id)))
-                    return;
-                store.clearDraft(id);
-                useStorePictures
-                    .getState()
-                    .clearEntityPhotos({ entity: 'report', entityId: id });
-                deleteAct(expectedDraft.actPdf?.uri);
-            }
-        ).finally(() => {
-            syncingRef.current = false;
-            setIsSyncing(false);
-        });
-
-        return failedSyncCount;
-    }, [isChecked, isOnline, submitTaskReport]);
-
     useEffect(() => {
-        if (!isChecked || !isOnline || !hasReadyDraft || isSyncing) return;
-        void syncReportsRecords();
-    }, [isChecked, isOnline, hasReadyDraft, isSyncing, syncReportsRecords]);
+        if (!isChecked) return;
+        if (!isOnline) {
+            attemptedTaskIdsRef.current.clear();
+            return;
+        }
+        for (const taskId of attemptedTaskIdsRef.current) {
+            if (drafts?.[taskId]?.reportState !== 'pending')
+                attemptedTaskIdsRef.current.delete(taskId);
+        }
+        const hasReadyDraft = Object.entries(drafts ?? {}).some(
+            ([taskId, draft]) =>
+                draft?.reportState === 'pending' &&
+                !pendingOperations.includes(taskId) &&
+                !attemptedTaskIdsRef.current.has(taskId)
+        );
+        if (!hasReadyDraft || isSyncing) return;
+        void syncReportsRecords(true);
+    }, [
+        isChecked,
+        isOnline,
+        drafts,
+        pendingOperations,
+        isSyncing,
+        syncReportsRecords,
+    ]);
 
     return syncReportsRecords;
 };

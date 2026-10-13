@@ -68,6 +68,7 @@ const setup = async (
     fixtures.api.onLookup = null;
     fixtures.api.actCalls = [];
     fixtures.api.fileValidationError = null;
+    fixtures.api.fileValidationCalls = [];
     fixtures.useNetwork.setState({ isChecked: true, isOnline: online });
     fixtures.useTasksStore.setState({
         tasks: [{ id: 1, ['is_team_task']: brigade }],
@@ -245,6 +246,55 @@ test('leaves an offline submission pending without calling the backend', async (
     );
     assert.deepEqual(fixtures.api.calls, []);
     assert.deepEqual(fixtures.useReportsStore.getState().reports, []);
+});
+
+for (const serverUri of [
+    'https://example.test/photo.jpg',
+    'http://example.test/photo.jpg',
+]) {
+    test(`queues cached server photo ${serverUri} and validates only new files offline`, async (t) => {
+        const { submit } = await setup(t, { online: false });
+        const localUri = 'file:///new-photo.jpg';
+        fixtures.useReportsStore.setState({
+            reports: [
+                { id: 10, ['task_id']: 1, images: [{ url: serverUri }] },
+                { id: 11, ['task_id']: 2, images: [] },
+            ],
+        });
+        const values = {
+            ...fixtures.createValues(),
+            photos: { oldMeter: [serverUri, localUri] },
+        };
+        assert.equal((await submit(values)).offline, true);
+        const validation = fixtures.api.fileValidationCalls[0];
+        assert.equal(validation.offline, true);
+        assert.deepEqual(
+            validation.imagesPayload.files.map(({ file }) => file.uri),
+            [localUri]
+        );
+        const draft = fixtures.useReportDraftStore.getState().getDraft('1');
+        assert.equal(draft.reportState, 'pending');
+        assert.deepEqual(draft.photos, values.photos);
+        assert.equal(fixtures.api.lookupCount, 0);
+        assert.deepEqual(fixtures.api.calls, []);
+    });
+}
+
+test('does not treat another task server photo as an existing offline report photo', async (t) => {
+    const { submit } = await setup(t, { online: false });
+    const uri = 'https://example.test/another-task.jpg';
+    fixtures.useReportsStore.setState({
+        reports: [{ id: 10, ['task_id']: 2, images: [{ url: uri }] }],
+    });
+    await assert.rejects(
+        submit({ ...fixtures.createValues(), photos: { oldMeter: [uri] } }),
+        { code: 'REPORT_PHOTO_UNAVAILABLE' }
+    );
+    assert.equal(fixtures.api.fileValidationCalls.length, 0);
+    assert.notEqual(
+        fixtures.useReportDraftStore.getState().getDraft('1')?.reportState,
+        'pending'
+    );
 });
 
 test('hides a synchronized offline task after its sent draft is cleared', async (t) => {
