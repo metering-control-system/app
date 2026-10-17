@@ -838,6 +838,16 @@ const ReportSubmitForm = ({
                     keyboardType: 'number-pad',
                     error: errors.personalAccount,
                 })}
+                <View style={styles.control}>
+                    <Text style={styles.label}>Номер телефона</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={task?.consumer?.phone_number ?? ''}
+                        placeholder='Не указан'
+                        accessibilityLabel='Номер телефона из заявки'
+                        editable={false}
+                    />
+                </View>
             </ReportFormSection>
             <ReportFormSection
                 title='Старый счётчик'
@@ -894,6 +904,17 @@ const ReportSubmitForm = ({
             <ReportFormSection
                 title='Заметки по задаче'
                 icon='chatbubble-ellipses-outline'>
+                <View style={styles.control}>
+                    <Text style={styles.label}>Причина замены</Text>
+                    <TextInput
+                        style={[styles.input, styles.textArea]}
+                        value={task?.task_data?.service_reason ?? ''}
+                        placeholder='Не указана'
+                        accessibilityLabel='Причина замены из заявки'
+                        editable={false}
+                        multiline
+                    />
+                </View>
                 {renderTextField({
                     name: 'comment',
                     label: 'Комментарий к задаче',
