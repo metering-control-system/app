@@ -103,7 +103,7 @@ const TaskScreen = () => {
         setIsSyncing(true);
         setError(null);
         try {
-            const failed = await syncReportsRecords({ includeErrors: true });
+            const failed = await syncReportsRecords();
             if (failed) setError(`Не синхронизировано отчётов: ${failed}.`);
         } catch {
             setError('Не удалось синхронизировать отчёты.');
@@ -182,7 +182,7 @@ const TaskScreen = () => {
                         onPress={synchronize}
                         isPending={isSyncing}
                         disabled={
-                            !queuedTasks.length ||
+                            !reportsPendingCount ||
                             isSyncing ||
                             operations.length > 0
                         }

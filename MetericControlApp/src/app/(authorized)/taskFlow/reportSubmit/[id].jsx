@@ -5,7 +5,7 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
@@ -72,7 +72,15 @@ const ReportSubmitScreen = () => {
                         contentContainerStyle={{ flexGrow: 1 }}
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
+                        {isQueueView && !loadedTask && (
+                            <Text style={styles.missingTask}>
+                                {draft?.reportState === 'pending'
+                                    ? 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Отчёт остаётся в очереди и будет отправлен при появлении интернета.'
+                                    : 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Для загрузки задачи подключитесь к интернету. Отчёт с ошибкой необходимо отправить вручную.'}
+                            </Text>
+                        )}
                         <ReportSubmitForm
+                            hasSourceTask={Boolean(loadedTask)}
                             readOnly={isQueueView}
                             onError={handleError}
                             onActionStart={dismissError}
@@ -99,6 +107,16 @@ const ReportSubmitScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({ screen: { backgroundColor: '#f3f6fa' } });
+const styles = StyleSheet.create({
+    screen: { backgroundColor: '#f3f6fa' },
+    missingTask: {
+        padding: 16,
+        marginBottom: 12,
+        borderRadius: 10,
+        backgroundColor: '#fff3cd',
+        color: '#664d03',
+        lineHeight: 21,
+    },
+});
 
 export default ReportSubmitScreen;

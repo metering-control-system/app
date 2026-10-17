@@ -89,6 +89,7 @@ const ReportSubmitForm = ({
     defaultActTemplate,
     onValidationError,
     readOnly = false,
+    hasSourceTask = true,
 }) => {
     const router = useRouter();
     const queryClient = useQueryClient();
@@ -172,12 +173,13 @@ const ReportSubmitForm = ({
     const isQueued = draftValues?.reportState === 'pending';
     const isReadOnly = readOnly || isQueued;
     const isEditingDisabled = isReportBusy || isReadOnly;
-    const canReturnToDraft = ['pending', 'error'].includes(
-        draftValues?.reportState
-    );
+    const canReturnToDraft =
+        hasSourceTask &&
+        ['pending', 'error'].includes(draftValues?.reportState);
     const returnToDraft = useReportDraftStore((state) => state.returnToDraft);
     const handleReturnToDraft = () => {
         if (
+            !hasSourceTask ||
             isReportBusy ||
             queryClient.isMutating(getReportOperationFilters(draftId))
         )
