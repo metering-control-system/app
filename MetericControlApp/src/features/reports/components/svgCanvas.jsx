@@ -8,7 +8,7 @@ import FormButton from '@/shared/components/button/formButton';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);
 
-const SvgCanvas = ({ onSave, isSaving = false }) => {
+const SvgCanvas = ({ onSave, onClear, initialStrokes, isSaving = false }) => {
     const gridId = `grid${useId().replace(/[^a-zA-Z0-9]/g, '')}`;
     const {
         gesture,
@@ -17,7 +17,12 @@ const SvgCanvas = ({ onSave, isSaving = false }) => {
         completedAnimatedProps,
         clearCanvas,
         exportStrokes,
-    } = useSvgCanvas();
+    } = useSvgCanvas(initialStrokes);
+
+    const handleClear = async () => {
+        if (onClear && (await onClear()) === false) return;
+        clearCanvas();
+    };
 
     return (
         <View
@@ -75,7 +80,7 @@ const SvgCanvas = ({ onSave, isSaving = false }) => {
             </GestureDetector>
             <FormButton
                 message='Очистить холст'
-                onPress={clearCanvas}
+                onPress={handleClear}
                 disabled={isSaving}
             />
             {onSave && (

@@ -133,8 +133,8 @@ const ReportSubmitForm = ({
     const startSignatureSession = useReportActStore(
         (state) => state.startSession
     );
-    const clearSignatureSession = useReportActStore(
-        (state) => state.clearSession
+    const clearSignatureResult = useReportActStore(
+        (state) => state.clearResult
     );
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
@@ -299,8 +299,8 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: true,
         });
-        clearSignatureSession();
-    }, [signatureResult, draftId, setValue, clearSignatureSession, isReadOnly]);
+        clearSignatureResult();
+    }, [signatureResult, draftId, setValue, clearSignatureResult, isReadOnly]);
 
     useEffect(() => {
         if (hydratedPhotosIdRef.current === draftId) {

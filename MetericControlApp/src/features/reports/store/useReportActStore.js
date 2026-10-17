@@ -22,9 +22,16 @@ const useReportActStore = create(
                     },
                 })),
             startSession: (session) => set({ session, result: null }),
-            completeSession: (actPdf) => {
+            completeSession: (
+                actPdf,
+                { keepSession = false, expectedSession } = {}
+            ) => {
                 const session = get().session;
-                if (!session) return false;
+                if (
+                    !session ||
+                    (expectedSession && session !== expectedSession)
+                )
+                    return false;
                 const taskId = String(session.taskId);
                 if (
                     get().actMetadataByTask[taskId]?.checksum !==
@@ -32,9 +39,15 @@ const useReportActStore = create(
                 )
                     return false;
                 get().saveAct(taskId, actPdf);
-                set({ result: { taskId, actPdf } });
+                set({
+                    session: keepSession
+                        ? { ...session, values: { ...session.values, actPdf } }
+                        : null,
+                    result: { taskId, actPdf },
+                });
                 return true;
             },
+            clearResult: () => set({ result: null }),
             clearSession: () => set({ session: null, result: null }),
             clearAllActs: () =>
                 set({ actMetadataByTask: {}, session: null, result: null }),
