@@ -41,6 +41,7 @@ import {
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
+import { buildReportSignaturesPayload } from '@/features/reports/lib/buildReportSignaturesPayload';
 import useStorePictures from '@/shared/store/useStorePictures';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
@@ -208,7 +209,12 @@ const useSubmitReport = () => {
             });
             const reportPayload = buildReportPayload(
                 { ...values, taskId },
-                { includeEmptyOptionalFields: Boolean(existingReport) }
+                {
+                    includeEmptyOptionalFields: Boolean(existingReport),
+                    signaturePayload: buildReportSignaturesPayload(
+                        values.actPdf
+                    ),
+                }
             );
             const reportCommentPayload = buildReportCommentPayload(values);
             const upsertRequest = buildReportUpsertRequest({

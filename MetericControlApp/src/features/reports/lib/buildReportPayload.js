@@ -57,7 +57,7 @@ const normalizePhotoUris = (value) => {
 
 export const buildReportPayload = (
     formValues,
-    { includeEmptyOptionalFields = false } = {}
+    { includeEmptyOptionalFields = false, signaturePayload = {} } = {}
 ) => {
     const contactNameParts = splitReportContactName(
         formValues.consumerContact.fullName
@@ -80,7 +80,7 @@ export const buildReportPayload = (
             ['client_report_id']: formValues.clientReportId.trim(),
         }),
         ['task_id']: Number(formValues.taskId),
-        ['act_details']: actFields['act_details'],
+        ['act_details']: { ...actFields['act_details'], ...signaturePayload },
         metering: {
             ...actFields.metering,
             ['dismantling_completed']: formValues.metering.dismantlingCompleted,
