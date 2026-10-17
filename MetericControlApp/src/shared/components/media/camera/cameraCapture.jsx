@@ -1,6 +1,6 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { useEffect, useRef, useState } from 'react';
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Alert, AppState, Pressable, StyleSheet, View } from 'react-native';
 import {
     FontAwesome6,
     Ionicons,
@@ -41,13 +41,59 @@ export default function CameraCapture({
     onClose,
 }) {
     const [facing, setFacing] = useState('back');
-    const [permission, requestPermission] = useCameraPermissions();
+    const [permission, requestPermission, getPermission] =
+        useCameraPermissions();
+    const requestingPermission = useRef(false);
     const [flashMode, setFlashMode] = useState('off');
     const [torchEnabled, setTorchEnabled] = useState(false);
     const [isCapturing, setIsCapturing] = useState(false);
     const [isCameraReady, setIsCameraReady] = useState(false);
     const [tapPoint, setTapPoint] = useState(null);
     const tapPointTimer = useRef(null);
+
+    useEffect(() => {
+        const subscription = AppState.addEventListener('change', (state) => {
+            if (state === 'active' && !requestingPermission.current) {
+                void getPermission().catch(() => undefined);
+            }
+        });
+        return () => subscription.remove();
+    }, [getPermission]);
+
+    const handleRequestPermission = async () => {
+        if (requestingPermission.current) return;
+        requestingPermission.current = true;
+        try {
+            const result = await requestPermission();
+            if (!result.granted && !result.canAskAgain) {
+                Alert.alert(
+                    'Доступ к камере отключён',
+                    'Система не разрешила доступ к камере. Его можно включить в настройках приложения.',
+                    [
+                        { text: 'Отмена', style: 'cancel' },
+                        {
+                            text: 'Открыть настройки',
+                            onPress: () => {
+                                void Linking.openSettings().catch(() =>
+                                    Alert.alert(
+                                        'Не удалось открыть настройки',
+                                        'Откройте разрешения приложения в настройках устройства.'
+                                    )
+                                );
+                            },
+                        },
+                    ]
+                );
+            }
+        } catch {
+            Alert.alert(
+                'Не удалось запросить доступ к камере',
+                'Попробуйте ещё раз.'
+            );
+        } finally {
+            requestingPermission.current = false;
+        }
+    };
 
     useEffect(() => {
         return () => {
@@ -120,20 +166,11 @@ export default function CameraCapture({
         return <View style={styles.container} />;
     }
 
-    if (!permission.canAskAgain) {
-        return (
-            <CameraPermissionScreen
-                style={styles.container}
-                requestPermission={async () => await Linking.openSettings()}
-            />
-        );
-    }
-
     if (!permission.granted) {
         return (
             <CameraPermissionScreen
                 style={styles.container}
-                requestPermission={requestPermission}
+                requestPermission={handleRequestPermission}
             />
         );
     }
