@@ -5,18 +5,26 @@ import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import ReportSubmitForm from '@/features/reports/components/reportSubmitForm';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
-import { ScrollView, StyleSheet } from 'react-native';
+import { ScrollView, StyleSheet, Text } from 'react-native';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import { KeyboardAvoidingView } from 'react-native-keyboard-controller';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 
 const ReportSubmitScreen = () => {
     const { error: errorMessage, handleError, dismissError } = useErrors();
 
-    const { id, reference, sourceReportId } = useLocalSearchParams();
-    const { task, isPending } = useTaskById(+id);
+    const { id, reference, sourceReportId, queueView } = useLocalSearchParams();
+    const draft = useReportDraftStore((state) => state.drafts?.[id]);
+    const isQueueView =
+        queueView === '1' && ['pending', 'error'].includes(draft?.reportState);
+    const { task: loadedTask, isPending: isTaskPending } = useTaskById(+id);
+    const task =
+        loadedTask ??
+        (isQueueView ? { id: Number(id), address: draft?.address } : null);
+    const isPending = isTaskPending && !isQueueView;
     const reportQuery = useTaskReport(task);
     const {
         scrollRef,
@@ -34,6 +42,7 @@ const ReportSubmitScreen = () => {
         isPending,
         reference,
         sourceReportId,
+        queueView: isQueueView,
     });
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
@@ -44,9 +53,11 @@ const ReportSubmitScreen = () => {
 
     return (
         <ScreenLayout safe style={styles.screen}>
-            {isPending || reportQuery.isPending || isResolvingSource ? (
+            {isPending ||
+            (!isQueueView && reportQuery.isPending) ||
+            isResolvingSource ? (
                 <ScreenLoader loading />
-            ) : reportQuery.isError ? (
+            ) : reportQuery.isError && !isQueueView ? (
                 <TaskReportLookupError
                     onRetry={reportQuery.refetch}
                     onClose={() => router.replace('/(authorized)/(tabs)/tasks')}
@@ -61,7 +72,16 @@ const ReportSubmitScreen = () => {
                         contentContainerStyle={{ flexGrow: 1 }}
                         keyboardShouldPersistTaps='handled'
                         showsVerticalScrollIndicator={false}>
+                        {isQueueView && !loadedTask && (
+                            <Text style={styles.missingTask}>
+                                {draft?.reportState === 'pending'
+                                    ? 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Отчёт остаётся в очереди и будет отправлен при появлении интернета.'
+                                    : 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Для загрузки задачи подключитесь к интернету. Отчёт с ошибкой необходимо отправить вручную.'}
+                            </Text>
+                        )}
                         <ReportSubmitForm
+                            hasSourceTask={Boolean(loadedTask)}
+                            readOnly={isQueueView}
                             onError={handleError}
                             onActionStart={dismissError}
                             key={id}
@@ -87,6 +107,16 @@ const ReportSubmitScreen = () => {
     );
 };
 
-const styles = StyleSheet.create({ screen: { backgroundColor: '#f3f6fa' } });
+const styles = StyleSheet.create({
+    screen: { backgroundColor: '#f3f6fa' },
+    missingTask: {
+        padding: 16,
+        marginBottom: 12,
+        borderRadius: 10,
+        backgroundColor: '#fff3cd',
+        color: '#664d03',
+        lineHeight: 21,
+    },
+});
 
 export default ReportSubmitScreen;

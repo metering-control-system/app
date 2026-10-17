@@ -30,7 +30,10 @@ import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useReportActStore from '@/features/reports/store/useReportActStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
-import { buildReportUpsertRequest } from '@/features/reports/lib/reportUpsert';
+import {
+    buildReportUpsertRequest,
+    selectReportForTask,
+} from '@/features/reports/lib/reportUpsert';
 import {
     REPORT_OPERATION_KEY,
     startReportOperation,
@@ -133,10 +136,14 @@ const useSubmitReport = () => {
                 throw new Error('Отсутствует цифровой акт');
             }
             if (!isOnline && isChecked) {
+                const cachedReport = selectReportForTask(
+                    useReportsStore.getState().reports,
+                    taskId
+                );
                 await validateReportUploadFiles({
                     imagesPayload: buildReportImagesPayload(
                         values,
-                        [],
+                        cachedReport?.images,
                         photoMetadata
                     ),
                     actPayload: !isRefused
@@ -410,7 +417,9 @@ const useSubmitReport = () => {
                             submissionReport: previousDraft.submissionReport,
                         }),
                         ...error.submittedDraft,
-                        reportState: 'error',
+                        reportState: variables.expectedDraft
+                            ? 'pending'
+                            : 'error',
                     },
                 });
             }

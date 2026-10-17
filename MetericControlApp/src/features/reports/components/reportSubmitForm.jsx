@@ -6,7 +6,7 @@ import {
 } from '@/features/reports/lib/validateReportUploadFiles';
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
-import { useMutationState } from '@tanstack/react-query';
+import { useMutationState, useQueryClient } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef, useState } from 'react';
@@ -88,8 +88,11 @@ const ReportSubmitForm = ({
     highlightedField,
     defaultActTemplate,
     onValidationError,
+    readOnly = false,
+    hasSourceTask = true,
 }) => {
     const router = useRouter();
+    const queryClient = useQueryClient();
     const [clearedRemarks, setClearedRemarks] = useState(null);
     const renderRemark = (name) => {
         if (
@@ -167,6 +170,26 @@ const ReportSubmitForm = ({
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
     );
+    const isQueued = draftValues?.reportState === 'pending';
+    const isReadOnly = readOnly || isQueued;
+    const isEditingDisabled = isReportBusy || isReadOnly;
+    const canReturnToDraft =
+        hasSourceTask &&
+        ['pending', 'error'].includes(draftValues?.reportState);
+    const returnToDraft = useReportDraftStore((state) => state.returnToDraft);
+    const handleReturnToDraft = () => {
+        if (
+            !hasSourceTask ||
+            isReportBusy ||
+            queryClient.isMutating(getReportOperationFilters(draftId))
+        )
+            return;
+        returnToDraft(draftId);
+        router.replace({
+            pathname: '/(authorized)/taskFlow/reportSubmit/[id]',
+            params: { id: draftId },
+        });
+    };
     const savedAct = useReportActStore(
         (state) => state.actMetadataByTask[draftId]
     );
@@ -271,13 +294,13 @@ const ReportSubmitForm = ({
     }, [draftId, initialValues, reset]);
 
     useEffect(() => {
-        if (signatureResult?.taskId !== draftId) return;
+        if (isReadOnly || signatureResult?.taskId !== draftId) return;
         setValue('actPdf', signatureResult.actPdf, {
             shouldDirty: true,
             shouldValidate: true,
         });
         clearSignatureSession();
-    }, [signatureResult, draftId, setValue, clearSignatureSession]);
+    }, [signatureResult, draftId, setValue, clearSignatureSession, isReadOnly]);
 
     useEffect(() => {
         if (hydratedPhotosIdRef.current === draftId) {
@@ -328,7 +351,7 @@ const ReportSubmitForm = ({
     ]);
 
     useEffect(() => {
-        if (watch('clientReportId')) {
+        if (isReadOnly || watch('clientReportId')) {
             return;
         }
 
@@ -336,7 +359,7 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: false,
         });
-    }, [setValue, watch]);
+    }, [setValue, watch, isReadOnly]);
 
     const admissionStatus = watch('admission.status');
     const isRefusedContact = watch('consumerContact.isRefusedContact');
@@ -345,7 +368,7 @@ const ReportSubmitForm = ({
     const isFirstStep = stepIndex === 0;
 
     useEffect(() => {
-        if (admissionStatus === 'NOT_ADMITTED') {
+        if (isReadOnly || admissionStatus === 'NOT_ADMITTED') {
             return;
         }
 
@@ -357,10 +380,10 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: true,
         });
-    }, [admissionStatus, setValue]);
+    }, [admissionStatus, setValue, isReadOnly]);
 
     useEffect(() => {
-        if (isActualMeterDifferent) {
+        if (isReadOnly || isActualMeterDifferent) {
             return;
         }
 
@@ -372,16 +395,17 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: true,
         });
-    }, [isActualMeterDifferent, setValue]);
+    }, [isActualMeterDifferent, setValue, isReadOnly]);
 
     useEffect(() => {
+        if (isReadOnly) return;
         Object.entries(reportPhotos).forEach(([slot, uris]) => {
             setValue(`photos.${slot}`, Array.isArray(uris) ? uris : [uris], {
                 shouldDirty: true,
                 shouldValidate: false,
             });
         });
-    }, [reportPhotos, setValue]);
+    }, [reportPhotos, setValue, isReadOnly]);
 
     const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
         onError,
@@ -425,7 +449,7 @@ const ReportSubmitForm = ({
     });
 
     const confirmLoadReport = () => {
-        if (!isOnline || isReportBusy) return;
+        if (!isOnline || isEditingDisabled) return;
         onActionStart();
         const load = (mode) => {
             Keyboard.dismiss();
@@ -459,7 +483,7 @@ const ReportSubmitForm = ({
     };
 
     const onSubmit = async (values) => {
-        if (isReportBusy) return;
+        if (isEditingDisabled) return;
         onActionStart();
         try {
             const res = await submitTaskReport({
@@ -590,7 +614,7 @@ const ReportSubmitForm = ({
                                 multiline={multiline}
                                 numberOfLines={numberOfLines}
                                 textAlignVertical={multiline ? 'top' : 'center'}
-                                editable={editable && !isReportBusy}
+                                editable={editable && !isEditingDisabled}
                                 onBlur={onBlur}
                                 onChangeText={onChange}
                             />
@@ -632,6 +656,7 @@ const ReportSubmitForm = ({
                                 <Pressable
                                     key={String(option.value)}
                                     accessibilityRole='radio'
+                                    disabled={isEditingDisabled}
                                     accessibilityState={{ checked: isSelected }}
                                     onPress={() => {
                                         onChange(
@@ -677,9 +702,9 @@ const ReportSubmitForm = ({
                     accessibilityRole='switch'
                     accessibilityState={{
                         checked: Boolean(value),
-                        disabled: disabled || isReportBusy,
+                        disabled: disabled || isEditingDisabled,
                     }}
-                    disabled={disabled || isReportBusy}
+                    disabled={disabled || isEditingDisabled}
                     onPress={() => {
                         onChange(!value);
                         onBlur?.();
@@ -695,7 +720,7 @@ const ReportSubmitForm = ({
                             onChange(nextValue);
                             onBlur?.();
                         }}
-                        disabled={disabled || isReportBusy}
+                        disabled={disabled || isEditingDisabled}
                         trackColor={{ false: '#d8e0ec', true: '#b7d5ff' }}
                         thumbColor={value ? '#2469c9' : '#fff'}
                     />
@@ -731,7 +756,7 @@ const ReportSubmitForm = ({
                                             onChange={onChange}
                                             onBlur={onBlur}
                                             dateTime={field.kind === 'datetime'}
-                                            disabled={isReportBusy}
+                                            disabled={isEditingDisabled}
                                             error={error?.message}
                                         />
                                     )}
@@ -1128,7 +1153,7 @@ const ReportSubmitForm = ({
                                     { shouldDirty: true, shouldValidate: true }
                                 );
                             }}
-                            disabled={isReportBusy}
+                            disabled={isEditingDisabled}
                         />
                         {errors.photos?.[photoField.name]?.message && (
                             <Text style={styles.errorText}>
@@ -1302,7 +1327,7 @@ const ReportSubmitForm = ({
     const hasTemplates = (templates?.length ?? 0) > 0;
 
     useEffect(() => {
-        if (!hasTemplates) {
+        if (!isReadOnly && !hasTemplates) {
             setValue('actPdf.isRefused', true, {
                 shouldDirty: true,
                 shouldValidate: false,
@@ -1312,7 +1337,7 @@ const ReportSubmitForm = ({
                 shouldValidate: false,
             });
         }
-    }, [hasTemplates, setValue]);
+    }, [hasTemplates, setValue, isReadOnly]);
 
     const renderPdfStep = () => {
         const selectedTemplate = templates.find(
@@ -1320,7 +1345,7 @@ const ReportSubmitForm = ({
         );
 
         const printToFile = async () => {
-            if (generatingPdfRef.current) return;
+            if (isEditingDisabled || generatingPdfRef.current) return;
             onActionStart();
             generatingPdfRef.current = true;
             setIsGeneratingPdf(true);
@@ -1384,7 +1409,7 @@ const ReportSubmitForm = ({
                             templates={templates}
                             template={template}
                             actPdf={getValues('actPdf')}
-                            isBusy={isReportBusy}
+                            isBusy={isEditingDisabled}
                             isGenerating={isGeneratingPdf}
                             onGenerate={printToFile}
                             onShare={async () => {
@@ -1411,7 +1436,11 @@ const ReportSubmitForm = ({
                                 }
                             }}
                             onSign={async (role) => {
-                                if (generatingPdfRef.current) return;
+                                if (
+                                    isEditingDisabled ||
+                                    generatingPdfRef.current
+                                )
+                                    return;
                                 onActionStart();
                                 generatingPdfRef.current = true;
                                 try {
@@ -1528,7 +1557,7 @@ const ReportSubmitForm = ({
                         textStyle={styles.secondaryButtonText}
                         onPress={confirmLoadReport}
                         isPending={isLoadingReport}
-                        disabled={!isOnline || isReportBusy}
+                        disabled={!isOnline || isEditingDisabled}
                     />
                     <Text style={styles.description}>
                         {isLoadingReport
@@ -1538,6 +1567,15 @@ const ReportSubmitForm = ({
                               : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}
                     </Text>
                 </View>
+            )}
+            {canReturnToDraft && (
+                <FormButton
+                    message='Вернуть в черновик'
+                    onPress={handleReturnToDraft}
+                    disabled={isReportBusy}
+                    style={styles.secondaryButton}
+                    textStyle={styles.secondaryButtonText}
+                />
             )}
             <View
                 pointerEvents={isReportBusy ? 'none' : 'auto'}
@@ -1565,12 +1603,12 @@ const ReportSubmitForm = ({
                         <FormButton
                             message='Сохранить отчёт'
                             onPress={() => {
-                                if (isReportBusy) return;
+                                if (isEditingDisabled) return;
                                 onActionStart();
                                 return handleSubmit(onSubmit, onInvalid)();
                             }}
                             isPending={isSubmitting}
-                            disabled={isReportBusy}
+                            disabled={isEditingDisabled}
                             style={styles.primaryButton}
                         />
                     ) : (

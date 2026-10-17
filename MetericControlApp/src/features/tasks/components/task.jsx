@@ -12,7 +12,7 @@ import {
 import { colors } from '@/shared/consts/baseColors';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 
-const Task = ({ task, hasPendingTaskReport, needsReportRevision }) => {
+const Task = ({ task, hasPendingTaskReport, needsReportRevision, onPress }) => {
     const router = useRouter();
     const isPendingSync = useTaskOfflineMutationStore(
         (state) => state.tasksStatuses?.[task.id]
@@ -21,9 +21,12 @@ const Task = ({ task, hasPendingTaskReport, needsReportRevision }) => {
     return (
         <Card
             clickable
-            onPress={() => {
-                router.push(`/(authorized)/taskFlow/${task.id}`);
-            }}
+            onPress={
+                onPress ??
+                (() => {
+                    router.push(`/(authorized)/taskFlow/${task.id}`);
+                })
+            }
             title={task.address?.display_address}
             titleAlign={'flex-start'}>
             <Text style={styles.cardText}>{task.consumer?.full_name}</Text>

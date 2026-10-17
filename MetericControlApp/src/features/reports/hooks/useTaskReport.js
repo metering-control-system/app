@@ -54,6 +54,7 @@ const useTaskReport = (task) => {
     return {
         report,
         data: report,
+        isQueued: draft?.reportState === 'pending',
         isReadOnly: !isSubmitting && isTaskReportReadOnly(task, report, draft),
         isPending: enabled && query.isPending,
         isFetching: enabled && query.isFetching,

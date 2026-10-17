@@ -12,6 +12,7 @@ export const api = {
     onLookup: null,
     actCalls: [],
     fileValidationError: null,
+    fileValidationCalls: [],
 };
 export const useNetwork = create(() => ({ isChecked: true, isOnline: true }));
 export const useTasksStore = create(() => ({ tasks: [] }));
@@ -107,8 +108,10 @@ export const addReportComment = async () => {
     if (api.commentError) throw api.commentError;
 };
 export const uploadReportImage = async () => api.report;
+export const submitReport = async () => api.report;
 export const deleteReportImage = async () => {};
-export const validateReportUploadFiles = async () => {
+export const validateReportUploadFiles = async (payload) => {
+    api.fileValidationCalls.push(payload);
     if (api.fileValidationError) throw api.fileValidationError;
 };
 export const validateReportAct = async () => {};

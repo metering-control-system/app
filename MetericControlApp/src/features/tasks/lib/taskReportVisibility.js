@@ -4,7 +4,7 @@ export const isTaskReportReadOnly = (task, report, draft) => {
     if (!task || !report) return false;
     if (
         report.status === 'ON_REVIEW' &&
-        ['pending', 'error'].includes(draft?.reportState) &&
+        ['pending', 'error', 'draft'].includes(draft?.reportState) &&
         (!task.is_team_task ||
             (draft.submissionReport?.updatedAt &&
                 draft.submissionReport.id === report.id &&

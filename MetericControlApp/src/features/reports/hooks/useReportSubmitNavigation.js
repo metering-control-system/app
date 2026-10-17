@@ -10,6 +10,7 @@ const useReportSubmitNavigation = ({
     isPending,
     reference,
     sourceReportId,
+    queueView,
 }) => {
     const draft = useReportDraftStore((state) => state.drafts?.[id]);
     const isResolvingSource = Boolean(sourceReportId && reportQuery.isFetching);
@@ -83,6 +84,8 @@ const useReportSubmitNavigation = ({
             reportQuery.data?.status !== 'REJECTED');
 
     const redirect =
+        !(queueView && ['pending', 'error'].includes(draft?.reportState)) &&
+        draft?.reportState !== 'pending' &&
         !reportQuery.isPending &&
         !isResolvingSource &&
         (reportQuery.isReadOnly || sourceReportChanged)

@@ -19,6 +19,15 @@ const useReportDraftStore = create(
 
                     return { drafts: nextDrafts };
                 }),
+            returnToDraft: (draftId) =>
+                set((state) => {
+                    const current = state.drafts[draftId];
+                    if (!['pending', 'error'].includes(current?.reportState))
+                        return state;
+                    const draft = { ...current, reportState: 'draft' };
+                    delete draft.submissionFinalization;
+                    return { drafts: { ...state.drafts, [draftId]: draft } };
+                }),
             clearDrafts: () => set({ drafts: {} }),
         }),
         {

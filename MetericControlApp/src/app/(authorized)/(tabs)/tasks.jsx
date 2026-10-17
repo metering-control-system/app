@@ -1,6 +1,6 @@
 import TasksList from '@/features/tasks/components/taskList';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import Notification from '@/shared/components/notification/Notification';
 import { sortingVariants } from '@/features/tasks/constants/taskSortingVariants';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
@@ -14,9 +14,23 @@ import { OverlayButton } from '@/shared/components/button/overlayButton';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
 import useActTemplates from '@/features/reports/hooks/useActTemplates';
+import { Modal, Pressable, StyleSheet, Text } from 'react-native';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
+import { REPORT_OPERATION_KEY } from '@/features/reports/lib/reportOperation';
+import { useMutationState } from '@tanstack/react-query';
+import FormButton from '@/shared/components/button/formButton';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
+    const [showQueue, setShowQueue] = useState(false);
+    const closeQueue = useCallback(() => setShowQueue(false), []);
+    const drafts = useReportDraftStore((state) => state.drafts);
+    const queueCount = Object.values(drafts ?? {}).filter((draft) =>
+        ['pending', 'error'].includes(draft?.reportState)
+    ).length;
     const { requestedTemplatesError, requestActTemplates } = useActTemplates();
 
     const [dismissedTemplateError, setDismissedTemplateError] = useState(null);
@@ -51,6 +65,64 @@ const TaskScreen = () => {
 
     const reportsPendingCount = Object.keys(reportsPending).length;
 
+    const tasks = useTasksStore((state) => state.tasks);
+    const reports = useReportsStore((state) => state.reports);
+    const { isChecked, isOnline } = useNetwork();
+    const [isSyncing, setIsSyncing] = useState(false);
+    const operations = useMutationState({
+        filters: { mutationKey: REPORT_OPERATION_KEY, status: 'pending' },
+    });
+    const queuedTasks = useMemo(() => {
+        const tasksById = new Map(
+            (tasks ?? []).map((task) => [String(task.id), task])
+        );
+        return Object.entries(drafts ?? {})
+            .filter(([, draft]) =>
+                ['pending', 'error'].includes(draft?.reportState)
+            )
+            .map(([taskId, draft]) => {
+                const report = selectReportForTask(reports, taskId);
+                return (
+                    tasksById.get(taskId) ?? {
+                        id: taskId,
+                        address: report?.address ??
+                            draft.address ?? {
+                                ['display_address']: `Задача №${taskId}`,
+                            },
+                        consumer: report?.consumer,
+                    }
+                );
+            });
+    }, [drafts, tasks, reports]);
+    const synchronize = useCallback(async () => {
+        if (!isChecked || !isOnline) {
+            setError('Для синхронизации нужен интернет.');
+            return;
+        }
+        if (isSyncing) return;
+        setIsSyncing(true);
+        setError(null);
+        try {
+            const failed = await syncReportsRecords();
+            if (failed) setError(`Не синхронизировано отчётов: ${failed}.`);
+        } catch {
+            setError('Не удалось синхронизировать отчёты.');
+        } finally {
+            setIsSyncing(false);
+        }
+    }, [isChecked, isOnline, isSyncing, syncReportsRecords, setError]);
+
+    const openQueuedReport = useCallback(
+        (task) => {
+            closeQueue();
+            router.push({
+                pathname: '/(authorized)/taskFlow/reportSubmit/[id]',
+                params: { id: String(task.id), queueView: '1' },
+            });
+        },
+        [closeQueue, router]
+    );
+
     return (
         <ScreenLayout safe>
             <ControlPanel
@@ -63,6 +135,16 @@ const TaskScreen = () => {
                 setSearch={setSearch}
                 search={search}
             />
+            {queueCount > 0 && (
+                <Pressable
+                    accessibilityRole='button'
+                    onPress={() => setShowQueue(true)}
+                    style={styles.queueButton}>
+                    <Text style={styles.queueButtonText}>
+                        Отчётов на синхронизацию: {queueCount}
+                    </Text>
+                </Pressable>
+            )}
             <TasksList
                 setError={setError}
                 sorting={sorting}
@@ -82,6 +164,44 @@ const TaskScreen = () => {
                 onPress={() => router.push('/(authorized)/gis/map')}
                 icon={<FontAwesome name='map' size={20} color='white' />}
             />
+            <Modal
+                visible={showQueue}
+                animationType='slide'
+                onRequestClose={() => setShowQueue(false)}>
+                <ScreenLayout safe>
+                    <Pressable
+                        accessibilityRole='button'
+                        onPress={() => setShowQueue(false)}
+                        style={styles.queueButton}>
+                        <Text style={styles.queueButtonText}>
+                            Назад к задачам
+                        </Text>
+                    </Pressable>
+                    <FormButton
+                        message='Синхронизировать все'
+                        onPress={synchronize}
+                        isPending={isSyncing}
+                        disabled={
+                            !reportsPendingCount ||
+                            isSyncing ||
+                            operations.length > 0
+                        }
+                        style={styles.syncButton}
+                    />
+                    <TasksList
+                        tasks={queuedTasks}
+                        onTaskPress={openQueuedReport}
+                        refreshing={isSyncing}
+                        onRefresh={synchronize}
+                        emptyMessage='Нет несинхронизированных отчётов'
+                    />
+                    <Notification
+                        variant='warning'
+                        message={error}
+                        handleClose={() => setError(null)}
+                    />
+                </ScreenLayout>
+            </Modal>
             <Notification
                 variant='warning'
                 message={
@@ -104,5 +224,20 @@ const TaskScreen = () => {
         </ScreenLayout>
     );
 };
+
+const styles = StyleSheet.create({
+    syncButton: { marginBottom: 16 },
+    queueButton: {
+        paddingVertical: 14,
+        borderRadius: 10,
+        backgroundColor: '#dbeafe',
+        marginBottom: 16,
+    },
+    queueButtonText: {
+        textAlign: 'center',
+        fontWeight: '600',
+        color: '#2469c9',
+    },
+});
 
 export default TaskScreen;
