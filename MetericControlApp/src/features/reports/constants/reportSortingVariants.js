@@ -1,6 +1,6 @@
+import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 export const sortingVariants = {
-    ADMITTED: 'Допущен',
-    NOT_ADMITTED: 'Не допущен',
+    ...reportAdmission,
     SUBMITTED_AT: 'По времени отправления',
     REVIEWED_AT: 'По времени проверки',
     APPROVED_AT: 'По времени принятия',

@@ -1,3 +1,4 @@
+import { ADMISSION_STATUS_OPTIONS } from '@/features/reports/constants/reportAdmissionStatus';
 import { z } from 'zod';
 import { createReportPhotoSlotRecord } from '@/features/reports/constants/reportPhotoConfigs';
 import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
@@ -186,7 +187,7 @@ export const reportSubmitFormSchema = z
         admission: z.object({
             ...actFieldsSchema('admission'),
             status: reportChoiceSchema(
-                [{ value: 'ADMITTED' }, { value: 'NOT_ADMITTED' }],
+                ADMISSION_STATUS_OPTIONS,
                 'Выберите статус допуска'
             ),
             rejectionReason: reportChoiceSchema(

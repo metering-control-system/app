@@ -1,3 +1,4 @@
+import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmissionStatus';
 import {
     REPORT_DRAFT_STATE,
     REPORT_QUEUE_STATES,
@@ -219,7 +220,10 @@ const ReportSubmitForm = ({
     const isRefusedContact = watch('consumerContact.isRefusedContact');
     const isActualMeterDifferent = watch('meterBefore.isActualDifferent');
     useEffect(() => {
-        if (isReadOnly || admissionStatus === 'NOT_ADMITTED') {
+        if (
+            isReadOnly ||
+            admissionStatus === REPORT_ADMISSION_STATUS.NOT_ADMITTED
+        ) {
             return;
         }
         setValue('admission.rejectionReason', '', {

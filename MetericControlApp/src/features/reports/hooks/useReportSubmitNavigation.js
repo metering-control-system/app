@@ -1,3 +1,4 @@
+import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmissionStatus';
 import {
     REPORT_DRAFT_STATE,
     REPORT_QUEUE_STATES,
@@ -46,7 +47,7 @@ const useReportSubmitNavigation = ({
     if (!isActualDifferent && targetField === 'meterBefore.actualType')
         targetField = 'meterBefore.type';
     if (
-        admissionStatus !== 'NOT_ADMITTED' &&
+        admissionStatus !== REPORT_ADMISSION_STATUS.NOT_ADMITTED &&
         ['admission.rejectionReason', 'admission.rejectionComment'].includes(
             targetField
         )
