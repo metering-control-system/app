@@ -44,11 +44,8 @@ import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMe
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
 import { buildReportSignaturesPayload } from '@/features/reports/lib/buildReportSignaturesPayload';
 import useStorePictures from '@/shared/store/useStorePictures';
-import useTasksStore from '@/features/tasks/store/useTasksStore';
-import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
-import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
-const useSubmitReport = () => {
+const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
     const queryClient = useQueryClient();
     const { isOnline, isChecked } = useNetwork();
     const setDraft = useReportDraftStore((state) => state.setDraft);
@@ -176,11 +173,9 @@ const useSubmitReport = () => {
                 return { offline: true };
             }
             const task =
-                useTasksStore
-                    .getState()
-                    .tasks?.find(
-                        (task) => Number(task.id) === Number(taskId)
-                    ) ?? (await getTaskById(taskId));
+                getTasks()?.find(
+                    (task) => Number(task.id) === Number(taskId)
+                ) ?? (await getTaskById(taskId));
             const existingReport = await getReportByTaskId(taskId);
             if (
                 isTaskReportReadOnly(
@@ -196,19 +191,6 @@ const useSubmitReport = () => {
                 throw Object.assign(
                     new Error(
                         'Отчёт уже отправлен и недоступен для редактирования.'
-                    ),
-                    { code: 'REPORT_READ_ONLY' }
-                );
-            }
-            if (
-                task.is_team_task &&
-                expectedDraft &&
-                existingReport?.status === 'REJECTED'
-            ) {
-                preserveBrigadeDraft({ taskId, values, expectedDraft });
-                throw Object.assign(
-                    new Error(
-                        'Отчёт бригады возвращён на доработку. Ваш черновик сохранён. Откройте его и отправьте вручную.'
                     ),
                     { code: 'REPORT_READ_ONLY' }
                 );
@@ -422,11 +404,9 @@ const useSubmitReport = () => {
             ]);
         },
         onError: async (error, variables, previousDraft) => {
-            const task = useTasksStore
-                .getState()
-                .tasks?.find(
-                    (item) => Number(item.id) === Number(variables.taskId)
-                );
+            const task = getTasks()?.find(
+                (item) => Number(item.id) === Number(variables.taskId)
+            );
             if (
                 (task?.is_team_task || error.isTeamTask) &&
                 error.response?.status === 409

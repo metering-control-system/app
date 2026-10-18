@@ -5,12 +5,11 @@ import useReportsStore from '@/features/reports/store/useReportsStore';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 import { mergeReportUpdates } from '@/features/reports/lib/mergeReportUpdates';
-import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 import { REPORT_OPERATION_KEY } from '@/features/reports/lib/reportOperation';
 import { clearRemovedReportQueries } from '@/features/reports/lib/clearRemovedReportQueries';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 
-const useTaskReport = (task) => {
+const useTaskReport = (task, isTaskReportReadOnly) => {
     const queryClient = useQueryClient();
     const reports = useReportsStore((state) => state.reports);
     const draft = useReportDraftStore((state) => state.drafts?.[task?.id]);
@@ -37,12 +36,9 @@ const useTaskReport = (task) => {
                     if (
                         task.is_team_task &&
                         draft?.reportState === 'pending' &&
-                        [
-                            'ON_REVIEW',
-                            'ON_ADMIN',
-                            'ACCEPTED',
-                            'REJECTED',
-                        ].includes(report.status) &&
+                        ['ON_REVIEW', 'ON_ADMIN', 'ACCEPTED'].includes(
+                            report.status
+                        ) &&
                         (draft.submissionReport?.id !== report.id ||
                             draft.submissionReport?.updatedAt !==
                                 report.updated_at)
