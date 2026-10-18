@@ -1,3 +1,4 @@
+import { preserveBrigadeDraft } from '@/features/reports/lib/preserveBrigadeDraft';
 import { useIsMutating, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getReportByTaskId } from '@/features/reports/api/submitReportApi';
 import useReportsStore from '@/features/reports/store/useReportsStore';
@@ -30,6 +31,28 @@ const useTaskReport = (task) => {
             if (!signal.aborted) {
                 const store = useReportsStore.getState();
                 if (report) {
+                    const draft = useReportDraftStore
+                        .getState()
+                        .getDraft(String(task.id));
+                    if (
+                        task.is_team_task &&
+                        draft?.reportState === 'pending' &&
+                        [
+                            'ON_REVIEW',
+                            'ON_ADMIN',
+                            'ACCEPTED',
+                            'REJECTED',
+                        ].includes(report.status) &&
+                        (draft.submissionReport?.id !== report.id ||
+                            draft.submissionReport?.updatedAt !==
+                                report.updated_at)
+                    ) {
+                        preserveBrigadeDraft({
+                            taskId: task.id,
+                            values: draft,
+                            expectedDraft: draft,
+                        });
+                    }
                     store.setUpdatedReports([report]);
                 } else {
                     const removedReports = store.removeReports(expectedReports);

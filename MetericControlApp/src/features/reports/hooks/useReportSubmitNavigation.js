@@ -14,7 +14,16 @@ const useReportSubmitNavigation = ({
 }) => {
     const draft = useReportDraftStore((state) => state.drafts?.[id]);
     const isResolvingSource = Boolean(sourceReportId && reportQuery.isFetching);
-    const referencedField = FORM_FIELDS_MAP[reference?.toUpperCase()];
+    const canUseServerRemarks =
+        !task?.is_team_task ||
+        reportQuery.data?.status !== 'REJECTED' ||
+        (Number(draft?.serverReportSource?.id) ===
+            Number(reportQuery.data?.id) &&
+            draft?.serverReportSource?.updatedAt ===
+                reportQuery.data?.updated_at);
+    const referencedField = canUseServerRemarks
+        ? FORM_FIELDS_MAP[reference?.toUpperCase()]
+        : null;
     const isActualDifferent =
         draft?.meterBefore?.isActualDifferent ??
         Boolean(
@@ -50,6 +59,10 @@ const useReportSubmitNavigation = ({
     );
 
     useEffect(() => {
+        if (!canUseServerRemarks) {
+            setHighlightedField(null);
+            return;
+        }
         if (
             referencedField &&
             !isPending &&
@@ -65,6 +78,7 @@ const useReportSubmitNavigation = ({
             setHighlightedField(targetField ?? null);
         }
     }, [
+        canUseServerRemarks,
         reference,
         referencedField,
         targetField,
