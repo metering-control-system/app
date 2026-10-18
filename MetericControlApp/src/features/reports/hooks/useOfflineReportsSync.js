@@ -1,6 +1,6 @@
 import useStorePictures from '@/shared/store/useStorePictures';
 import { deleteAct } from '@/features/reports/lib/savePdfToDocuments';
-import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -45,9 +45,7 @@ export const useOfflineReportsSync = (submitTaskReport) => {
                 },
                 (id, expectedDraft) => {
                     const store = useReportDraftStore.getState();
-                    if (
-                        !areReportDraftsEqual(expectedDraft, store.getDraft(id))
-                    )
+                    if (!areObjectsEqual(expectedDraft, store.getDraft(id)))
                         return;
                     store.clearDraft(id);
                     useStorePictures

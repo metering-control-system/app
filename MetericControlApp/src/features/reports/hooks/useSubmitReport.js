@@ -8,7 +8,7 @@ import {
 import { validateReportAct } from '@/features/reports/lib/validateReportAct';
 import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 import { useCallback } from 'react';
-import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
     addReportComment,
@@ -66,7 +66,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
                 .getDraft(draftId);
             if (
                 expectedDraft &&
-                !areReportDraftsEqual(
+                !areObjectsEqual(
                     expectedDraft,
                     useReportDraftStore.getState().getDraft(draftId)
                 )
@@ -107,7 +107,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
             }
             if (
                 expectedDraft &&
-                !areReportDraftsEqual(
+                !areObjectsEqual(
                     expectedDraft,
                     useReportDraftStore.getState().getDraft(draftId)
                 )
@@ -248,7 +248,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
                     },
                 };
                 if (
-                    areReportDraftsEqual(
+                    areObjectsEqual(
                         submittedDraft,
                         useReportDraftStore.getState().getDraft(draftId)
                     )
@@ -344,7 +344,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
                 };
                 const nextDraft = { ...submittedDraft, submissionFinalization };
                 if (
-                    areReportDraftsEqual(
+                    areObjectsEqual(
                         submittedDraft,
                         useReportDraftStore.getState().getDraft(draftId)
                     )
@@ -379,10 +379,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
             if (
                 !variables.expectedDraft &&
                 _data.submittedDraft &&
-                areReportDraftsEqual(
-                    _data.submittedDraft,
-                    store.getDraft(draftId)
-                )
+                areObjectsEqual(_data.submittedDraft, store.getDraft(draftId))
             ) {
                 store.clearDraft(draftId);
             }
@@ -434,7 +431,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
             )
                 return;
             if (
-                !areReportDraftsEqual(
+                !areObjectsEqual(
                     error.submittedDraft ?? previousDraft,
                     currentDraft
                 )

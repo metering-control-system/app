@@ -1,6 +1,6 @@
 import { mapTaskToReportDefaults } from './mapTaskToReportDefaults.js';
 import { reportSubmitFormDefaultValues } from '../constants/reportSubmitFormDefaults.js';
-import { areReportDraftsEqual } from './areReportDraftsEqual.js';
+import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
 import { REPORT_PHOTO_SLOT_BY_KIND } from '../constants/reportPhotoConfigs.js';
 import { hydrateReportActFields } from './reportActFieldValues.js';
 
@@ -144,7 +144,7 @@ export const getReportFormInitialValues = ({
             uri:
                 savedAct?.checksum &&
                 savedAct.checksum === draftValues?.actPdf?.checksum &&
-                areReportDraftsEqual(
+                areObjectsEqual(
                     savedAct.signatures,
                     draftValues?.actPdf?.signatures ?? {}
                 )

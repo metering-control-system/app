@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { areReportDraftsEqual } from './areReportDraftsEqual.js';
+import { areObjectsEqual } from './areObjectsEqual.js';
 
 const draft = {
     reportState: 'pending',
@@ -11,7 +11,7 @@ const draft = {
 
 test('accepts a restored draft with equal nested data and different object identities', () => {
     assert.equal(
-        areReportDraftsEqual(draft, JSON.parse(JSON.stringify(draft))),
+        areObjectsEqual(draft, JSON.parse(JSON.stringify(draft))),
         true
     );
 });
@@ -19,7 +19,7 @@ test('accepts a restored draft with equal nested data and different object ident
 test('does not depend on the order of object properties', () => {
     const { metering: _metering, ...rest } = draft;
     assert.equal(
-        areReportDraftsEqual(draft, {
+        areObjectsEqual(draft, {
             ...rest,
             metering: { dismantlingCompleted: false, oldReading: '12' },
         }),
@@ -43,7 +43,7 @@ test('rejects changes to nested values, flags, comments, photos and draft state'
         undefined,
     ];
     for (const current of changedDrafts) {
-        assert.equal(areReportDraftsEqual(draft, current), false);
+        assert.equal(areObjectsEqual(draft, current), false);
     }
 });
 
@@ -55,7 +55,7 @@ test('distinguishes missing fields, empty values, types and arrays from objects'
         [{ checked: false }, { checked: null }],
         [{ photos: [] }, { photos: {} }],
     ]) {
-        assert.equal(areReportDraftsEqual(expected, current), false);
-        assert.equal(areReportDraftsEqual(current, expected), false);
+        assert.equal(areObjectsEqual(expected, current), false);
+        assert.equal(areObjectsEqual(current, expected), false);
     }
 });

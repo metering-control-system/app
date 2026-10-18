@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { areReportDraftsEqual } from '../lib/areReportDraftsEqual.js';
+import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
 import { registerHooks } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
@@ -43,6 +43,15 @@ const loader = registerHooks({
         if (replacements.has(specifier)) {
             return { url: replacements.get(specifier), shortCircuit: true };
         }
+        if (specifier === '@/shared/lib/collections/areObjectsEqual') {
+            return {
+                url: new URL(
+                    '../../../shared/lib/collections/areObjectsEqual.js',
+                    import.meta.url
+                ).href,
+                shortCircuit: true,
+            };
+        }
         if (specifier.startsWith('@/features/reports/lib/')) {
             return {
                 url: new URL(
@@ -72,7 +81,7 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
         mutationKey: [...REPORT_OPERATION_KEY, 'submit'],
         mutationFn: async ({ taskId, expectedDraft }) => {
             if (
-                !areReportDraftsEqual(
+                !areObjectsEqual(
                     expectedDraft,
                     useReportDraftStore.getState().getDraft(taskId)
                 )

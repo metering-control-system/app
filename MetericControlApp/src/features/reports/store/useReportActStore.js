@@ -2,7 +2,7 @@ import { create } from 'zustand/react';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
 import { reportSignaturesStorage } from '@/features/reports/store/reportSignaturesStorage';
-import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 
 const useReportActStore = create(
     persist(
@@ -55,10 +55,7 @@ const useReportActStore = create(
                 const key = String(taskId);
                 if (
                     !expectedAct ||
-                    !areReportDraftsEqual(
-                        get().actMetadataByTask[key],
-                        expectedAct
-                    )
+                    !areObjectsEqual(get().actMetadataByTask[key], expectedAct)
                 )
                     return;
                 set((state) => {

@@ -1,6 +1,6 @@
 import { ensureActFileExists } from './ensureActFileExists';
 import { createActChecksum } from './createActChecksum';
-import { areReportDraftsEqual } from './areReportDraftsEqual';
+import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
 import useReportActStore from '@/features/reports/store/useReportActStore';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 
@@ -27,7 +27,7 @@ export const validateReportAct = async ({ taskId, values }) => {
         checksum !== actPdf.checksum ||
         checksum !== record.checksum ||
         String(record.templateId) !== String(template.id) ||
-        !areReportDraftsEqual(actPdf.signatures ?? {}, record.signatures ?? {})
+        !areObjectsEqual(actPdf.signatures ?? {}, record.signatures ?? {})
     ) {
         throw new Error(
             'Данные отчёта или шаблон изменились. Пересоздайте акт. Прежние подписи будут удалены.'

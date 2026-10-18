@@ -1,11 +1,11 @@
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import { areReportDraftsEqual } from './areReportDraftsEqual';
+import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
 
 export const preserveBrigadeDraft = ({ taskId, values, expectedDraft }) => {
     const store = useReportDraftStore.getState();
     const draftId = String(taskId);
     const current = store.getDraft(draftId);
-    if (expectedDraft && !areReportDraftsEqual(expectedDraft, current)) return;
+    if (expectedDraft && !areObjectsEqual(expectedDraft, current)) return;
     const draft = {
         ...values,
         ...current,

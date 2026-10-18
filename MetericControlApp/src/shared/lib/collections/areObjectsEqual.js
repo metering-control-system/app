@@ -1,4 +1,4 @@
-export const areReportDraftsEqual = (expected, current) => {
+export const areObjectsEqual = (expected, current) => {
     if (Object.is(expected, current)) return true;
     if (
         expected === null ||
@@ -16,7 +16,7 @@ export const areReportDraftsEqual = (expected, current) => {
         keys.every(
             (key) =>
                 Object.hasOwn(current, key) &&
-                areReportDraftsEqual(expected[key], current[key])
+                areObjectsEqual(expected[key], current[key])
         )
     );
 };
