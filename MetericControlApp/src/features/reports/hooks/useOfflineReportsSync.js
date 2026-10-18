@@ -31,6 +31,7 @@ export const useOfflineReportsSync = () => {
                 ).filter(
                     ([taskId, draft]) =>
                         draft?.reportState === 'pending' &&
+                        !draft.requiresManualSubmit &&
                         (!automatic || !attemptedTaskIdsRef.current.has(taskId))
                 )
             );
@@ -79,6 +80,7 @@ export const useOfflineReportsSync = () => {
         const hasReadyDraft = Object.entries(drafts ?? {}).some(
             ([taskId, draft]) =>
                 draft?.reportState === 'pending' &&
+                !draft.requiresManualSubmit &&
                 !pendingOperations.includes(taskId) &&
                 !attemptedTaskIdsRef.current.has(taskId)
         );

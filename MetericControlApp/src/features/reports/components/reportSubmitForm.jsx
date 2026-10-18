@@ -97,6 +97,7 @@ const ReportSubmitForm = ({
     const renderRemark = (name) => {
         if (
             existingReport?.status !== 'REJECTED' ||
+            (task?.is_team_task && !hasServerRemarks) ||
             clearedRemarks === existingReport
         )
             return null;
@@ -133,8 +134,8 @@ const ReportSubmitForm = ({
     const startSignatureSession = useReportActStore(
         (state) => state.startSession
     );
-    const clearSignatureSession = useReportActStore(
-        (state) => state.clearSession
+    const clearSignatureResult = useReportActStore(
+        (state) => state.clearResult
     );
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
@@ -170,6 +171,11 @@ const ReportSubmitForm = ({
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
     );
+    const hasServerRemarks =
+        Number(draftValues?.serverReportSource?.id) ===
+            Number(existingReport?.id) &&
+        draftValues?.serverReportSource?.updatedAt ===
+            existingReport?.updated_at;
     const isQueued = draftValues?.reportState === 'pending';
     const isReadOnly = readOnly || isQueued;
     const isEditingDisabled = isReportBusy || isReadOnly;
@@ -299,8 +305,8 @@ const ReportSubmitForm = ({
             shouldDirty: true,
             shouldValidate: true,
         });
-        clearSignatureSession();
-    }, [signatureResult, draftId, setValue, clearSignatureSession, isReadOnly]);
+        clearSignatureResult();
+    }, [signatureResult, draftId, setValue, clearSignatureResult, isReadOnly]);
 
     useEffect(() => {
         if (hydratedPhotosIdRef.current === draftId) {
@@ -349,6 +355,20 @@ const ReportSubmitForm = ({
         setEntityPhotoMetadata,
         setPhoto,
     ]);
+
+    useEffect(() => {
+        if (!task?.is_team_task || isReadOnly || isReportBusy) return;
+        const subscription = watch((values) => {
+            const store = useReportDraftStore.getState();
+            const current = store.getDraft(draftId);
+            if (current?.reportState === 'pending') return;
+            store.setDraft({
+                draftId,
+                values: { ...current, ...values, reportState: 'draft' },
+            });
+        });
+        return () => subscription.unsubscribe();
+    }, [task?.is_team_task, isReadOnly, isReportBusy, watch, draftId]);
 
     useEffect(() => {
         if (isReadOnly || watch('clientReportId')) {
@@ -442,8 +462,17 @@ const ReportSubmitForm = ({
                 photoMetadata,
                 removedPhotoIds,
             });
-            reset(values);
-            setDraft({ draftId, values });
+            const loadedValues = {
+                ...values,
+                reportState: 'draft',
+                requiresManualSubmit: true,
+                serverReportSource:
+                    mode === 'replace'
+                        ? { id: report.id, updatedAt: report.updated_at }
+                        : null,
+            };
+            reset(loadedValues);
+            setDraft({ draftId, values: loadedValues });
             setStepIndex(0);
         },
     });
@@ -455,6 +484,17 @@ const ReportSubmitForm = ({
             Keyboard.dismiss();
             void loadReport(mode);
         };
+        if (existingReport?.status === 'REJECTED') {
+            Alert.alert(
+                'Загрузить отчёт с замечаниями?',
+                'Поля и фотографии вашего локального черновика будут заменены отклонённым отчётом с сервера.',
+                [
+                    { text: 'Отмена', style: 'cancel' },
+                    { text: 'Загрузить', onPress: () => load('replace') },
+                ]
+            );
+            return;
+        }
         Alert.alert(
             'Загрузить отчёт бригады',
             'Заменить весь отчёт или заполнить только пустые поля? Во втором случае ваши заполненные значения и фото-разделы сохранятся. Выключенные галочки включатся, если они включены на сервере; уже включённые останутся включёнными. После загрузки отчёт нужно отправить вручную.',
@@ -838,6 +878,16 @@ const ReportSubmitForm = ({
                     keyboardType: 'number-pad',
                     error: errors.personalAccount,
                 })}
+                <View style={styles.control}>
+                    <Text style={styles.label}>Номер телефона</Text>
+                    <TextInput
+                        style={styles.input}
+                        value={task?.consumer?.phone_number ?? ''}
+                        placeholder='Не указан'
+                        accessibilityLabel='Номер телефона из заявки'
+                        editable={false}
+                    />
+                </View>
             </ReportFormSection>
             <ReportFormSection
                 title='Старый счётчик'
@@ -894,6 +944,17 @@ const ReportSubmitForm = ({
             <ReportFormSection
                 title='Заметки по задаче'
                 icon='chatbubble-ellipses-outline'>
+                <View style={styles.control}>
+                    <Text style={styles.label}>Причина замены</Text>
+                    <TextInput
+                        style={[styles.input, styles.textArea]}
+                        value={task?.task_data?.service_reason ?? ''}
+                        placeholder='Не указана'
+                        accessibilityLabel='Причина замены из заявки'
+                        editable={false}
+                        multiline
+                    />
+                </View>
                 {renderTextField({
                     name: 'comment',
                     label: 'Комментарий к задаче',
@@ -1552,7 +1613,11 @@ const ReportSubmitForm = ({
             {task?.is_team_task && (
                 <View style={styles.brigadeActions}>
                     <FormButton
-                        message='Загрузить отправленный отчёт'
+                        message={
+                            existingReport?.status === 'REJECTED'
+                                ? 'Загрузить отчёт с замечаниями'
+                                : 'Загрузить отправленный отчёт'
+                        }
                         style={styles.loadButton}
                         textStyle={styles.secondaryButtonText}
                         onPress={confirmLoadReport}
@@ -1564,7 +1629,10 @@ const ReportSubmitForm = ({
                             ? 'Загружаем отчёт. Дождитесь завершения.'
                             : !isOnline
                               ? 'Для загрузки отчёта бригады нужен интернет.'
-                              : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}
+                              : existingReport?.status === 'REJECTED' &&
+                                  !hasServerRemarks
+                                ? 'Открыт ваш личный черновик. Замечания относятся к отчёту с сервера. Продолжите свой вариант или загрузите отчёт с замечаниями.'
+                                : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}
                     </Text>
                 </View>
             )}

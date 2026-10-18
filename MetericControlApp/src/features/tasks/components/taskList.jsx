@@ -103,7 +103,12 @@ const ConnectedTasksList = ({
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            filterSubmittedTasks(tasks, reports, drafts)
+            filterSubmittedTasks(tasks, reports, drafts).map((task) => {
+                const report = selectReportForTask(reports, task.id);
+                return report?.status === 'REJECTED'
+                    ? { ...task, status: 'REJECTED' }
+                    : task;
+            })
         );
         const sorted = sortBy(filtered, sorting);
         return filterBySearch({ query: sorted, input: search });
@@ -140,18 +145,6 @@ const ConnectedTasksList = ({
         <TaskListView
             tasks={displayedTasks}
             syncingRecords={syncingRecords}
-            revisionTaskIds={
-                new Set(
-                    (reports ?? [])
-                        .filter((report) => report.status === 'REJECTED')
-                        .filter(
-                            (report) =>
-                                selectReportForTask(reports, report.task_id)
-                                    ?.id === report.id
-                        )
-                        .map((report) => String(report.task_id))
-                )
-            }
             refreshing={isRefreshingList || isRefrehsing || isReportsFetching}
             onRefresh={onRefresh}
             onLayout={(event) => setListHeight(event.nativeEvent.layout.height)}
@@ -166,12 +159,7 @@ const ConnectedTasksList = ({
     );
 };
 
-const TaskListItem = ({
-    task,
-    onTaskPress,
-    hasPendingTaskReport,
-    needsReportRevision,
-}) => {
+const TaskListItem = ({ task, onTaskPress, hasPendingTaskReport }) => {
     const handlePress = useCallback(
         () => onTaskPress?.(task),
         [onTaskPress, task]
@@ -181,7 +169,6 @@ const TaskListItem = ({
             task={task}
             onPress={onTaskPress ? handlePress : undefined}
             hasPendingTaskReport={hasPendingTaskReport}
-            needsReportRevision={needsReportRevision}
         />
     );
 };
@@ -192,7 +179,6 @@ const TaskListView = ({
     tasks,
     onTaskPress,
     syncingRecords,
-    revisionTaskIds,
     refreshing = false,
     onRefresh,
     emptyMessage = 'Задачи не найдены',
@@ -207,10 +193,9 @@ const TaskListView = ({
                 task={item}
                 onTaskPress={onTaskPress}
                 hasPendingTaskReport={!!syncingRecords?.[item.id]}
-                needsReportRevision={revisionTaskIds?.has(String(item.id))}
             />
         ),
-        [onTaskPress, syncingRecords, revisionTaskIds]
+        [onTaskPress, syncingRecords]
     );
     return (
         <View style={styles.container} onLayout={onLayout}>

@@ -1,3 +1,4 @@
+import { preserveBrigadeDraft } from '@/features/reports/lib/preserveBrigadeDraft';
 import { validateReportValues } from '@/features/reports/lib/validateReportValues';
 import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
 import {
@@ -41,6 +42,7 @@ import {
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
+import { buildReportSignaturesPayload } from '@/features/reports/lib/buildReportSignaturesPayload';
 import useStorePictures from '@/shared/store/useStorePictures';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
@@ -165,7 +167,11 @@ const useSubmitReport = () => {
                     : values;
                 setDraft({
                     draftId,
-                    values: { ...offlineValues, reportState: 'pending' },
+                    values: {
+                        ...offlineValues,
+                        reportState: 'pending',
+                        requiresManualSubmit: false,
+                    },
                 });
                 return { offline: true };
             }
@@ -184,9 +190,25 @@ const useSubmitReport = () => {
                 )
             ) {
                 setUpdatedReports([existingReport]);
+                if (task.is_team_task) {
+                    preserveBrigadeDraft({ taskId, values, expectedDraft });
+                }
                 throw Object.assign(
                     new Error(
                         'Отчёт уже отправлен и недоступен для редактирования.'
+                    ),
+                    { code: 'REPORT_READ_ONLY' }
+                );
+            }
+            if (
+                task.is_team_task &&
+                expectedDraft &&
+                existingReport?.status === 'REJECTED'
+            ) {
+                preserveBrigadeDraft({ taskId, values, expectedDraft });
+                throw Object.assign(
+                    new Error(
+                        'Отчёт бригады возвращён на доработку. Ваш черновик сохранён. Откройте его и отправьте вручную.'
                     ),
                     { code: 'REPORT_READ_ONLY' }
                 );
@@ -208,7 +230,12 @@ const useSubmitReport = () => {
             });
             const reportPayload = buildReportPayload(
                 { ...values, taskId },
-                { includeEmptyOptionalFields: Boolean(existingReport) }
+                {
+                    includeEmptyOptionalFields: Boolean(existingReport),
+                    signaturePayload: buildReportSignaturesPayload(
+                        values.actPdf
+                    ),
+                }
             );
             const reportCommentPayload = buildReportCommentPayload(values);
             const upsertRequest = buildReportUpsertRequest({
@@ -222,6 +249,8 @@ const useSubmitReport = () => {
                     submissionReport: previousDraft.submissionReport,
                 }),
                 reportState: 'pending',
+                serverReportSource: previousDraft?.serverReportSource,
+                requiresManualSubmit: false,
             };
             if (!expectedDraft) {
                 setDraft({ draftId, values: submittedDraft });
@@ -353,6 +382,7 @@ const useSubmitReport = () => {
                     submittedDraft,
                 };
             } catch (error) {
+                error.isTeamTask = task.is_team_task;
                 error.submittedDraft = submittedDraft;
                 throw error;
             }
@@ -391,7 +421,29 @@ const useSubmitReport = () => {
                 queryClient.invalidateQueries({ queryKey: ['tasks'] }),
             ]);
         },
-        onError: (error, variables, previousDraft) => {
+        onError: async (error, variables, previousDraft) => {
+            const task = useTasksStore
+                .getState()
+                .tasks?.find(
+                    (item) => Number(item.id) === Number(variables.taskId)
+                );
+            if (
+                (task?.is_team_task || error.isTeamTask) &&
+                error.response?.status === 409
+            ) {
+                preserveBrigadeDraft({
+                    taskId: variables.taskId,
+                    values: variables.values,
+                    expectedDraft: error.submittedDraft ?? previousDraft,
+                });
+                try {
+                    const report = await getReportByTaskId(variables.taskId);
+                    if (report) setUpdatedReports([report]);
+                } catch {
+                    return;
+                }
+                return;
+            }
             const draftId = String(variables.taskId);
             const currentDraft = useReportDraftStore
                 .getState()

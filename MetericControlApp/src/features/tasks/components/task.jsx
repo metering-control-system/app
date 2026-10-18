@@ -12,7 +12,7 @@ import {
 import { colors } from '@/shared/consts/baseColors';
 import useTaskOfflineMutationStore from '@/features/tasks/store/useTaskOfflineMutationStore';
 
-const Task = ({ task, hasPendingTaskReport, needsReportRevision, onPress }) => {
+const Task = ({ task, hasPendingTaskReport, onPress }) => {
     const router = useRouter();
     const isPendingSync = useTaskOfflineMutationStore(
         (state) => state.tasksStatuses?.[task.id]
@@ -33,14 +33,6 @@ const Task = ({ task, hasPendingTaskReport, needsReportRevision, onPress }) => {
 
             <View style={styles.cardPeriod}>
                 <View style={styles.badges}>
-                    {needsReportRevision && (
-                        <Text
-                            numberOfLines={2}
-                            ellipsizeMode='tail'
-                            style={[styles.badge, colors.warning]}>
-                            На доработку
-                        </Text>
-                    )}
                     <Text
                         numberOfLines={2}
                         ellipsizeMode='tail'

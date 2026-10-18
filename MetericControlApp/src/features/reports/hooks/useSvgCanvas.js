@@ -3,12 +3,23 @@ import { Gesture } from 'react-native-gesture-handler';
 import { useAnimatedProps, useSharedValue } from 'react-native-reanimated';
 import { scheduleOnRN, scheduleOnUI } from 'react-native-worklets';
 
-const useSvgCanvas = () => {
+const useSvgCanvas = (initialStrokes = []) => {
     const size = useSharedValue({ width: 0, height: 0 });
-    const strokes = useSharedValue([]);
+    const strokes = useSharedValue(initialStrokes);
     const activePoints = useSharedValue([]);
     const activePath = useSharedValue('');
-    const completedPath = useSharedValue('');
+    const completedPath = useSharedValue(
+        initialStrokes
+            .map((stroke) =>
+                stroke
+                    .map(
+                        ({ x, y }, index) =>
+                            `${index ? 'L' : 'M'} ${x} ${y}${!index ? ' l 0 0' : ''}`
+                    )
+                    .join(' ')
+            )
+            .join(' ')
+    );
 
     const activeAnimatedProps = useAnimatedProps(() => ({
         d: activePath.value,
