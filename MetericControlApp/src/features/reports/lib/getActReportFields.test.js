@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
-import { getActReportFields } from './getActReportFields.js';
+import { getActReportFields } from '@/features/reports/lib/getActReportFields';
 
 const moduleUrl = (source) =>
     `data:text/javascript,${encodeURIComponent(source)}`;
@@ -53,10 +53,10 @@ const loader = registerHooks({
     },
 });
 const { generateActPdf: generatePdf } =
-    await import('../../acts/lib/generateActPdf.js');
+    await import('@/features/acts/lib/generateActPdf');
 const { createActChecksum: checksumAct } =
-    await import('../../acts/lib/createActChecksum.js');
-const { validateAct } = await import('../../acts/lib/validateAct.js');
+    await import('@/features/acts/lib/createActChecksum');
+const { validateAct } = await import('@/features/acts/lib/validateAct');
 const { printedHtml } = await import(printUrl);
 const { default: actStore } = await import(actStoreUrl);
 const { default: templatesStore } = await import(templatesStoreUrl);

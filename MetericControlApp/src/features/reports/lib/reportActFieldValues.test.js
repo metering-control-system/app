@@ -1,15 +1,15 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { registerHooks } from 'node:module';
-import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
-import { reportSubmitFormDefaultValues } from '../constants/reportSubmitFormDefaults.js';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
+import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
 import {
     buildReportActFieldsPayload,
     hydrateReportActFields,
     parseReportDate,
     parseReportDateTime,
     formatReportDateTime,
-} from './reportActFieldValues.js';
+} from '@/features/reports/lib/reportActFieldValues';
 
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -25,7 +25,7 @@ const loader = registerHooks({
     },
 });
 const { reportSubmitFormSchema } =
-    await import('../model/reportSubmitFormSchema.js');
+    await import('@/features/reports/model/reportSubmitFormSchema');
 loader.deregister();
 const validValues = () => ({
     ...structuredClone(reportSubmitFormDefaultValues),

@@ -6,7 +6,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { createElement, useState } from 'react';
 import { act, create } from 'react-test-renderer';
-import { state, useSubmitReport } from './fixtures/reportFormValidation.js';
+import {
+    state,
+    useSubmitReport,
+} from '@/features/reports/components/fixtures/reportFormValidation';
 
 const fixtures = new URL('./fixtures/reportFormValidation.js', import.meta.url)
     .href;
@@ -117,7 +120,8 @@ const loader = registerHooks({
         return nextLoad(url, context);
     },
 });
-const { default: Form } = await import('./reportSubmitForm.jsx');
+const { default: Form } =
+    await import('@/features/reports/components/reportSubmitForm');
 loader.deregister();
 
 const setup = async (t) => {

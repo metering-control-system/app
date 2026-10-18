@@ -1,6 +1,6 @@
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
-import { REPORT_ACT_FIELDS } from './reportActFields';
-import { REPORT_FORM_STEPS } from '../lib/reportFormValidation';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
+import { REPORT_FORM_STEPS } from '@/features/reports/lib/reportFormValidation';
 
 export const FORM_FIELDS_MAP = {
     '@METERIC_CUSTOMER_NAME': {

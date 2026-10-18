@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { reportSubmitFormSchema } from '../model/reportSubmitFormSchema.js';
-import { createReportValidationError } from './reportValidationError.js';
+import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
+import { createReportValidationError } from '@/features/reports/lib/reportValidationError';
 
 const {
     clientReportId,

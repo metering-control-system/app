@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
     mergeReportPhotoMetadata,
     prepareReportPhotoMetadata,
-} from './reportPhotoMetadata.js';
+} from '@/features/reports/lib/reportPhotoMetadata';
 
 const createSequentialId = () => {
     let value = 0;

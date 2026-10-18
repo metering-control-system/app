@@ -2,8 +2,8 @@ import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmi
 import {
     INSTALLATION_LOCATION_OPTIONS,
     REPLACEMENT_REASON_OPTIONS,
-} from '../constants/reportActFields.js';
-import { REJECTION_REASON_OPTIONS } from '../constants/reportFieldOptions.js';
+} from '@/features/reports/constants/reportActFields';
+import { REJECTION_REASON_OPTIONS } from '@/features/reports/constants/reportFieldOptions';
 
 const normalizeValue = (value) => {
     if (typeof value === 'string') return value.trim();

@@ -4,7 +4,7 @@ import {
     isValidReportEmail,
     isValidReportPhone,
     normalizeReportPhone,
-} from './reportContactValidation.js';
+} from '@/features/reports/lib/reportContactValidation';
 
 test('phones require a valid international number and normalize punctuation to E.164', () => {
     for (const value of [

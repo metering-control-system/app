@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import { registerHooks } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
@@ -16,11 +16,11 @@ import {
     submission,
     useNetwork,
     useReportDraftStore,
-} from './fixtures/offlineReportsSync.js';
+} from '@/features/reports/hooks/fixtures/offlineReportsSync';
 import {
     REPORT_OPERATION_KEY,
     startReportOperation,
-} from '../lib/reportOperation.js';
+} from '@/features/reports/lib/reportOperation';
 
 const fixturesUrl = new URL('./fixtures/offlineReportsSync.js', import.meta.url)
     .href;
@@ -65,7 +65,8 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { useOfflineReportsSync } = await import('./useOfflineReportsSync.js');
+const { useOfflineReportsSync } =
+    await import('@/features/reports/hooks/useOfflineReportsSync');
 loader.deregister();
 
 const setup = (t, drafts, beforeFinish = async () => {}) => {

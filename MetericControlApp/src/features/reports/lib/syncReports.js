@@ -1,7 +1,7 @@
 import { getReportsUpdate } from '@/features/reports/api/getReportsUpdateApi';
 import useReportsStore from '@/features/reports/store/useReportsStore';
 import useReportsSyncStore from '@/features/reports/store/useReportsSyncStore';
-import { clearRemovedReportQueries } from './clearRemovedReportQueries.js';
+import { clearRemovedReportQueries } from '@/features/reports/lib/clearRemovedReportQueries';
 
 export const TASK_REPORTS_QUERY_KEY = ['reports', 'tasks'];
 export const REPORTS_STALE_TIME = 30 * 1000;

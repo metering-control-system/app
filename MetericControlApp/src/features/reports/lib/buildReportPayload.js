@@ -1,8 +1,8 @@
-import { createClientReportId } from './createClientReportId.js';
-import { REPORT_PHOTO_CONFIGS } from '../constants/reportPhotoConfigs.js';
-import { buildReportActFieldsPayload } from './reportActFieldValues.js';
-import { normalizeReportPhone } from './reportContactValidation.js';
-import { splitReportContactName } from './reportContactValues.js';
+import { createClientReportId } from '@/features/reports/lib/createClientReportId';
+import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
+import { buildReportActFieldsPayload } from '@/features/reports/lib/reportActFieldValues';
+import { normalizeReportPhone } from '@/features/reports/lib/reportContactValidation';
+import { splitReportContactName } from '@/features/reports/lib/reportContactValues';
 
 const toNullableValue = (value) => {
     if (typeof value !== 'string') {

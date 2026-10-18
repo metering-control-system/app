@@ -4,8 +4,8 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { act, create } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import * as fixtures from './fixtures/taskReportSubmission.js';
-import { isTaskReportReadOnly } from '../../tasks/lib/taskReportVisibility.js';
+import * as fixtures from '@/features/reports/hooks/fixtures/taskReportSubmission';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const fixturesUrl = new URL(
     './fixtures/taskReportSubmission.js',
@@ -50,7 +50,8 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { default: useSubmitReport } = await import('./useSubmitReport.js');
+const { default: useSubmitReport } =
+    await import('@/features/reports/hooks/useSubmitReport');
 loader.deregister();
 
 const setup = async (

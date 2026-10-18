@@ -1,6 +1,6 @@
 import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 
 export const preserveBrigadeDraft = ({ taskId, values, expectedDraft }) => {
     const store = useReportDraftStore.getState();

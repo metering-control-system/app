@@ -5,7 +5,7 @@ import test from 'node:test';
 import { createElement, useState } from 'react';
 import { act, create } from 'react-test-renderer';
 import ts from 'typescript';
-import { buildReportActFieldsPayload } from '../lib/reportActFieldValues.js';
+import { buildReportActFieldsPayload } from '@/features/reports/lib/reportActFieldValues';
 
 const sourceUrl = (source) =>
     `data:text/javascript,${encodeURIComponent(source)}`;
@@ -52,7 +52,8 @@ const loader = registerHooks({
         return nextLoad(url, context);
     },
 });
-const { default: ReportDateField } = await import('./reportDateField.jsx');
+const { default: ReportDateField } =
+    await import('@/features/reports/components/reportDateField');
 const native = await import(nativeUrl);
 const picker = await import(pickerUrl);
 loader.deregister();

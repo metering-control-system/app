@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fetchReportPages } from './fetchReportPages.js';
+import { fetchReportPages } from '@/features/reports/lib/fetchReportPages';
 
 test('loads all report pages before returning the synchronization snapshot', async () => {
     const params = [];

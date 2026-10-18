@@ -1,5 +1,5 @@
 import { create } from 'zustand';
-import { mergeReportUpdates } from '../../lib/mergeReportUpdates.js';
+import { mergeReportUpdates } from '@/features/reports/lib/mergeReportUpdates';
 
 export const api = {
     report: null,

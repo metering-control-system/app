@@ -1,4 +1,4 @@
-import { selectReportForTask } from '../lib/reportUpsert.js';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
@@ -13,17 +13,17 @@ import {
     requests,
     focusScreens,
     focusState,
-} from './fixtures/taskReportQueries.js';
-import useReportsSyncStore from '../store/useReportsSyncStore.js';
+} from '@/features/reports/hooks/fixtures/taskReportQueries';
+import useReportsSyncStore from '@/features/reports/store/useReportsSyncStore';
 import {
     isTaskReportReadOnly,
     filterSubmittedTasks,
-} from '../../tasks/lib/taskReportVisibility.js';
+} from '@/features/tasks/lib/taskReportVisibility';
 import {
     useNetwork,
     useReportsStore,
     useReportDraftStore,
-} from './fixtures/taskReportSubmission.js';
+} from '@/features/reports/hooks/fixtures/taskReportSubmission';
 
 const storesUrl = new URL('./fixtures/taskReportSubmission.js', import.meta.url)
     .href;
@@ -62,9 +62,12 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { default: useTaskReports } = await import('./useTaskReports.js');
-const { default: useTaskReport } = await import('./useTaskReport.js');
-const { default: useUpdateReports } = await import('./useUpdateReports.js');
+const { default: useTaskReports } =
+    await import('@/features/reports/hooks/useTaskReports');
+const { default: useTaskReport } =
+    await import('@/features/reports/hooks/useTaskReport');
+const { default: useUpdateReports } =
+    await import('@/features/reports/hooks/useUpdateReports');
 loader.deregister();
 
 const task = { id: 1, ['is_team_task']: false };
@@ -388,7 +391,7 @@ test('a snapshot cleanup cancels an older active task lookup so its response can
         .getState()
         .setUpdatedReports(data.reports, { snapshotAt: data.snapshot_at });
     const { clearRemovedReportQueries } =
-        await import('../lib/clearRemovedReportQueries.js');
+        await import('@/features/reports/lib/clearRemovedReportQueries');
     await act(async () =>
         clearRemovedReportQueries(
             client,

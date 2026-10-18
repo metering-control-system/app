@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 
-import { registerReportPaginationCursor } from './reportPaginationGuard.js';
+import { registerReportPaginationCursor } from '@/features/reports/lib/reportPaginationGuard';
 
 test('accepts new report pagination cursors', () => {
     const seenCursors = new Set();

@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
     isRetryableImageUploadError,
     retryReportImageUpload,
-} from './retryReportImageUpload.js';
+} from '@/features/reports/lib/retryReportImageUpload';
 
 test('retries a temporary image upload failure up to five times', async () => {
     let requestCount = 0;

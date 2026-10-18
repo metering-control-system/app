@@ -1,4 +1,4 @@
-import { REPORT_PHOTO_SLOTS } from '../constants/reportPhotoConfigs.js';
+import { REPORT_PHOTO_SLOTS } from '@/features/reports/constants/reportPhotoConfigs';
 
 export { REPORT_PHOTO_SLOTS };
 

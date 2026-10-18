@@ -1,4 +1,4 @@
-import { registerReportPaginationCursor } from './reportPaginationGuard.js';
+import { registerReportPaginationCursor } from '@/features/reports/lib/reportPaginationGuard';
 
 export const fetchReportPages = async (fetchPage, lastSyncAt) => {
     const reports = [];

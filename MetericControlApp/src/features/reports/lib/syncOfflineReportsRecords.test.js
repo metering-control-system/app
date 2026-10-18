@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { syncOfflineReportsRecords } from './syncOfflineReportsRecords.js';
+import { syncOfflineReportsRecords } from '@/features/reports/lib/syncOfflineReportsRecords';
 
 test('cleans only successful submissions and passes the submitted draft to cleanup', async () => {
     const records = Object.fromEntries(

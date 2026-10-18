@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { mergeReportUpdates } from './mergeReportUpdates.js';
+import { mergeReportUpdates } from '@/features/reports/lib/mergeReportUpdates';
 
 test('does not restore an old rejection after successful resubmission', () => {
     const current = {

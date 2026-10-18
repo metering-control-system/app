@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { areObjectsEqual } from './areObjectsEqual.js';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 
 const draft = {
     reportState: 'pending',

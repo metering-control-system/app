@@ -13,7 +13,7 @@ import {
     SEAL_LOCATION_OPTIONS,
 } from '@/features/reports/constants/reportFieldOptions';
 import { colors } from '@/shared/consts/baseColors';
-import { getAdditionalReportDetails } from '../lib/reportFieldDetails';
+import { getAdditionalReportDetails } from '@/features/reports/lib/reportFieldDetails';
 
 const DetailRow = ({ label, value, stacked = false }) => (
     <View style={[styles.detailRow, stacked && styles.stackedDetailRow]}>

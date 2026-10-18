@@ -1,8 +1,8 @@
-import { mapTaskToReportDefaults } from './mapTaskToReportDefaults.js';
-import { reportSubmitFormDefaultValues } from '../constants/reportSubmitFormDefaults.js';
-import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
-import { REPORT_PHOTO_SLOT_BY_KIND } from '../constants/reportPhotoConfigs.js';
-import { hydrateReportActFields } from './reportActFieldValues.js';
+import { mapTaskToReportDefaults } from '@/features/reports/lib/mapTaskToReportDefaults';
+import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
+import { REPORT_PHOTO_SLOT_BY_KIND } from '@/features/reports/constants/reportPhotoConfigs';
+import { hydrateReportActFields } from '@/features/reports/lib/reportActFieldValues';
 
 export const mapReportImagesToForm = (images = []) => {
     const photos = {};

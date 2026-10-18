@@ -1,6 +1,6 @@
-import { ensureActFileExists } from './ensureActFileExists';
-import { createActChecksum } from './createActChecksum';
-import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
+import { ensureActFileExists } from '@/features/acts/lib/ensureActFileExists';
+import { createActChecksum } from '@/features/acts/lib/createActChecksum';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import useActStore from '@/features/acts/store/useActStore';
 import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 

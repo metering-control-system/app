@@ -5,14 +5,14 @@ import {
     reportIntegerSchema,
     reportTextSchema,
     reportChoiceSchema,
-} from './reportFieldSchemas.js';
-import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
+} from '@/features/reports/model/reportFieldSchemas';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
 import {
     parseReportDate,
     parseReportDateTime,
     buildReportActFieldsPayload,
-} from '../lib/reportActFieldValues.js';
-import { splitReportContactName } from '../lib/reportContactValues.js';
+} from '@/features/reports/lib/reportActFieldValues';
+import { splitReportContactName } from '@/features/reports/lib/reportContactValues';
 
 const reading = reportReadingSchema();
 test('readings retain zero and signed decimals while enforcing API precision', () => {

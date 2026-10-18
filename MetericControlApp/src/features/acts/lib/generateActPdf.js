@@ -1,6 +1,6 @@
 import { printToFileAsync } from 'expo-print';
 import { fillActTemplate } from '@/features/acts/lib/fillActTemplate';
-import { createActChecksum } from './createActChecksum';
+import { createActChecksum } from '@/features/acts/lib/createActChecksum';
 
 export const generateActPdf = async ({
     template,

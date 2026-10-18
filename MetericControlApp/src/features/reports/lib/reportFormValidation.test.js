@@ -2,7 +2,7 @@ import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { getFirstReportValidationError } from './reportFormValidation.js';
+import { getFirstReportValidationError } from '@/features/reports/lib/reportFormValidation';
 
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -19,7 +19,7 @@ const loader = registerHooks({
     },
 });
 const { reportSubmitFormSchema } =
-    await import('../model/reportSubmitFormSchema.js');
+    await import('@/features/reports/model/reportSubmitFormSchema');
 loader.deregister();
 const validate = zodResolver(reportSubmitFormSchema);
 const values = () => ({

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { loadReportReplacement } from './loadReportReplacement.js';
+import { loadReportReplacement } from '@/features/reports/lib/loadReportReplacement';
 
 const report = { id: 8, ['task_id']: 17, images: [] };
 

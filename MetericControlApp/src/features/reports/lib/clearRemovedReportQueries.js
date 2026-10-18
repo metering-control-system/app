@@ -1,4 +1,4 @@
-import { selectReportForTask } from './reportUpsert.js';
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 
 export const clearRemovedReportQueries = (
     queryClient,
