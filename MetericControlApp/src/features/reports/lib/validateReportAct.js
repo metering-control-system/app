@@ -2,7 +2,7 @@ import { ensureActFileExists } from './ensureActFileExists';
 import { createActChecksum } from './createActChecksum';
 import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
 import useReportActStore from '@/features/reports/store/useReportActStore';
-import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
+import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 
 export const validateReportAct = async ({ taskId, values }) => {
     if (values.actPdf?.isRefused) return;

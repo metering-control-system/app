@@ -1,7 +1,7 @@
 import { create } from 'zustand/react';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
-import { actTemplatesStorage } from '@/features/reports/store/actTemplatesStorage';
+import { actTemplatesStorage } from '@/features/acts/store/actTemplatesStorage';
 import { mergeData } from '@/shared/lib/mergeData';
 
 const useActTemplatesStore = create(

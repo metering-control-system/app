@@ -1,3 +1,4 @@
+import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
 import {
@@ -20,7 +21,7 @@ import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { OverlayButton } from '@/shared/components/button/overlayButton';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import useActTemplates from '@/features/reports/hooks/useActTemplates';
+import useActTemplates from '@/features/acts/hooks/useActTemplates';
 import { Modal, Pressable, StyleSheet, Text } from 'react-native';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
@@ -38,7 +39,16 @@ const TaskScreen = () => {
     const queueCount = Object.values(drafts ?? {}).filter((draft) =>
         ['pending', 'error'].includes(draft?.reportState)
     ).length;
-    const { requestedTemplatesError, requestActTemplates } = useActTemplates();
+    const defaultActTemplate = useSettingsStore(
+        (state) => state.defaultActTemplate
+    );
+    const setDefaultActTemplate = useSettingsStore(
+        (state) => state.setDefaultActTemplate
+    );
+    const { requestedTemplatesError, requestActTemplates } = useActTemplates({
+        defaultActTemplate,
+        setDefaultActTemplate,
+    });
 
     const [dismissedTemplateError, setDismissedTemplateError] = useState(null);
     const templateErrorVisible =

@@ -33,7 +33,7 @@ const replacements = new Map([
     ],
     ['expo-file-system', moduleUrl('export class File { exists = true; }')],
     ['@/features/reports/store/useReportActStore', actStoreUrl],
-    ['@/features/reports/store/useActTemplatesStore', templatesStoreUrl],
+    ['@/features/acts/store/useActTemplatesStore', templatesStoreUrl],
 ]);
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {

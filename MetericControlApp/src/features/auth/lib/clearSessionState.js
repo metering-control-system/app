@@ -9,7 +9,7 @@ import useReportsStore from '@/features/reports/store/useReportsStore';
 import useReportsSyncStore from '@/features/reports/store/useReportsSyncStore';
 import useProfileStore from '@/features/settings/store/useProfileStore';
 import useCommentsStore from '@/features/comments/store/useCommentsStore';
-import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
+import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 
 const clearSessionState = async (queryClient) => {
     useReportActStore.getState().clearAllActs();

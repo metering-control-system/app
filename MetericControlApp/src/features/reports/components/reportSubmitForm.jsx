@@ -35,7 +35,7 @@ import {
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportActStore from '@/features/reports/store/useReportActStore';
-import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
+import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 
 const ReportSubmitForm = ({

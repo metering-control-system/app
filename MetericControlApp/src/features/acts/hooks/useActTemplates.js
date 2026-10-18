@@ -1,20 +1,13 @@
 import { useMutation, useMutationState } from '@tanstack/react-query';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
-import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
-import { getActTemplatesApi } from '@/features/reports/api/getActTemplatesApi';
+import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
+import { getActTemplatesApi } from '@/features/acts/api/getActTemplatesApi';
 import { useCallback, useEffect } from 'react';
-import useSettingsStore from '@/features/settings/store/useSettingsStore';
 
 const mutationKey = ['actTemplates'];
 
-const useActTemplates = () => {
+const useActTemplates = ({ defaultActTemplate, setDefaultActTemplate }) => {
     const templates = useActTemplatesStore((state) => state.templates);
-    const defaultActTemplate = useSettingsStore(
-        (state) => state.defaultActTemplate
-    );
-    const setDefaultActTemplate = useSettingsStore(
-        (state) => state.setDefaultActTemplate
-    );
 
     useEffect(() => {
         if (defaultActTemplate == null && templates.length) {
