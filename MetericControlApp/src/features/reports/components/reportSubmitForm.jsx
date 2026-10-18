@@ -15,6 +15,8 @@ import { ReportPhotosStep } from '@/features/reports/components/reportSubmitForm
 import { ReportAdmissionStep } from '@/features/reports/components/reportSubmitForm/steps/reportAdmissionStep';
 import { ReportContactsStep } from '@/features/reports/components/reportSubmitForm/steps/reportContactsStep';
 import { ReportActStep } from '@/features/reports/components/reportSubmitForm/steps/reportActStep';
+import useReportFormHydration from '@/features/reports/hooks/useReportFormHydration';
+import useBrigadeReportLoading from '@/features/reports/hooks/useBrigadeReportLoading';
 import { useMutationState, useQueryClient } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -28,18 +30,14 @@ import { mapTaskToReportDefaults } from '@/features/reports/lib/mapTaskToReportD
 import {
     mapReportImagesToForm,
     mapReportToFormValues,
-    buildReportReplacement,
+    getReportFormInitialValues,
 } from '@/features/reports/lib/reportFormHydration';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportActStore from '@/features/reports/store/useReportActStore';
 import useActTemplatesStore from '@/features/reports/store/useActTemplatesStore';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
-import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
-import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
-import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
-import useLoadBrigadeReport from '@/features/reports/hooks/useLoadBrigadeReport';
-import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
+
 const ReportSubmitForm = ({
     onError,
     reportSubmission,
@@ -141,61 +139,16 @@ const ReportSubmitForm = ({
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
     const templates = useActTemplatesStore((state) => state.templates);
-    const initialValues = useMemo(() => {
-        const taskDefaults = mapReportToFormValues(
-            task?.is_team_task ? null : existingReport,
-            mapTaskToReportDefaults(task)
-        );
-        const draftFormValues = draftValues ? { ...draftValues } : null;
-        if (draftFormValues) {
-            delete draftFormValues.photoMetadata;
-            delete draftFormValues.removedPhotoIds;
-            delete draftFormValues.act;
-            delete draftFormValues.address;
-        }
-        return {
-            ...taskDefaults,
-            ...draftFormValues,
-            address: taskDefaults.address,
-            actDetails: {
-                ...taskDefaults.actDetails,
-                ...draftFormValues?.actDetails,
-            },
-            meterBefore: {
-                ...taskDefaults.meterBefore,
-                ...draftFormValues?.meterBefore,
-            },
-            metering: {
-                ...taskDefaults.metering,
-                ...draftFormValues?.metering,
-            },
-            photos: { ...taskDefaults.photos, ...draftFormValues?.photos },
-            admission: {
-                ...taskDefaults.admission,
-                ...draftFormValues?.admission,
-            },
-            consumerContact: {
-                ...taskDefaults.consumerContact,
-                ...draftFormValues?.consumerContact,
-            },
-            actPdf: {
-                ...reportSubmitFormDefaultValues.actPdf,
-                ...draftValues?.actPdf,
-                signatures: savedAct?.signatures ?? {},
-                checksum: savedAct?.checksum,
-                templateId: savedAct?.templateId,
-                uri:
-                    savedAct?.checksum &&
-                    savedAct.checksum === draftValues?.actPdf?.checksum &&
-                    areReportDraftsEqual(
-                        savedAct.signatures,
-                        draftValues?.actPdf?.signatures ?? {}
-                    )
-                        ? (draftValues?.actPdf?.uri ?? '')
-                        : '',
-            },
-        };
-    }, [draftValues, existingReport, task, savedAct]);
+    const initialValues = useMemo(
+        () =>
+            getReportFormInitialValues({
+                draftValues,
+                existingReport,
+                task,
+                savedAct,
+            }),
+        [draftValues, existingReport, task, savedAct]
+    );
     const initialPhotoMetadata = useMemo(
         () =>
             mapReportImagesToForm(
@@ -225,67 +178,22 @@ const ReportSubmitForm = ({
         formState: { errors },
     } = form;
     useWatch({ control });
-    useEffect(() => {
-        if (hydratedDraftIdRef.current === draftId) {
-            return;
-        }
-        reset(initialValues);
-        hydratedDraftIdRef.current = draftId;
-    }, [draftId, initialValues, reset, hydratedDraftIdRef]);
-    useEffect(() => {
-        if (isReadOnly || signatureResult?.taskId !== draftId) return;
-        setValue('actPdf', signatureResult.actPdf, {
-            shouldDirty: true,
-            shouldValidate: true,
-        });
-        clearSignatureResult();
-    }, [signatureResult, draftId, setValue, clearSignatureResult, isReadOnly]);
-    useEffect(() => {
-        if (hydratedPhotosIdRef.current === draftId) {
-            return;
-        }
-        Object.entries(initialValues.photos).forEach(([slot, uris]) => {
-            const localUris = Array.isArray(reportPhotos[slot])
-                ? reportPhotos[slot]
-                : reportPhotos[slot]
-                  ? [reportPhotos[slot]]
-                  : [];
-            const mergedUris = [
-                ...uris,
-                ...localUris.filter((uri) => !uris.includes(uri)),
-            ];
-            if (
-                mergedUris.length &&
-                mergedUris.some((uri, index) => uri !== localUris[index])
-            ) {
-                setPhoto({
-                    entity: 'report',
-                    entityId: id,
-                    slot,
-                    uri: mergedUris,
-                });
-            }
-        });
-        setEntityPhotoMetadata({
-            entity: 'report',
-            entityId: id,
-            photoMetadata: mergeReportPhotoMetadata({
-                serverMetadata: initialPhotoMetadata,
-                localMetadata: reportPhotoMetadata,
-            }),
-        });
-        hydratedPhotosIdRef.current = draftId;
-    }, [
+    useReportFormHydration({
+        hydratedDraftIdRef,
         draftId,
-        id,
-        initialPhotoMetadata,
-        initialValues.photos,
-        reportPhotoMetadata,
-        reportPhotos,
-        setEntityPhotoMetadata,
-        setPhoto,
+        initialValues,
+        isReadOnly,
+        signatureResult,
+        clearSignatureResult,
         hydratedPhotosIdRef,
-    ]);
+        reportPhotos,
+        setPhoto,
+        id,
+        setEntityPhotoMetadata,
+        initialPhotoMetadata,
+        reportPhotoMetadata,
+        form,
+    });
     useEffect(() => {
         if (!task?.is_team_task || isReadOnly || isReportBusy) return;
         const subscription = watch((values) => {
@@ -348,99 +256,23 @@ const ReportSubmitForm = ({
     }, [reportPhotos, setValue, isReadOnly]);
     const isLastStep = stepIndex === FORM_STEPS.length - 1;
     const isFirstStep = stepIndex === 0;
-    const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
+    const { confirmLoadReport, isLoadingReport } = useBrigadeReportLoading({
         onError,
-        taskId: task?.id ?? id,
-        onLoaded: (report, mode) => {
-            const replacement = buildReportReplacement(
-                report,
-                mapTaskToReportDefaults(task)
-            );
-            const pictures = useStorePictures.getState();
-            const {
-                values,
-                photoMetadata,
-                removedPhotoIds = [],
-            } = mode === 'empty'
-                ? fillEmptyReportFields({
-                      currentValues: {
-                          ...getValues(),
-                          photos:
-                              pictures.photos.report?.[id] ??
-                              getValues('photos'),
-                      },
-                      replacement,
-                      localPhotoMetadata: pictures.photoMetadata.report?.[id],
-                      removedPhotoIds: pictures.removedPhotoIds.report?.[id],
-                  })
-                : replacement;
-            hydratedDraftIdRef.current = draftId;
-            hydratedPhotosIdRef.current = draftId;
-            replaceEntityPhotos({
-                entity: 'report',
-                entityId: id,
-                photos: values.photos,
-                photoMetadata,
-                removedPhotoIds,
-            });
-            const loadedValues = {
-                ...values,
-                reportState: 'draft',
-                requiresManualSubmit: true,
-                serverReportSource:
-                    mode === 'replace'
-                        ? { id: report.id, updatedAt: report.updated_at }
-                        : null,
-            };
-            reset(loadedValues);
-            setDraft({ draftId, values: loadedValues });
-            setStepIndex(0);
-        },
+        task,
+        id,
+        getValues,
+        hydratedDraftIdRef,
+        draftId,
+        hydratedPhotosIdRef,
+        replaceEntityPhotos,
+        reset,
+        setDraft,
+        setStepIndex,
+        isOnline,
+        isEditingDisabled,
+        onActionStart,
+        existingReport,
     });
-    const confirmLoadReport = () => {
-        if (!isOnline || isEditingDisabled) return;
-        onActionStart();
-        const load = (mode) => {
-            Keyboard.dismiss();
-            void loadReport(mode);
-        };
-        if (existingReport?.status === 'REJECTED') {
-            Alert.alert(
-                'Загрузить отчёт с замечаниями?',
-                'Поля и фотографии вашего локального черновика будут заменены отклонённым отчётом с сервера.',
-                [
-                    { text: 'Отмена', style: 'cancel' },
-                    { text: 'Загрузить', onPress: () => load('replace') },
-                ]
-            );
-            return;
-        }
-        Alert.alert(
-            'Загрузить отчёт бригады',
-            'Заменить весь отчёт или заполнить только пустые поля? Во втором случае ваши заполненные значения и фото-разделы сохранятся. Выключенные галочки включатся, если они включены на сервере; уже включённые останутся включёнными. После загрузки отчёт нужно отправить вручную.',
-            [
-                { text: 'Отмена', style: 'cancel' },
-                { text: 'Только пустые поля', onPress: () => load('empty') },
-                {
-                    text: 'Заменить всё',
-                    style: 'destructive',
-                    onPress: () =>
-                        Alert.alert(
-                            'Заменить ваш отчёт?',
-                            'Все поля и фотографии будут заменены данными с сервера, включая пустые поля. Ожидающая отправка старого черновика будет отменена. Отменить замену нельзя.',
-                            [
-                                { text: 'Отмена', style: 'cancel' },
-                                {
-                                    text: 'Заменить',
-                                    style: 'destructive',
-                                    onPress: () => load('replace'),
-                                },
-                            ]
-                        ),
-                },
-            ]
-        );
-    };
     const onSubmit = async (values) => {
         if (isEditingDisabled) return;
         onActionStart();
@@ -804,6 +636,7 @@ const ReportSubmitForm = ({
         </View>
     );
 };
+
 const styles = StyleSheet.create({
     form: { paddingTop: 14, paddingBottom: 20 },
     header: {

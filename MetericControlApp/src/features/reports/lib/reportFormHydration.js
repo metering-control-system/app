@@ -1,3 +1,6 @@
+import { mapTaskToReportDefaults } from './mapTaskToReportDefaults.js';
+import { reportSubmitFormDefaultValues } from '../constants/reportSubmitFormDefaults.js';
+import { areReportDraftsEqual } from './areReportDraftsEqual.js';
 import { REPORT_PHOTO_SLOT_BY_KIND } from '../constants/reportPhotoConfigs.js';
 import { hydrateReportActFields } from './reportActFieldValues.js';
 
@@ -95,3 +98,58 @@ export const buildReportReplacement = (report, taskDefaults) => ({
     values: mapReportToFormValues(report, taskDefaults),
     photoMetadata: mapReportImagesToForm(report.images ?? []).photoMetadata,
 });
+
+export const getReportFormInitialValues = ({
+    draftValues,
+    existingReport,
+    task,
+    savedAct,
+}) => {
+    const taskDefaults = mapReportToFormValues(
+        task?.is_team_task ? null : existingReport,
+        mapTaskToReportDefaults(task)
+    );
+    const draftFormValues = draftValues ? { ...draftValues } : null;
+    if (draftFormValues) {
+        delete draftFormValues.photoMetadata;
+        delete draftFormValues.removedPhotoIds;
+        delete draftFormValues.act;
+        delete draftFormValues.address;
+    }
+    return {
+        ...taskDefaults,
+        ...draftFormValues,
+        address: taskDefaults.address,
+        actDetails: {
+            ...taskDefaults.actDetails,
+            ...draftFormValues?.actDetails,
+        },
+        meterBefore: {
+            ...taskDefaults.meterBefore,
+            ...draftFormValues?.meterBefore,
+        },
+        metering: { ...taskDefaults.metering, ...draftFormValues?.metering },
+        photos: { ...taskDefaults.photos, ...draftFormValues?.photos },
+        admission: { ...taskDefaults.admission, ...draftFormValues?.admission },
+        consumerContact: {
+            ...taskDefaults.consumerContact,
+            ...draftFormValues?.consumerContact,
+        },
+        actPdf: {
+            ...reportSubmitFormDefaultValues.actPdf,
+            ...draftValues?.actPdf,
+            signatures: savedAct?.signatures ?? {},
+            checksum: savedAct?.checksum,
+            templateId: savedAct?.templateId,
+            uri:
+                savedAct?.checksum &&
+                savedAct.checksum === draftValues?.actPdf?.checksum &&
+                areReportDraftsEqual(
+                    savedAct.signatures,
+                    draftValues?.actPdf?.signatures ?? {}
+                )
+                    ? (draftValues?.actPdf?.uri ?? '')
+                    : '',
+        },
+    };
+};
