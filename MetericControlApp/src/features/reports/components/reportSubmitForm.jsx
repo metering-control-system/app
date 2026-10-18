@@ -1,3 +1,7 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import { REPORT_API_FIELDS } from '@/features/reports/constants/reportFieldReferences';
 import { FontAwesome, Ionicons } from '@expo/vector-icons';
 import { Text, View, StyleSheet, Alert, Keyboard } from 'react-native';
@@ -109,12 +113,11 @@ const ReportSubmitForm = ({
             Number(existingReport?.id) &&
         draftValues?.serverReportSource?.updatedAt ===
             existingReport?.updated_at;
-    const isQueued = draftValues?.reportState === 'pending';
+    const isQueued = draftValues?.reportState === REPORT_DRAFT_STATE.PENDING;
     const isReadOnly = readOnly || isQueued;
     const isEditingDisabled = isReportBusy || isReadOnly;
     const canReturnToDraft =
-        hasSourceTask &&
-        ['pending', 'error'].includes(draftValues?.reportState);
+        hasSourceTask && REPORT_QUEUE_STATES.includes(draftValues?.reportState);
     const returnToDraft = useReportDraftStore((state) => state.returnToDraft);
     const handleReturnToDraft = () => {
         if (
@@ -191,10 +194,14 @@ const ReportSubmitForm = ({
         const subscription = watch((values) => {
             const store = useReportDraftStore.getState();
             const current = store.getDraft(draftId);
-            if (current?.reportState === 'pending') return;
+            if (current?.reportState === REPORT_DRAFT_STATE.PENDING) return;
             store.setDraft({
                 draftId,
-                values: { ...current, ...values, reportState: 'draft' },
+                values: {
+                    ...current,
+                    ...values,
+                    reportState: REPORT_DRAFT_STATE.DRAFT,
+                },
             });
         });
         return () => subscription.unsubscribe();

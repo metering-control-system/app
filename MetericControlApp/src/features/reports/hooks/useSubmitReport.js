@@ -1,3 +1,4 @@
+import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import { preserveBrigadeDraft } from '@/features/reports/lib/preserveBrigadeDraft';
 import { validateReportValues } from '@/features/reports/lib/validateReportValues';
 import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
@@ -172,7 +173,7 @@ const useSubmitReport = ({
                     draftId,
                     values: {
                         ...offlineValues,
-                        reportState: 'pending',
+                        reportState: REPORT_DRAFT_STATE.PENDING,
                         requiresManualSubmit: false,
                     },
                 });
@@ -236,7 +237,7 @@ const useSubmitReport = ({
                 ...(previousDraft?.submissionReport && {
                     submissionReport: previousDraft.submissionReport,
                 }),
-                reportState: 'pending',
+                reportState: REPORT_DRAFT_STATE.PENDING,
                 serverReportSource: previousDraft?.serverReportSource,
                 requiresManualSubmit: false,
             };
@@ -431,7 +432,7 @@ const useSubmitReport = ({
                 .getDraft(draftId);
             if (
                 error.code === 'REPORT_READ_ONLY' &&
-                currentDraft?.reportState !== 'pending'
+                currentDraft?.reportState !== REPORT_DRAFT_STATE.PENDING
             )
                 return;
             if (
@@ -451,8 +452,8 @@ const useSubmitReport = ({
                         }),
                         ...error.submittedDraft,
                         reportState: variables.expectedDraft
-                            ? 'pending'
-                            : 'error',
+                            ? REPORT_DRAFT_STATE.PENDING
+                            : REPORT_DRAFT_STATE.ERROR,
                     },
                 });
             }

@@ -1,3 +1,4 @@
+import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { Alert, Keyboard } from 'react-native';
 import useStorePictures from '@/shared/store/useStorePictures';
@@ -59,7 +60,7 @@ const useBrigadeReportLoading = ({
             });
             const loadedValues = {
                 ...values,
-                reportState: 'draft',
+                reportState: REPORT_DRAFT_STATE.DRAFT,
                 requiresManualSubmit: true,
                 serverReportSource:
                     mode === 'replace'

@@ -1,3 +1,7 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import { createActOperations } from '@/features/acts/lib/createActOperations';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import { deleteAct } from '@/features/acts/lib/savePdfToDocuments';
@@ -40,7 +44,7 @@ const TaskScreen = () => {
     const closeQueue = useCallback(() => setShowQueue(false), []);
     const drafts = useReportDraftStore((state) => state.drafts);
     const queueCount = Object.values(drafts ?? {}).filter((draft) =>
-        ['pending', 'error'].includes(draft?.reportState)
+        REPORT_QUEUE_STATES.includes(draft?.reportState)
     ).length;
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
@@ -87,7 +91,7 @@ const TaskScreen = () => {
     const reportsPending = Object.entries(
         useReportDraftStore((state) => state.drafts)
     ).reduce((prev, curr) => {
-        if (curr[1].reportState === 'pending') {
+        if (curr[1].reportState === REPORT_DRAFT_STATE.PENDING) {
             return { ...prev, [curr[0]]: curr[1] };
         }
         return prev;
@@ -128,7 +132,7 @@ const TaskScreen = () => {
         );
         return Object.entries(drafts ?? {})
             .filter(([, draft]) =>
-                ['pending', 'error'].includes(draft?.reportState)
+                REPORT_QUEUE_STATES.includes(draft?.reportState)
             )
             .map(([taskId, draft]) => {
                 const report = selectReportForTask(reports, taskId);

@@ -1,3 +1,7 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import useActDocument from '@/features/acts/hooks/useActDocument';
 import { getActReportFields } from '@/features/reports/lib/getActReportFields';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
@@ -25,7 +29,7 @@ const ReportSubmitScreen = () => {
     const { id, reference, sourceReportId, queueView } = useLocalSearchParams();
     const draft = useReportDraftStore((state) => state.drafts?.[id]);
     const isQueueView =
-        queueView === '1' && ['pending', 'error'].includes(draft?.reportState);
+        queueView === '1' && REPORT_QUEUE_STATES.includes(draft?.reportState);
     const { task: loadedTask, isPending: isTaskPending } = useTaskById(+id);
     const task =
         loadedTask ??
@@ -90,7 +94,8 @@ const ReportSubmitScreen = () => {
                         showsVerticalScrollIndicator={false}>
                         {isQueueView && !loadedTask && (
                             <Text style={styles.missingTask}>
-                                {draft?.reportState === 'pending'
+                                {draft?.reportState ===
+                                REPORT_DRAFT_STATE.PENDING
                                     ? 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Отчёт остаётся в очереди и будет отправлен при появлении интернета.'
                                     : 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Для загрузки задачи подключитесь к интернету. Отчёт с ошибкой необходимо отправить вручную.'}
                             </Text>

@@ -1,3 +1,4 @@
+import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
 
@@ -9,7 +10,7 @@ export const preserveBrigadeDraft = ({ taskId, values, expectedDraft }) => {
     const draft = {
         ...values,
         ...current,
-        reportState: 'draft',
+        reportState: REPORT_DRAFT_STATE.DRAFT,
         requiresManualSubmit: true,
     };
     delete draft.submissionFinalization;

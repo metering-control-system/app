@@ -1,3 +1,7 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import useStorePictures from '@/shared/store/useStorePictures';
 import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
@@ -27,7 +31,7 @@ export const useOfflineReportsSync = (submitTaskReport, deleteAct) => {
                     useReportDraftStore.getState().drafts ?? {}
                 ).filter(
                     ([taskId, draft]) =>
-                        draft?.reportState === 'pending' &&
+                        draft?.reportState === REPORT_DRAFT_STATE.PENDING &&
                         !draft.requiresManualSubmit &&
                         (!automatic || !attemptedTaskIdsRef.current.has(taskId))
                 )
@@ -69,12 +73,12 @@ export const useOfflineReportsSync = (submitTaskReport, deleteAct) => {
             return;
         }
         for (const taskId of attemptedTaskIdsRef.current) {
-            if (!['pending', 'error'].includes(drafts?.[taskId]?.reportState))
+            if (!REPORT_QUEUE_STATES.includes(drafts?.[taskId]?.reportState))
                 attemptedTaskIdsRef.current.delete(taskId);
         }
         const hasReadyDraft = Object.entries(drafts ?? {}).some(
             ([taskId, draft]) =>
-                draft?.reportState === 'pending' &&
+                draft?.reportState === REPORT_DRAFT_STATE.PENDING &&
                 !draft.requiresManualSubmit &&
                 !pendingOperations.includes(taskId) &&
                 !attemptedTaskIdsRef.current.has(taskId)

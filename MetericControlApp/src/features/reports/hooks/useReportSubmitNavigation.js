@@ -1,3 +1,7 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { REPORT_FIELD_REFERENCES as FORM_FIELDS_MAP } from '@/features/reports/constants/reportFieldReferences';
 import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
@@ -98,8 +102,8 @@ const useReportSubmitNavigation = ({
             reportQuery.data?.status !== 'REJECTED');
 
     const redirect =
-        !(queueView && ['pending', 'error'].includes(draft?.reportState)) &&
-        draft?.reportState !== 'pending' &&
+        !(queueView && REPORT_QUEUE_STATES.includes(draft?.reportState)) &&
+        draft?.reportState !== REPORT_DRAFT_STATE.PENDING &&
         !reportQuery.isPending &&
         !isResolvingSource &&
         (reportQuery.isReadOnly || sourceReportChanged)
