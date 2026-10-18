@@ -1,4 +1,4 @@
-import useReportActStore from '@/features/reports/store/useReportActStore';
+import useActStore from '@/features/acts/store/useActStore';
 import tokenStorage from '@/features/auth/lib/tokenStorage';
 import useAuth from '@/features/auth/store/useAuth';
 import useTasksSyncStore from '@/features/tasks/store/useTasksSyncStore';
@@ -12,8 +12,8 @@ import useCommentsStore from '@/features/comments/store/useCommentsStore';
 import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 
 const clearSessionState = async (queryClient) => {
-    useReportActStore.getState().clearAllActs();
-    useReportActStore.persist.clearStorage();
+    useActStore.getState().clearAllActs();
+    useActStore.persist.clearStorage();
     await tokenStorage.clearTokens();
     useAuth.getState().clearSession();
     useTasksSyncStore.getState().setLastSyncAt(null);

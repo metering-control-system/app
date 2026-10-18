@@ -5,8 +5,6 @@ import {
     finalizeReportSubmission,
     isConfirmedReportSubmission,
 } from '@/features/reports/lib/finalizeReportSubmission';
-import { validateReportAct } from '@/features/reports/lib/validateReportAct';
-import { savePdfToDocuments } from '@/features/reports/lib/savePdfToDocuments';
 import { useCallback } from 'react';
 import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -29,7 +27,6 @@ import {
 } from '@/features/reports/lib/buildReportPayload';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import useReportActStore from '@/features/reports/store/useReportActStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
 import {
     buildReportUpsertRequest,
@@ -42,10 +39,21 @@ import {
 import { createClientId } from '@/features/reports/lib/createClientReportId';
 import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
-import { buildReportSignaturesPayload } from '@/features/reports/lib/buildReportSignaturesPayload';
 import useStorePictures from '@/shared/store/useStorePictures';
 
-const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
+const useSubmitReport = ({
+    getTasks,
+    getTaskById,
+    isTaskReportReadOnly,
+    actOperations,
+}) => {
+    const {
+        validateReportAct,
+        savePdfToDocuments,
+        getActRecord,
+        clearTaskAct,
+        buildReportSignaturesPayload,
+    } = actOperations;
     const queryClient = useQueryClient();
     const { isOnline, isChecked } = useNetwork();
     const setDraft = useReportDraftStore((state) => state.setDraft);
@@ -74,8 +82,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
                 return { skipped: true };
             }
             if (previousDraft?.submissionFinalization && isOnline) {
-                const recoveryActRecord =
-                    useReportActStore.getState().actMetadataByTask[draftId];
+                const recoveryActRecord = getActRecord(draftId);
                 let report;
                 try {
                     report = await getReportByTaskId(taskId);
@@ -114,8 +121,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
             ) {
                 return { skipped: true };
             }
-            const actRecord =
-                useReportActStore.getState().actMetadataByTask[draftId];
+            const actRecord = getActRecord(draftId);
             const picturesState = useStorePictures.getState();
             const photoMetadata = prepareReportPhotoMetadata({
                 photos: values.photos,
@@ -371,9 +377,7 @@ const useSubmitReport = ({ getTasks, getTaskById, isTaskReportReadOnly }) => {
         },
         onSuccess: async (_data, variables) => {
             if (_data.skipped || _data.offline) return;
-            useReportActStore
-                .getState()
-                .clearTaskAct(variables.taskId, _data.actRecord);
+            clearTaskAct(variables.taskId, _data.actRecord);
             const store = useReportDraftStore.getState();
             const draftId = String(variables.taskId);
             if (

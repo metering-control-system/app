@@ -1,10 +1,10 @@
 import { create } from 'zustand/react';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
-import { reportSignaturesStorage } from '@/features/reports/store/reportSignaturesStorage';
+import { actSignaturesStorage } from '@/features/acts/store/actSignaturesStorage';
 import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 
-const useReportActStore = create(
+const useActStore = create(
     persist(
         (set, get) => ({
             actMetadataByTask: {},
@@ -68,7 +68,7 @@ const useReportActStore = create(
         {
             name: 'report-signatures-store',
             storage: createJSONStorage(() =>
-                createPersistStorage(reportSignaturesStorage)
+                createPersistStorage(actSignaturesStorage)
             ),
             partialize: (state) => ({
                 actMetadataByTask: state.actMetadataByTask,
@@ -77,4 +77,4 @@ const useReportActStore = create(
     )
 );
 
-export default useReportActStore;
+export default useActStore;

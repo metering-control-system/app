@@ -1,5 +1,4 @@
 import useStorePictures from '@/shared/store/useStorePictures';
-import { deleteAct } from '@/features/reports/lib/savePdfToDocuments';
 import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
@@ -8,7 +7,7 @@ import { useMutationState } from '@tanstack/react-query';
 import { REPORT_OPERATION_KEY } from '@/features/reports/lib/reportOperation';
 import { syncOfflineReportsRecords } from '@/features/reports/lib/syncOfflineReportsRecords';
 
-export const useOfflineReportsSync = (submitTaskReport) => {
+export const useOfflineReportsSync = (submitTaskReport, deleteAct) => {
     const { isChecked, isOnline } = useNetwork();
     const syncingRef = useRef(false);
     const attemptedTaskIdsRef = useRef(new Set());
@@ -60,7 +59,7 @@ export const useOfflineReportsSync = (submitTaskReport) => {
 
             return failedSyncCount;
         },
-        [isChecked, isOnline, submitTaskReport]
+        [isChecked, isOnline, submitTaskReport, deleteAct]
     );
 
     useEffect(() => {

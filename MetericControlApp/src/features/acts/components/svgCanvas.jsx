@@ -3,7 +3,7 @@ import { StyleSheet, View } from 'react-native';
 import { GestureDetector } from 'react-native-gesture-handler';
 import Svg, { Defs, Path, Pattern, Rect } from 'react-native-svg';
 import Animated from 'react-native-reanimated';
-import useSvgCanvas from '@/features/reports/hooks/useSvgCanvas';
+import useSvgCanvas from '@/features/acts/hooks/useSvgCanvas';
 import FormButton from '@/shared/components/button/formButton';
 
 const AnimatedPath = Animated.createAnimatedComponent(Path);

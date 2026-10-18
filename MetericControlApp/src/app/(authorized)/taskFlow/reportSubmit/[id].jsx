@@ -1,3 +1,14 @@
+import useActStore from '@/features/acts/store/useActStore';
+import { validateAct } from '@/features/acts/lib/validateAct';
+import { savePdfToDocuments } from '@/features/acts/lib/savePdfToDocuments';
+import { buildSignaturesPayload } from '@/features/acts/lib/buildSignaturesPayload';
+import { generateActPdf } from '@/features/acts/lib/generateActPdf';
+import { ensureActFileExists } from '@/features/acts/lib/ensureActFileExists';
+
+import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
+import ActDocumentPanel from '@/features/acts/components/actDocumentPanel';
+import { useCallback } from 'react';
+import { getActReportFields } from '@/features/reports/lib/getActReportFields';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
@@ -51,10 +62,54 @@ const ReportSubmitScreen = () => {
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
     );
+    const signatureResult = useActStore((state) => state.result);
+    const savedAct = useActStore(
+        (state) => state.actMetadataByTask[String(task?.id ?? id)]
+    );
+    const templates = useActTemplatesStore((state) => state.templates);
+    const renderActDocument = useCallback(
+        (props) => <ActDocumentPanel {...props} />,
+        []
+    );
+
+    const actOperations = {
+        validateReportAct: ({ taskId, values }) =>
+            validateAct({
+                taskId,
+                actPdf: values.actPdf,
+                fields: values.actPdf?.isRefused
+                    ? undefined
+                    : getActReportFields(values),
+            }),
+        getActRecord: (taskId) =>
+            useActStore.getState().actMetadataByTask[String(taskId)],
+        clearTaskAct: (taskId, expectedAct) =>
+            useActStore.getState().clearTaskAct(taskId, expectedAct),
+        savePdfToDocuments,
+        buildReportSignaturesPayload: buildSignaturesPayload,
+        ensureActFileExists,
+        generateActPdf: ({ template, values, previousAct }) =>
+            generateActPdf({
+                template,
+                fields: getActReportFields(values),
+                actPdf: values.actPdf,
+                previousAct,
+            }),
+        saveAct: useActStore.getState().saveAct,
+        clearSignatureResult: useActStore.getState().clearResult,
+        startSignatureSession: (session) =>
+            useActStore
+                .getState()
+                .startSession({
+                    ...session,
+                    fields: getActReportFields(session.values),
+                }),
+    };
     const reportSubmission = useSubmitReport({
         getTasks: () => useTasksStore.getState().tasks,
         getTaskById,
         isTaskReportReadOnly,
+        actOperations,
     });
     const router = useRouter();
 
@@ -90,6 +145,9 @@ const ReportSubmitScreen = () => {
                         )}
                         <ReportSubmitForm
                             reportSubmission={reportSubmission}
+                            actState={{ signatureResult, savedAct, templates }}
+                            actOperations={actOperations}
+                            renderActDocument={renderActDocument}
                             hasSourceTask={Boolean(loadedTask)}
                             readOnly={isQueueView}
                             onError={handleError}

@@ -1,7 +1,7 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { FontAwesome } from '@expo/vector-icons';
-import { SIGNATURE_ROLES } from '@/features/reports/constants/signatureRoles';
-import PdfViewer from '@/features/reports/components/pdfViewer';
+import { SIGNATURE_ROLES } from '@/features/acts/constants/signatureRoles';
+import PdfViewer from '@/features/acts/components/pdfViewer';
 import FormButton from '@/shared/components/button/formButton';
 
 const ActDocumentPanel = ({

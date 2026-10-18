@@ -1,11 +1,15 @@
 import { printToFileAsync } from 'expo-print';
-import { fillActTemplate } from '@/features/reports/lib/fillActTemplate';
-import { getActReportFields } from './getActReportFields';
+import { fillActTemplate } from '@/features/acts/lib/fillActTemplate';
 import { createActChecksum } from './createActChecksum';
 
-export const generateActPdf = async ({ template, values, previousAct }) => {
+export const generateActPdf = async ({
+    template,
+    fields,
+    actPdf: currentAct,
+    previousAct,
+}) => {
     if (!template?.html) throw new Error('Выберите шаблон акта.');
-    const snapshot = JSON.parse(JSON.stringify(values));
+    const snapshot = JSON.parse(JSON.stringify({ fields, actPdf: currentAct }));
     const templateSnapshot = {
         ...template,
         requiredFields: [...(template.requiredFields ?? [])],
@@ -16,10 +20,10 @@ export const generateActPdf = async ({ template, values, previousAct }) => {
         templateId: String(templateSnapshot.id),
         signatures: {},
     };
-    const actFields = getActReportFields(snapshot);
+    const actFields = snapshot.fields;
     const checksum = await createActChecksum({
         template: templateSnapshot,
-        values: snapshot,
+        fields: actFields,
     });
     const savedAct = previousAct ?? snapshot.actPdf;
     actPdf.signatures =

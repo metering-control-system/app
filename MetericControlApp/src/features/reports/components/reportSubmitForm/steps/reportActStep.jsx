@@ -1,18 +1,12 @@
 import { Controller } from 'react-hook-form';
 import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
-import { validateReportAct } from '@/features/reports/lib/validateReportAct';
-import { ensureActFileExists } from '@/features/reports/lib/ensureActFileExists';
-import { generateActPdf } from '@/features/reports/lib/generateActPdf';
-import useReportActStore from '@/features/reports/store/useReportActStore';
 import * as Sharing from 'expo-sharing';
-import ActDocumentPanel from '@/features/reports/components/actDocumentPanel';
 import {
     ReportFormSection,
     ReportFieldLayout,
 } from '@/features/reports/components/reportFormLayout';
 import { ReportToggleField } from '@/features/reports/components/reportSubmitForm/reportFormFields';
-
 export const ReportActStep = ({
     templates,
     template,
@@ -30,9 +24,18 @@ export const ReportActStep = ({
     control,
     hasTemplates,
     isGeneratingPdf,
-    startSignatureSession,
+    actOperations,
+    renderActDocument,
     router,
 }) => {
+    const {
+        validateReportAct,
+        ensureActFileExists,
+        generateActPdf,
+        getActRecord,
+        saveAct,
+        startSignatureSession,
+    } = actOperations;
     const fieldProps = {
         fillPositions,
         highlightedField,
@@ -49,10 +52,9 @@ export const ReportActStep = ({
             const actPdf = await generateActPdf({
                 template: selectedTemplate,
                 values: getValues(),
-                previousAct:
-                    useReportActStore.getState().actMetadataByTask[draftId],
+                previousAct: getActRecord(draftId),
             });
-            useReportActStore.getState().saveAct(draftId, actPdf);
+            saveAct(draftId, actPdf);
             setValue('actPdf', actPdf, { shouldDirty: true });
         } catch {
             onError(
@@ -100,15 +102,15 @@ export const ReportActStep = ({
                             />
                         )}
                     />
-                    <ActDocumentPanel
-                        onError={onError}
-                        templates={templates}
-                        template={template}
-                        actPdf={getValues('actPdf')}
-                        isBusy={isEditingDisabled}
-                        isGenerating={isGeneratingPdf}
-                        onGenerate={printToFile}
-                        onShare={async () => {
+                    {renderActDocument({
+                        onError: onError,
+                        templates: templates,
+                        template: template,
+                        actPdf: getValues('actPdf'),
+                        isBusy: isEditingDisabled,
+                        isGenerating: isGeneratingPdf,
+                        onGenerate: printToFile,
+                        onShare: async () => {
                             onActionStart();
                             try {
                                 ensureActFileExists(getValues('actPdf.uri'));
@@ -128,8 +130,8 @@ export const ReportActStep = ({
                                     'Попробуйте ещё раз. Если ошибка повторится, пересоздайте акт.'
                                 );
                             }
-                        }}
-                        onSign={async (role) => {
+                        },
+                        onSign: async (role) => {
                             if (isEditingDisabled || generatingPdfRef.current)
                                 return;
                             onActionStart();
@@ -157,8 +159,8 @@ export const ReportActStep = ({
                             } finally {
                                 generatingPdfRef.current = false;
                             }
-                        }}
-                    />
+                        },
+                    })}
                 </ReportFormSection>
             </HighlightWrap>
         </ReportFieldLayout>

@@ -34,13 +34,14 @@ import {
 } from '@/features/reports/lib/reportFormHydration';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
-import useReportActStore from '@/features/reports/store/useReportActStore';
-import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 
 const ReportSubmitForm = ({
     onError,
     reportSubmission,
+    actState,
+    actOperations,
+    renderActDocument,
     onActionStart,
     task,
     existingReport,
@@ -67,13 +68,8 @@ const ReportSubmitForm = ({
     const [isGeneratingPdf, setIsGeneratingPdf] = useState(false);
     const generatingPdfRef = useRef(false);
     const isReportBusy = pendingOperations.length > 0 || isGeneratingPdf;
-    const signatureResult = useReportActStore((state) => state.result);
-    const startSignatureSession = useReportActStore(
-        (state) => state.startSession
-    );
-    const clearSignatureResult = useReportActStore(
-        (state) => state.clearResult
-    );
+    const { signatureResult, savedAct, templates } = actState;
+    const { clearSignatureResult } = actOperations;
     const reportPhotosRaw = useStorePictures(
         (state) => state.photos.report?.[id]
     );
@@ -133,12 +129,8 @@ const ReportSubmitForm = ({
             params: { id: draftId },
         });
     };
-    const savedAct = useReportActStore(
-        (state) => state.actMetadataByTask[draftId]
-    );
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
-    const templates = useActTemplatesStore((state) => state.templates);
     const initialValues = useMemo(
         () =>
             getReportFormInitialValues({
@@ -493,7 +485,8 @@ const ReportSubmitForm = ({
                         control={control}
                         hasTemplates={hasTemplates}
                         isGeneratingPdf={isGeneratingPdf}
-                        startSignatureSession={startSignatureSession}
+                        actOperations={actOperations}
+                        renderActDocument={renderActDocument}
                         router={router}
                     />
                 );

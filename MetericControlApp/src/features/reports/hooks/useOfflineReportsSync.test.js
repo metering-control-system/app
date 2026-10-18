@@ -12,6 +12,7 @@ import {
 } from '@tanstack/react-query';
 import {
     cleanup,
+    deleteAct,
     submission,
     useNetwork,
     useReportDraftStore,
@@ -35,7 +36,7 @@ const replacements = new Map(
     ])
 );
 replacements.set(
-    '@/features/reports/lib/savePdfToDocuments',
+    '@/features/acts/lib/savePdfToDocuments',
     `data:text/javascript,${encodeURIComponent(`export { deleteAct } from '${fixturesUrl}';`)}`
 );
 const loader = registerHooks({
@@ -98,7 +99,7 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
         );
     let root;
     const Harness = () => {
-        useOfflineReportsSync(submission.current);
+        useOfflineReportsSync(submission.current, deleteAct);
         return null;
     };
     const mount = () =>

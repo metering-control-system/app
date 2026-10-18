@@ -1,5 +1,5 @@
-import { SIGNATURE_ROLES } from '@/features/reports/constants/signatureRoles';
-import { createSignatureSvg } from '@/features/reports/lib/createSignatureSvg';
+import { SIGNATURE_ROLES } from '@/features/acts/constants/signatureRoles';
+import { createSignatureSvg } from '@/features/acts/lib/createSignatureSvg';
 
 export const fillActTemplate = (html, data, requiredFields = []) => {
     const allowedFields = new Set(

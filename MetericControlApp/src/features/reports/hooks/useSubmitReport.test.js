@@ -18,7 +18,7 @@ const replacements = new Map(
         ['@/features/reports/store/useReportsStore', 'useReportsStore'],
         ['@/features/reports/store/useReportDraftStore', 'useReportDraftStore'],
         ['@/shared/store/useStorePictures', 'useStorePictures'],
-        ['@/features/reports/store/useReportActStore', 'useReportActStore'],
+        ['@/features/acts/store/useActStore', 'useActStore'],
     ].map(([specifier, name]) => [
         specifier,
         `data:text/javascript,${encodeURIComponent(`export { ${name} as default } from '${fixturesUrl}';`)}`,
@@ -27,8 +27,8 @@ const replacements = new Map(
 const apiModules = new Set([
     '@/features/reports/api/submitReportApi',
     '@/features/tasks/api/getTaskByIdApi',
-    '@/features/reports/lib/savePdfToDocuments',
-    '@/features/reports/lib/validateReportAct',
+    '@/features/acts/lib/savePdfToDocuments',
+    '@/features/acts/lib/validateAct',
     '@/features/reports/lib/validateReportUploadFiles',
 ]);
 const loader = registerHooks({
@@ -85,6 +85,20 @@ const setup = async (
             getTasks: () => fixtures.useTasksStore.getState().tasks,
             getTaskById: fixtures.getTaskById,
             isTaskReportReadOnly,
+            actOperations: {
+                validateReportAct: fixtures.validateReportAct,
+                savePdfToDocuments: fixtures.savePdfToDocuments,
+                getActRecord: (taskId) =>
+                    fixtures.useActStore.getState().actMetadataByTask[
+                        String(taskId)
+                    ],
+                clearTaskAct: (taskId, record) =>
+                    fixtures.useActStore
+                        .getState()
+                        .clearTaskAct(taskId, record),
+                buildReportSignaturesPayload:
+                    fixtures.buildReportSignaturesPayload,
+            },
         });
         return null;
     };

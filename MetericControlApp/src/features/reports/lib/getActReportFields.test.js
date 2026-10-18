@@ -32,7 +32,7 @@ const replacements = new Map([
         `),
     ],
     ['expo-file-system', moduleUrl('export class File { exists = true; }')],
-    ['@/features/reports/store/useReportActStore', actStoreUrl],
+    ['@/features/acts/store/useActStore', actStoreUrl],
     ['@/features/acts/store/useActTemplatesStore', templatesStoreUrl],
 ]);
 const loader = registerHooks({
@@ -52,13 +52,30 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { generateActPdf } = await import('./generateActPdf.js');
-const { createActChecksum } = await import('./createActChecksum.js');
-const { validateReportAct } = await import('./validateReportAct.js');
+const { generateActPdf: generatePdf } =
+    await import('../../acts/lib/generateActPdf.js');
+const { createActChecksum: checksumAct } =
+    await import('../../acts/lib/createActChecksum.js');
+const { validateAct } = await import('../../acts/lib/validateAct.js');
 const { printedHtml } = await import(printUrl);
 const { default: actStore } = await import(actStoreUrl);
 const { default: templatesStore } = await import(templatesStoreUrl);
 loader.deregister();
+
+const generateActPdf = ({ values, ...options }) =>
+    generatePdf({
+        ...options,
+        fields: getActReportFields(values),
+        actPdf: values.actPdf,
+    });
+const createActChecksum = ({ values, template }) =>
+    checksumAct({ fields: getActReportFields(values), template });
+const validateReportAct = ({ taskId, values }) =>
+    validateAct({
+        taskId,
+        actPdf: values.actPdf,
+        fields: getActReportFields(values),
+    });
 
 const actDetails = {
     compiledAt: '12.10.2026 11:40',

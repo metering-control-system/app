@@ -10,15 +10,11 @@ export const state = {
         removedPhotoIds: { report: {} },
     },
     useReportDraftStore: { drafts: {} },
-    useReportActStore: { result: null, actMetadataByTask: {} },
+    useActStore: { result: null, actMetadataByTask: {} },
     useActTemplatesStore: { templates: [] },
 };
 const noop = () => {};
-for (const name of [
-    'useStorePictures',
-    'useReportDraftStore',
-    'useReportActStore',
-]) {
+for (const name of ['useStorePictures', 'useReportDraftStore', 'useActStore']) {
     for (const method of [
         'setDraft',
         'clearDraft',

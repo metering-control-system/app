@@ -89,7 +89,7 @@ const createSignatureDataUrl = (strokes = []) => {
     }
 };
 
-export const buildReportSignaturesPayload = (actPdf) => ({
+export const buildSignaturesPayload = (actPdf) => ({
     ['consumer_signature']: createSignatureDataUrl(
         actPdf?.isRefused ? [] : actPdf?.signatures?.client
     ),

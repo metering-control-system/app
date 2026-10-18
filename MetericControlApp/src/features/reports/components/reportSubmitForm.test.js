@@ -139,6 +139,21 @@ const setup = async (t) => {
         currentStep = stepIndex;
         return createElement(Form, {
             reportSubmission: useSubmitReport(),
+            actState: {
+                signatureResult: state.useActStore.result,
+                savedAct: state.useActStore.actMetadataByTask['1'],
+                templates: state.useActTemplatesStore.templates,
+            },
+            actOperations: {
+                clearSignatureResult: state.useActStore.clearResult,
+                getActRecord: () => state.useActStore.actMetadataByTask['1'],
+                saveAct() {},
+                startSignatureSession() {},
+                generateActPdf: async () => ({}),
+                validateReportAct: async () => {},
+                ensureActFileExists() {},
+            },
+            renderActDocument: () => null,
             task,
             id: '1',
             stepIndex,

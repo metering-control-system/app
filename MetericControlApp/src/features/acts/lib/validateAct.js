@@ -1,14 +1,12 @@
 import { ensureActFileExists } from './ensureActFileExists';
 import { createActChecksum } from './createActChecksum';
 import { areObjectsEqual } from '../../../shared/lib/collections/areObjectsEqual.js';
-import useReportActStore from '@/features/reports/store/useReportActStore';
+import useActStore from '@/features/acts/store/useActStore';
 import useActTemplatesStore from '@/features/acts/store/useActTemplatesStore';
 
-export const validateReportAct = async ({ taskId, values }) => {
-    if (values.actPdf?.isRefused) return;
-    const actPdf = values.actPdf;
-    const record =
-        useReportActStore.getState().actMetadataByTask[String(taskId)];
+export const validateAct = async ({ taskId, actPdf, fields }) => {
+    if (actPdf?.isRefused) return;
+    const record = useActStore.getState().actMetadataByTask[String(taskId)];
     const template = useActTemplatesStore
         .getState()
         .templates.find(
@@ -20,10 +18,9 @@ export const validateReportAct = async ({ taskId, values }) => {
         );
     }
     ensureActFileExists(actPdf.uri);
-    const checksum = await createActChecksum({ values, template });
+    const checksum = await createActChecksum({ fields, template });
     if (
-        useReportActStore.getState().actMetadataByTask[String(taskId)] !==
-            record ||
+        useActStore.getState().actMetadataByTask[String(taskId)] !== record ||
         checksum !== actPdf.checksum ||
         checksum !== record.checksum ||
         String(record.templateId) !== String(template.id) ||

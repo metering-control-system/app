@@ -1,5 +1,5 @@
 import mmkvStorage from '@/shared/store/persistMMKVStorage';
 
-export const reportSignaturesStorage = mmkvStorage(
+export const actSignaturesStorage = mmkvStorage(
     'metric-control-report-signatures-storage'
 );

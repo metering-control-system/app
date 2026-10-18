@@ -2,21 +2,20 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { StyleSheet, Text } from 'react-native';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
-import SvgCanvas from '@/features/reports/components/svgCanvas';
-import { SIGNATURE_ROLES } from '@/features/reports/constants/signatureRoles';
-import { validateReportAct } from '@/features/reports/lib/validateReportAct';
-import { generateActPdf } from '@/features/reports/lib/generateActPdf';
-import useReportActStore from '@/features/reports/store/useReportActStore';
-import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import SvgCanvas from '@/features/acts/components/svgCanvas';
+import { SIGNATURE_ROLES } from '@/features/acts/constants/signatureRoles';
+import { validateAct } from '@/features/acts/lib/validateAct';
+import { generateActPdf } from '@/features/acts/lib/generateActPdf';
+import useActStore from '@/features/acts/store/useActStore';
 import FormButton from '@/shared/components/button/formButton';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 
-const ReportSignatureCapture = ({ onError }) => {
+const ActSignatureCapture = ({ onError, onSaved }) => {
     const router = useRouter();
     const [session, setSession] = useState(
-        () => useReportActStore.getState().session
+        () => useActStore.getState().session
     );
-    const completeSession = useReportActStore((state) => state.completeSession);
+    const completeSession = useActStore((state) => state.completeSession);
     const [isSaving, setIsSaving] = useState(false);
     const savingRef = useRef(false);
     const closingRef = useRef(false);
@@ -42,9 +41,10 @@ const ReportSignatureCapture = ({ onError }) => {
         savingRef.current = true;
         setIsSaving(true);
         try {
-            await validateReportAct({
+            await validateAct({
                 taskId: session.taskId,
-                values: session.values,
+                actPdf: session.values.actPdf,
+                fields: session.fields,
             });
             const signatures = { ...session.values.actPdf?.signatures };
             if (clear) delete signatures[session.role];
@@ -56,12 +56,14 @@ const ReportSignatureCapture = ({ onError }) => {
             };
             const generatedAct = await generateActPdf({
                 template: session.template,
-                values: { ...session.values, actPdf },
+                fields: session.fields,
+                actPdf,
             });
             if (!mountedRef.current) return false;
-            await validateReportAct({
+            await validateAct({
                 taskId: session.taskId,
-                values: session.values,
+                actPdf: session.values.actPdf,
+                fields: session.fields,
             });
             if (!mountedRef.current) return false;
             if (
@@ -73,17 +75,13 @@ const ReportSignatureCapture = ({ onError }) => {
                 throw new Error(
                     'Акт изменился. Вернитесь в отчёт и пересоздайте его.'
                 );
-            const draftId = String(session.taskId);
-            const draftStore = useReportDraftStore.getState();
-            draftStore.setDraft({
-                draftId,
-                values: {
-                    ...(draftStore.getDraft(draftId) ?? session.values),
-                    actPdf: generatedAct,
-                },
+            onSaved({
+                taskId: session.taskId,
+                values: session.values,
+                actPdf: generatedAct,
             });
             if (clear) {
-                setSession(useReportActStore.getState().session);
+                setSession(useActStore.getState().session);
             } else {
                 closingRef.current = true;
                 router.back();
@@ -150,7 +148,7 @@ const ReportSignatureCapture = ({ onError }) => {
     );
 };
 
-export default ReportSignatureCapture;
+export default ActSignatureCapture;
 
 const styles = StyleSheet.create({
     container: { flex: 1 },

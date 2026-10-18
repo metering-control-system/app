@@ -1,11 +1,10 @@
 import { CryptoDigestAlgorithm, digestStringAsync } from 'expo-crypto';
-import { getActReportFields } from '@/features/reports/lib/getActReportFields';
 
-export const createActChecksum = ({ values, template }) => {
+export const createActChecksum = ({ fields, template }) => {
     if (!template?.html) throw new Error('Выберите шаблон акта.');
     const content = JSON.stringify({
         version: 1,
-        fields: getActReportFields(values),
+        fields,
         template: {
             id: String(template.id),
             html: template.html,
