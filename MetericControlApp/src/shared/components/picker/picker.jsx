@@ -38,6 +38,10 @@ const Picker = ({
     }, [opened, canBeOpened, animValue]);
 
     const selectedCount = multiSelect && state instanceof Set ? state.size : 0;
+    const selectedLabel = !multiSelect
+        ? variants?.find(([value]) => value === state)?.[1]
+        : null;
+    const displayLabel = selectedLabel ?? label;
 
     const onSelect = (item) => {
         if (!multiSelect) {
@@ -50,9 +54,11 @@ const Picker = ({
         } else {
             const newSet = new Set(state);
             if (changeOnRepeatedPress) {
-                state.has(item[0])
-                    ? newSet.delete(item[0])
-                    : newSet.add(item[0]);
+                if (state.has(item[0])) {
+                    newSet.delete(item[0]);
+                } else {
+                    newSet.add(item[0]);
+                }
             } else {
                 newSet.add(item[0]);
             }
@@ -77,12 +83,20 @@ const Picker = ({
                     <Text
                         style={styles.selectText}
                         numberOfLines={1}
-                        ellipsizeMode='clip'>
-                        {label}
-                        {selectedCount > 0 && ` (${selectedCount})`}
+                        ellipsizeMode='tail'>
+                        {displayLabel}
                     </Text>
                 ) : (
                     <FontAwesome5 name={icon} size={20} color='#727272' />
+                )}
+                {selectedCount > 0 && (
+                    <View style={styles.countBadge}>
+                        <Text
+                            style={styles.countText}
+                            accessibilityLabel={`Выбрано вариантов: ${selectedCount}`}>
+                            {selectedCount}
+                        </Text>
+                    </View>
                 )}
                 <Ionicons name='chevron-down' size={14} color='#999' />
             </TouchableOpacity>
@@ -140,6 +154,16 @@ const styles = StyleSheet.create({
         borderColor: '#e0e0e0',
     },
     selectText: { fontSize: 13, color: '#333', flexShrink: 1 },
+    countBadge: {
+        flexShrink: 0,
+        minWidth: 20,
+        paddingHorizontal: 5,
+        paddingVertical: 2,
+        borderRadius: 10,
+        backgroundColor: '#e1edff',
+        alignItems: 'center',
+    },
+    countText: { fontSize: 12, fontWeight: '600', color: '#245ca6' },
     selectionZone: {
         position: 'absolute',
         top: '100%',
