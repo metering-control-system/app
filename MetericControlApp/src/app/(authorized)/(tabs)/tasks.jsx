@@ -1,14 +1,6 @@
-import useActStore from '@/features/acts/store/useActStore';
-import { validateAct } from '@/features/acts/lib/validateAct';
-import {
-    savePdfToDocuments,
-    deleteAct,
-} from '@/features/acts/lib/savePdfToDocuments';
-import { buildSignaturesPayload } from '@/features/acts/lib/buildSignaturesPayload';
-import { generateActPdf } from '@/features/acts/lib/generateActPdf';
-import { ensureActFileExists } from '@/features/acts/lib/ensureActFileExists';
-
+import { createActOperations } from '@/features/acts/lib/createActOperations';
 import useSettingsStore from '@/features/settings/store/useSettingsStore';
+import { deleteAct } from '@/features/acts/lib/savePdfToDocuments';
 import { getActReportFields } from '@/features/reports/lib/getActReportFields';
 import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
@@ -81,39 +73,7 @@ const TaskScreen = () => {
         (state) => Object.keys(state.tasksStatuses ?? {}).length
     );
 
-    const actOperations = {
-        validateReportAct: ({ taskId, values }) =>
-            validateAct({
-                taskId,
-                actPdf: values.actPdf,
-                fields: values.actPdf?.isRefused
-                    ? undefined
-                    : getActReportFields(values),
-            }),
-        getActRecord: (taskId) =>
-            useActStore.getState().actMetadataByTask[String(taskId)],
-        clearTaskAct: (taskId, expectedAct) =>
-            useActStore.getState().clearTaskAct(taskId, expectedAct),
-        savePdfToDocuments,
-        buildReportSignaturesPayload: buildSignaturesPayload,
-        ensureActFileExists,
-        generateActPdf: ({ template, values, previousAct }) =>
-            generateActPdf({
-                template,
-                fields: getActReportFields(values),
-                actPdf: values.actPdf,
-                previousAct,
-            }),
-        saveAct: useActStore.getState().saveAct,
-        clearSignatureResult: useActStore.getState().clearResult,
-        startSignatureSession: (session) =>
-            useActStore
-                .getState()
-                .startSession({
-                    ...session,
-                    fields: getActReportFields(session.values),
-                }),
-    };
+    const actOperations = createActOperations(getActReportFields);
     const { submitTaskReport } = useSubmitReport({
         getTasks: () => useTasksStore.getState().tasks,
         getTaskById,
