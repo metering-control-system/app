@@ -13,5 +13,4 @@ export const taskStatusColors = StyleSheet.create({
     IN_PROGRESS: colors.secondary,
     COMPLETED: colors.primary,
     REJECTED: colors.warning,
-    NEEDS_REVISION: colors.warning,
 });

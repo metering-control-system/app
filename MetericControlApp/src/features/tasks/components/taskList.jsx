@@ -106,7 +106,7 @@ const ConnectedTasksList = ({
             filterSubmittedTasks(tasks, reports, drafts).map((task) => {
                 const report = selectReportForTask(reports, task.id);
                 return report?.status === 'REJECTED'
-                    ? { ...task, status: 'NEEDS_REVISION' }
+                    ? { ...task, status: 'REJECTED' }
                     : task;
             })
         );
