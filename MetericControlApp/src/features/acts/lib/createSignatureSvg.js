@@ -1,25 +1,11 @@
+import { prepareSignatureStrokes } from '@/features/acts/lib/prepareSignatureStrokes';
+
 export const createSignatureSvg = (strokes = []) => {
-    const validStrokes = strokes
-        .map((stroke) =>
-            stroke.filter(
-                (point) =>
-                    Number.isFinite(point?.x) && Number.isFinite(point?.y)
-            )
-        )
-        .filter((stroke) => stroke.length);
+    const { validStrokes, minX, minY, maxX, maxY } =
+        prepareSignatureStrokes(strokes);
     if (!validStrokes.length) return '';
 
-    let minX = Infinity;
-    let minY = Infinity;
-    let maxX = -Infinity;
-    let maxY = -Infinity;
     const paths = validStrokes.map((points) => {
-        points.forEach(({ x, y }) => {
-            minX = Math.min(minX, x);
-            minY = Math.min(minY, y);
-            maxX = Math.max(maxX, x);
-            maxY = Math.max(maxY, y);
-        });
         if (points.length === 1) {
             return `<circle cx="${points[0].x}" cy="${points[0].y}" r="1.5" fill="#172b4d" />`;
         }
