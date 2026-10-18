@@ -1,3 +1,4 @@
+import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import InteractiveMap from '@/features/gis/components/interactiveMap';
 import MapLegend from '@/features/gis/components/mapLegend';
@@ -55,7 +56,11 @@ const MapScreen = () => {
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            filterSubmittedTasks(tasks, reports, drafts)
+            filterSubmittedTasks(
+                tasks,
+                (taskId) => selectReportForTask(reports, taskId),
+                drafts
+            )
         );
         return filterBySearch({ query: filtered, input: search });
     }, [tasks, reports, drafts, filtering, search]);

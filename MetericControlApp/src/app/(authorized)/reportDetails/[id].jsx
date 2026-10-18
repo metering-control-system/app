@@ -1,3 +1,4 @@
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 import useReportDetailsNavigation from '@/features/reports/hooks/useReportDetailsNavigation';
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
@@ -42,6 +43,7 @@ const ReportDescription = () => {
         canOpenTask,
         redirect,
     } = useReportDetailsNavigation({
+        isTaskReportReadOnly,
         report,
         task,
         isTaskPending,

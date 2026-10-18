@@ -11,11 +11,6 @@ import { sortBy } from '@/features/tasks/lib/sortTasks';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
-import useReportsStore from '@/features/reports/store/useReportsStore';
-import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import useTaskReports from '@/features/reports/hooks/useTaskReports';
-import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
-import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 
 const ConnectedTasksList = ({
     setError,
@@ -24,16 +19,13 @@ const ConnectedTasksList = ({
     search,
     sync,
     syncingRecords,
+    prepareTasks,
+    isReportsPending,
+    isReportsFetching,
+    reportsError,
+    refreshReports,
 }) => {
     const tasks = useTasksStore((state) => state.tasks);
-    const reports = useReportsStore((state) => state.reports);
-    const drafts = useReportDraftStore((state) => state.drafts);
-    const {
-        isPending: isReportsPending,
-        isFetching: isReportsFetching,
-        error: reportsError,
-        refreshReports,
-    } = useTaskReports();
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [isRefreshingList, setIsRefreshingList] = useState(false);
@@ -103,16 +95,11 @@ const ConnectedTasksList = ({
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            filterSubmittedTasks(tasks, reports, drafts).map((task) => {
-                const report = selectReportForTask(reports, task.id);
-                return report?.status === 'REJECTED'
-                    ? { ...task, status: 'REJECTED' }
-                    : task;
-            })
+            prepareTasks(tasks)
         );
         const sorted = sortBy(filtered, sorting);
         return filterBySearch({ query: sorted, input: search });
-    }, [tasks, reports, drafts, filtering, sorting, search]);
+    }, [tasks, prepareTasks, filtering, sorting, search]);
 
     const onRefresh = async () => {
         setIsRefreshingList(true);

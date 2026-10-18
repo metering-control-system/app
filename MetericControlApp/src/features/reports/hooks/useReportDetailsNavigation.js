@@ -3,7 +3,6 @@ import { REPORT_FIELD_REFERENCES } from '@/features/reports/constants/reportFiel
 import { useScrollToPosition } from '@/shared/hooks/useNavigateToElement';
 import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const useReportDetailsNavigation = ({
     report,
@@ -11,6 +10,7 @@ const useReportDetailsNavigation = ({
     isTaskPending,
     reference,
     viewOnly,
+    isTaskReportReadOnly,
 }) => {
     const target = REPORT_FIELD_REFERENCES[reference?.toUpperCase()];
     const tiedTaskId = report?.task_id ? Number(report.task_id) : null;
@@ -19,7 +19,8 @@ const useReportDetailsNavigation = ({
     const latestReportQuery = useTaskReport(
         target && viewOnly !== '1' && report?.status === 'REJECTED'
             ? task
-            : null
+            : null,
+        isTaskReportReadOnly
     );
     const isResolvingReference = Boolean(
         target &&

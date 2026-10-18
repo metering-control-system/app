@@ -89,7 +89,7 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
         );
     let root;
     const Harness = () => {
-        useOfflineReportsSync();
+        useOfflineReportsSync(submission.current);
         return null;
     };
     const mount = () =>

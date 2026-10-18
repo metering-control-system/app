@@ -1,3 +1,10 @@
+import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
+import {
+    isTaskReportReadOnly,
+    filterSubmittedTasks,
+} from '@/features/tasks/lib/taskReportVisibility';
+import useTaskReports from '@/features/reports/hooks/useTaskReports';
 import TasksList from '@/features/tasks/components/taskList';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import { useCallback, useMemo, useState } from 'react';
@@ -53,7 +60,12 @@ const TaskScreen = () => {
         (state) => Object.keys(state.tasksStatuses ?? {}).length
     );
 
-    const syncReportsRecords = useOfflineReportsSync();
+    const { submitTaskReport } = useSubmitReport({
+        getTasks: () => useTasksStore.getState().tasks,
+        getTaskById,
+        isTaskReportReadOnly,
+    });
+    const syncReportsRecords = useOfflineReportsSync(submitTaskReport);
     const reportsPending = Object.entries(
         useReportDraftStore((state) => state.drafts)
     ).reduce((prev, curr) => {
@@ -65,8 +77,28 @@ const TaskScreen = () => {
 
     const reportsPendingCount = Object.keys(reportsPending).length;
 
+    const {
+        isPending: isReportsPending,
+        isFetching: isReportsFetching,
+        error: reportsError,
+        refreshReports,
+    } = useTaskReports();
     const tasks = useTasksStore((state) => state.tasks);
     const reports = useReportsStore((state) => state.reports);
+    const prepareTasks = useCallback(
+        (tasks) =>
+            filterSubmittedTasks(
+                tasks,
+                (taskId) => selectReportForTask(reports, taskId),
+                drafts
+            ).map((task) => {
+                const report = selectReportForTask(reports, task.id);
+                return report?.status === 'REJECTED'
+                    ? { ...task, status: 'REJECTED' }
+                    : task;
+            }),
+        [reports, drafts]
+    );
     const { isChecked, isOnline } = useNetwork();
     const [isSyncing, setIsSyncing] = useState(false);
     const operations = useMutationState({
@@ -146,6 +178,11 @@ const TaskScreen = () => {
                 </Pressable>
             )}
             <TasksList
+                prepareTasks={prepareTasks}
+                isReportsPending={isReportsPending}
+                isReportsFetching={isReportsFetching}
+                reportsError={reportsError}
+                refreshReports={refreshReports}
                 setError={setError}
                 sorting={sorting}
                 filtering={filtering}

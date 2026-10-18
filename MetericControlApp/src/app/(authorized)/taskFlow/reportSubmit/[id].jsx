@@ -1,3 +1,7 @@
+import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
+import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 import useReportSubmitNavigation from '@/features/reports/hooks/useReportSubmitNavigation';
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
@@ -25,7 +29,7 @@ const ReportSubmitScreen = () => {
         loadedTask ??
         (isQueueView ? { id: Number(id), address: draft?.address } : null);
     const isPending = isTaskPending && !isQueueView;
-    const reportQuery = useTaskReport(task);
+    const reportQuery = useTaskReport(task, isTaskReportReadOnly);
     const {
         scrollRef,
         fillPositions,
@@ -47,6 +51,11 @@ const ReportSubmitScreen = () => {
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
     );
+    const reportSubmission = useSubmitReport({
+        getTasks: () => useTasksStore.getState().tasks,
+        getTaskById,
+        isTaskReportReadOnly,
+    });
     const router = useRouter();
 
     if (redirect) return <Redirect href={redirect} />;
@@ -80,6 +89,7 @@ const ReportSubmitScreen = () => {
                             </Text>
                         )}
                         <ReportSubmitForm
+                            reportSubmission={reportSubmission}
                             hasSourceTask={Boolean(loadedTask)}
                             readOnly={isQueueView}
                             onError={handleError}

@@ -1,5 +1,3 @@
-import { selectReportForTask } from '../../reports/lib/reportUpsert.js';
-
 export const isTaskReportReadOnly = (task, report, draft) => {
     if (!task || !report) return false;
     if (
@@ -15,9 +13,9 @@ export const isTaskReportReadOnly = (task, report, draft) => {
     return ['ON_REVIEW', 'ON_ADMIN', 'ACCEPTED'].includes(report.status);
 };
 
-export const filterSubmittedTasks = (tasks, reports, drafts) =>
+export const filterSubmittedTasks = (tasks, getReportForTask, drafts) =>
     (tasks ?? []).filter((task) => {
-        const report = selectReportForTask(reports, task.id);
+        const report = getReportForTask(task.id);
         const draft = drafts?.[task.id];
         const hasServerLock = typeof task.is_locked === 'boolean';
         const hasNewerReport =

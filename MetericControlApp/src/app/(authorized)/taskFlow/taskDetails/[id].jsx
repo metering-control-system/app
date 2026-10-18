@@ -1,3 +1,4 @@
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
 import { useEffect } from 'react';
@@ -23,7 +24,7 @@ const TaskDetailsScreen = () => {
         isPending: isReportPending,
         error,
         refetch,
-    } = useTaskReport(task);
+    } = useTaskReport(task, isTaskReportReadOnly);
 
     useEffect(() => {
         if (

@@ -12,11 +12,9 @@ import {
     REJECTION_REASON_OPTIONS,
     SEAL_LOCATION_OPTIONS,
 } from '@/features/reports/constants/reportFieldOptions';
-import useTaskById from '@/features/tasks/hooks/useTaskById';
 
-const Report = ({ report }) => {
+const Report = ({ report, task }) => {
     const router = useRouter();
-    const { task } = useTaskById(Number(report.task_id));
     const rejectionReason = report.admission?.rejection_reason?.trim();
     const rejectionReasonLabel =
         REJECTION_REASON_OPTIONS.find(({ value }) => value === rejectionReason)

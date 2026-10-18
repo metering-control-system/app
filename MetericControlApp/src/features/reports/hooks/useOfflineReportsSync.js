@@ -1,7 +1,6 @@
 import useStorePictures from '@/shared/store/useStorePictures';
 import { deleteAct } from '@/features/reports/lib/savePdfToDocuments';
 import { areReportDraftsEqual } from '@/features/reports/lib/areReportDraftsEqual';
-import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { useCallback, useEffect, useRef, useState } from 'react';
@@ -9,8 +8,7 @@ import { useMutationState } from '@tanstack/react-query';
 import { REPORT_OPERATION_KEY } from '@/features/reports/lib/reportOperation';
 import { syncOfflineReportsRecords } from '@/features/reports/lib/syncOfflineReportsRecords';
 
-export const useOfflineReportsSync = () => {
-    const { submitTaskReport } = useSubmitReport();
+export const useOfflineReportsSync = (submitTaskReport) => {
     const { isChecked, isOnline } = useNetwork();
     const syncingRef = useRef(false);
     const attemptedTaskIdsRef = useRef(new Set());

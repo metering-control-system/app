@@ -81,7 +81,11 @@ const setup = async (
     });
     let submission;
     const Harness = () => {
-        submission = useSubmitReport();
+        submission = useSubmitReport({
+            getTasks: () => fixtures.useTasksStore.getState().tasks,
+            getTaskById: fixtures.getTaskById,
+            isTaskReportReadOnly,
+        });
         return null;
     };
     let root;

@@ -40,7 +40,6 @@ import {
     REJECTION_REASON_OPTIONS,
     SEAL_LOCATION_OPTIONS,
 } from '@/features/reports/constants/reportFieldOptions';
-import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
 import { mapTaskToReportDefaults } from '@/features/reports/lib/mapTaskToReportDefaults';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import {
@@ -78,6 +77,7 @@ const ADMISSION_STATUS_OPTIONS = [
 
 const ReportSubmitForm = ({
     onError,
+    reportSubmission,
     onActionStart,
     task,
     existingReport,
@@ -167,7 +167,7 @@ const ReportSubmitForm = ({
     const addRemovedPhotoId = useStorePictures(
         (state) => state.addRemovedPhotoId
     );
-    const { submitTaskReport, isPending: isSubmitting } = useSubmitReport();
+    const { submitTaskReport, isPending: isSubmitting } = reportSubmission;
     const draftValues = useReportDraftStore(
         (state) => state.drafts?.[draftId] ?? null
     );

@@ -67,6 +67,10 @@ const setup = async (t, { updateTasks, refreshReports, sync }) => {
                 filtering: new Set(),
                 syncingRecords: {},
                 sync,
+                refreshReports,
+                isReportsPending: false,
+                isReportsFetching: false,
+                prepareTasks: (tasks) => tasks,
             })
         );
     });

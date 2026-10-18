@@ -6,7 +6,7 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { createElement, useState } from 'react';
 import { act, create } from 'react-test-renderer';
-import { state } from './fixtures/reportFormValidation.js';
+import { state, useSubmitReport } from './fixtures/reportFormValidation.js';
 
 const fixtures = new URL('./fixtures/reportFormValidation.js', import.meta.url)
     .href;
@@ -127,6 +127,7 @@ const setup = async (t) => {
         const [stepIndex, setStepIndex] = useState(0);
         currentStep = stepIndex;
         return createElement(Form, {
+            reportSubmission: useSubmitReport(),
             task,
             id: '1',
             stepIndex,

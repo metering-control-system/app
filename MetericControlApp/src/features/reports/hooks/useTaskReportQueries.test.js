@@ -1,3 +1,4 @@
+import { selectReportForTask } from '../lib/reportUpsert.js';
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
@@ -14,7 +15,10 @@ import {
     focusState,
 } from './fixtures/taskReportQueries.js';
 import useReportsSyncStore from '../store/useReportsSyncStore.js';
-import { filterSubmittedTasks } from '../../tasks/lib/taskReportVisibility.js';
+import {
+    isTaskReportReadOnly,
+    filterSubmittedTasks,
+} from '../../tasks/lib/taskReportVisibility.js';
 import {
     useNetwork,
     useReportsStore,
@@ -91,7 +95,10 @@ const setup = async (
     const roots = [];
     let current;
     const useSelectedTaskReport = () =>
-        useTaskReport({ ...task, ['is_team_task']: brigade });
+        useTaskReport(
+            { ...task, ['is_team_task']: brigade },
+            isTaskReportReadOnly
+        );
     const useReportQuery =
         kind === 'single'
             ? useSelectedTaskReport
@@ -553,7 +560,11 @@ for (const brigade of [false, true]) {
         const visibleTasks = () =>
             filterSubmittedTasks(
                 [selectedTask],
-                useReportsStore.getState().reports,
+                (taskId) =>
+                    selectReportForTask(
+                        useReportsStore.getState().reports,
+                        taskId
+                    ),
                 {}
             );
         assert.equal(visibleTasks().length, 1);
