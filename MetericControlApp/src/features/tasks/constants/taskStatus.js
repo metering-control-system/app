@@ -3,4 +3,5 @@ export const taskStatus = {
     IN_PROGRESS: 'В работе',
     COMPLETED: 'Завершена',
     REJECTED: 'Отклонена',
+    NEEDS_REVISION: 'На доработку',
 };
