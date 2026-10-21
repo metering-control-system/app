@@ -1,3 +1,4 @@
+import { ReportFieldLayout } from '@/features/reports/components/reportFormLayout';
 import { StyleSheet, Text, View } from 'react-native';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 import {
@@ -7,7 +8,6 @@ import {
 import { getAdditionalReportDetails } from '@/features/reports/lib/reportFieldDetails';
 import {
     DetailRow,
-    ReportFieldTarget,
     Section,
     AdditionalDetails,
 } from '@/features/reports/components/reportDetailsForm/reportDetailsLayout';
@@ -30,12 +30,12 @@ const ReportDetailsForm = ({
     const contact = report.consumer_contact ?? {};
     const additionalDetails = getAdditionalReportDetails(report);
     const renderTarget = (name, children) => (
-        <ReportFieldTarget
+        <ReportFieldLayout
             name={name}
             highlightedField={highlightedField}
             fillPositions={fillPositions}>
             {children}
-        </ReportFieldTarget>
+        </ReportFieldLayout>
     );
     const renderDetail = (name, label, value) =>
         renderTarget(name, <DetailRow label={label} value={value} />);

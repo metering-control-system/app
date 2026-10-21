@@ -4,7 +4,6 @@ import {
     validateReportPhoto,
 } from '@/features/reports/lib/validateReportUploadFiles';
 import { Text, View, StyleSheet } from 'react-native';
-import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import MediaBlock from '@/shared/components/media/mediaBlock';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 import {
@@ -64,104 +63,98 @@ export const ReportPhotoField = ({
         <ReportFieldLayout
             key={photoField.name}
             name={photoFieldName}
-            fillPositions={fillPositions}>
-            <HighlightWrap isActive={highlightedField === photoFieldName}>
-                <ReportFormSection
-                    title={title}
-                    icon='camera-outline'
-                    description={
-                        uris.length
-                            ? `Добавлено фото: ${uris.length}`
-                            : 'Сделайте снимок или выберите фото из галереи.'
-                    }>
-                    <MediaBlock
-                        onError={onError}
-                        uris={uris}
-                        maxSizeBytes={REPORT_IMAGE_MAX_BYTES}
-                        handleOpenCamera={() => {
-                            router.push({
-                                pathname: '/(authorized)/camera',
-                                params: {
-                                    action: 'reports',
-                                    id,
-                                    slot: photoField.name,
-                                },
-                            });
-                        }}
-                        handleUploadPhoto={async (uriValue) => {
-                            try {
-                                await validateReportPhoto(
-                                    buildReportImageFile(
-                                        uriValue,
-                                        photoField.fileName
-                                    ),
-                                    ['photos', photoField.name]
-                                );
-                            } catch (error) {
-                                onError(
-                                    'Некорректная фотография',
-                                    error.message
-                                );
-                                return;
-                            }
-                            appendPhoto({
-                                entity: 'report',
-                                entityId: id,
+            fillPositions={fillPositions}
+            highlightedField={highlightedField}>
+            <ReportFormSection
+                title={title}
+                icon='camera-outline'
+                description={
+                    uris.length
+                        ? `Добавлено фото: ${uris.length}`
+                        : 'Сделайте снимок или выберите фото из галереи.'
+                }>
+                <MediaBlock
+                    onError={onError}
+                    uris={uris}
+                    maxSizeBytes={REPORT_IMAGE_MAX_BYTES}
+                    handleOpenCamera={() => {
+                        router.push({
+                            pathname: '/(authorized)/camera',
+                            params: {
+                                action: 'reports',
+                                id,
                                 slot: photoField.name,
-                                uri: uriValue,
-                            });
-                            setValue(
-                                `photos.${photoField.name}`,
-                                [...uris, uriValue],
-                                { shouldDirty: true, shouldValidate: true }
-                            );
-                        }}
-                        handleUpdatePhoto={(uriValue, index) => {
-                            if (!markExistingPhotoRemoved(uris[index])) {
-                                return;
-                            }
-                            updatePhoto({
-                                entity: 'report',
-                                entityId: id,
-                                slot: photoField.name,
-                                index,
-                                uri: uriValue,
-                            });
-                            const nextUris = [...uris];
-                            nextUris[index] = uriValue;
-                            setValue(`photos.${photoField.name}`, nextUris, {
-                                shouldDirty: true,
-                                shouldValidate: true,
-                            });
-                        }}
-                        handleDeletePhoto={(index) => {
-                            if (!markExistingPhotoRemoved(uris[index])) {
-                                return;
-                            }
-                            removePhotoAt({
-                                entity: 'report',
-                                entityId: id,
-                                slot: photoField.name,
-                                index,
-                            });
-                            setValue(
-                                `photos.${photoField.name}`,
-                                uris.filter(
-                                    (_, uriIndex) => uriIndex !== index
+                            },
+                        });
+                    }}
+                    handleUploadPhoto={async (uriValue) => {
+                        try {
+                            await validateReportPhoto(
+                                buildReportImageFile(
+                                    uriValue,
+                                    photoField.fileName
                                 ),
-                                { shouldDirty: true, shouldValidate: true }
+                                ['photos', photoField.name]
                             );
-                        }}
-                        disabled={isEditingDisabled}
-                    />
-                    {errors.photos?.[photoField.name]?.message && (
-                        <Text style={styles.errorText}>
-                            {errors.photos[photoField.name].message}
-                        </Text>
-                    )}
-                    {renderRemark(photoFieldName)}
-                </ReportFormSection>
-            </HighlightWrap>
+                        } catch (error) {
+                            onError('Некорректная фотография', error.message);
+                            return;
+                        }
+                        appendPhoto({
+                            entity: 'report',
+                            entityId: id,
+                            slot: photoField.name,
+                            uri: uriValue,
+                        });
+                        setValue(
+                            `photos.${photoField.name}`,
+                            [...uris, uriValue],
+                            { shouldDirty: true, shouldValidate: true }
+                        );
+                    }}
+                    handleUpdatePhoto={(uriValue, index) => {
+                        if (!markExistingPhotoRemoved(uris[index])) {
+                            return;
+                        }
+                        updatePhoto({
+                            entity: 'report',
+                            entityId: id,
+                            slot: photoField.name,
+                            index,
+                            uri: uriValue,
+                        });
+                        const nextUris = [...uris];
+                        nextUris[index] = uriValue;
+                        setValue(`photos.${photoField.name}`, nextUris, {
+                            shouldDirty: true,
+                            shouldValidate: true,
+                        });
+                    }}
+                    handleDeletePhoto={(index) => {
+                        if (!markExistingPhotoRemoved(uris[index])) {
+                            return;
+                        }
+                        removePhotoAt({
+                            entity: 'report',
+                            entityId: id,
+                            slot: photoField.name,
+                            index,
+                        });
+                        setValue(
+                            `photos.${photoField.name}`,
+                            uris.filter((_, uriIndex) => uriIndex !== index),
+                            { shouldDirty: true, shouldValidate: true }
+                        );
+                    }}
+                    disabled={isEditingDisabled}
+                />
+                {errors.photos?.[photoField.name]?.message && (
+                    <Text style={styles.errorText}>
+                        {errors.photos[photoField.name].message}
+                    </Text>
+                )}
+                {renderRemark(photoFieldName)}
+            </ReportFormSection>
         </ReportFieldLayout>
     );
 };

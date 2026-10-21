@@ -7,7 +7,6 @@ import {
     View,
     StyleSheet,
 } from 'react-native';
-import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import { ReportFieldLayout } from '@/features/reports/components/reportFormLayout';
 
 export const ReportTextField = ({
@@ -26,44 +25,45 @@ export const ReportTextField = ({
     isEditingDisabled,
     renderRemark,
 }) => (
-    <ReportFieldLayout name={name} fillPositions={fillPositions}>
-        <HighlightWrap isActive={highlightedField === name}>
-            <View style={styles.control}>
-                <Text style={styles.label}>
-                    {label}
-                    {required && <Text style={styles.requiredMark}> *</Text>}
-                </Text>
-                <Controller
-                    control={control}
-                    name={name}
-                    render={({ field: { onChange, onBlur, value } }) => (
-                        <TextInput
-                            placeholder={placeholder}
-                            placeholderTextColor='#8996a9'
-                            accessibilityLabel={label}
-                            value={value}
-                            style={[
-                                styles.input,
-                                multiline && styles.textArea,
-                                !editable && styles.inputDisabled,
-                                error && styles.inputError,
-                            ]}
-                            keyboardType={keyboardType}
-                            multiline={multiline}
-                            numberOfLines={numberOfLines}
-                            textAlignVertical={multiline ? 'top' : 'center'}
-                            editable={editable && !isEditingDisabled}
-                            onBlur={onBlur}
-                            onChangeText={onChange}
-                        />
-                    )}
-                />
-                {error ? (
-                    <Text style={styles.errorText}>{error.message}</Text>
-                ) : null}
-            </View>
-            {renderRemark(name)}
-        </HighlightWrap>
+    <ReportFieldLayout
+        name={name}
+        fillPositions={fillPositions}
+        highlightedField={highlightedField}>
+        <View style={styles.control}>
+            <Text style={styles.label}>
+                {label}
+                {required && <Text style={styles.requiredMark}> *</Text>}
+            </Text>
+            <Controller
+                control={control}
+                name={name}
+                render={({ field: { onChange, onBlur, value } }) => (
+                    <TextInput
+                        placeholder={placeholder}
+                        placeholderTextColor='#8996a9'
+                        accessibilityLabel={label}
+                        value={value}
+                        style={[
+                            styles.input,
+                            multiline && styles.textArea,
+                            !editable && styles.inputDisabled,
+                            error && styles.inputError,
+                        ]}
+                        keyboardType={keyboardType}
+                        multiline={multiline}
+                        numberOfLines={numberOfLines}
+                        textAlignVertical={multiline ? 'top' : 'center'}
+                        editable={editable && !isEditingDisabled}
+                        onBlur={onBlur}
+                        onChangeText={onChange}
+                    />
+                )}
+            />
+            {error ? (
+                <Text style={styles.errorText}>{error.message}</Text>
+            ) : null}
+        </View>
+        {renderRemark(name)}
     </ReportFieldLayout>
 );
 
@@ -81,48 +81,47 @@ export const ReportOptionField = ({
     isEditingDisabled,
     renderRemark,
 }) => (
-    <ReportFieldLayout name={name} fillPositions={fillPositions}>
-        <HighlightWrap isActive={highlightedField === name}>
-            <View style={styles.control}>
-                <Text style={styles.label}>
-                    {label}
-                    {required && <Text style={styles.requiredMark}> *</Text>}
-                </Text>
-                <View style={styles.chipsRow}>
-                    {options.map((option) => {
-                        const isSelected = value === option.value;
-                        return (
-                            <Pressable
-                                key={String(option.value)}
-                                accessibilityRole='radio'
-                                disabled={isEditingDisabled}
-                                accessibilityState={{ checked: isSelected }}
-                                onPress={() => {
-                                    onChange(
-                                        allowEmpty && isSelected
-                                            ? ''
-                                            : option.value
-                                    );
-                                    onBlur?.();
-                                }}
+    <ReportFieldLayout
+        name={name}
+        fillPositions={fillPositions}
+        highlightedField={highlightedField}>
+        <View style={styles.control}>
+            <Text style={styles.label}>
+                {label}
+                {required && <Text style={styles.requiredMark}> *</Text>}
+            </Text>
+            <View style={styles.chipsRow}>
+                {options.map((option) => {
+                    const isSelected = value === option.value;
+                    return (
+                        <Pressable
+                            key={String(option.value)}
+                            accessibilityRole='radio'
+                            disabled={isEditingDisabled}
+                            accessibilityState={{ checked: isSelected }}
+                            onPress={() => {
+                                onChange(
+                                    allowEmpty && isSelected ? '' : option.value
+                                );
+                                onBlur?.();
+                            }}
+                            style={[
+                                styles.chip,
+                                isSelected && styles.chipSelected,
+                            ]}>
+                            <Text
                                 style={[
-                                    styles.chip,
-                                    isSelected && styles.chipSelected,
+                                    styles.chipText,
+                                    isSelected && styles.chipTextSelected,
                                 ]}>
-                                <Text
-                                    style={[
-                                        styles.chipText,
-                                        isSelected && styles.chipTextSelected,
-                                    ]}>
-                                    {option.label}
-                                </Text>
-                            </Pressable>
-                        );
-                    })}
-                </View>
+                                {option.label}
+                            </Text>
+                        </Pressable>
+                    );
+                })}
             </View>
-            {renderRemark(name)}
-        </HighlightWrap>
+        </View>
+        {renderRemark(name)}
     </ReportFieldLayout>
 );
 
@@ -138,37 +137,38 @@ export const ReportToggleField = ({
     isEditingDisabled,
     renderRemark,
 }) => (
-    <ReportFieldLayout name={name} fillPositions={fillPositions}>
-        <HighlightWrap isActive={highlightedField === name}>
-            <Pressable
-                accessibilityRole='switch'
-                accessibilityState={{
-                    checked: Boolean(value),
-                    disabled: disabled || isEditingDisabled,
-                }}
-                disabled={disabled || isEditingDisabled}
-                onPress={() => {
-                    onChange(!value);
+    <ReportFieldLayout
+        name={name}
+        fillPositions={fillPositions}
+        highlightedField={highlightedField}>
+        <Pressable
+            accessibilityRole='switch'
+            accessibilityState={{
+                checked: Boolean(value),
+                disabled: disabled || isEditingDisabled,
+            }}
+            disabled={disabled || isEditingDisabled}
+            onPress={() => {
+                onChange(!value);
+                onBlur?.();
+            }}
+            style={({ pressed }) => [
+                styles.switchRow,
+                pressed && !disabled && styles.switchRowPressed,
+            ]}>
+            <Text style={styles.switchLabel}>{label}</Text>
+            <Switch
+                value={value}
+                onValueChange={(nextValue) => {
+                    onChange(nextValue);
                     onBlur?.();
                 }}
-                style={({ pressed }) => [
-                    styles.switchRow,
-                    pressed && !disabled && styles.switchRowPressed,
-                ]}>
-                <Text style={styles.switchLabel}>{label}</Text>
-                <Switch
-                    value={value}
-                    onValueChange={(nextValue) => {
-                        onChange(nextValue);
-                        onBlur?.();
-                    }}
-                    disabled={disabled || isEditingDisabled}
-                    trackColor={{ false: '#d8e0ec', true: '#b7d5ff' }}
-                    thumbColor={value ? '#2469c9' : '#fff'}
-                />
-            </Pressable>
-            {renderRemark(name)}
-        </HighlightWrap>
+                disabled={disabled || isEditingDisabled}
+                trackColor={{ false: '#d8e0ec', true: '#b7d5ff' }}
+                thumbColor={value ? '#2469c9' : '#fff'}
+            />
+        </Pressable>
+        {renderRemark(name)}
     </ReportFieldLayout>
 );
 

@@ -1,6 +1,5 @@
 import { Controller } from 'react-hook-form';
 import { Text, View, StyleSheet } from 'react-native';
-import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import { OPTIONAL_BOOLEAN_OPTIONS } from '@/features/reports/constants/reportActFields';
 import ReportDateField from '@/features/reports/components/reportDateField';
 import {
@@ -40,27 +39,26 @@ export const ReportActFields = ({
                         <ReportFieldLayout
                             key={name}
                             name={name}
-                            fillPositions={fillPositions}>
-                            <HighlightWrap isActive={highlightedField === name}>
-                                <Controller
-                                    control={control}
-                                    name={name}
-                                    render={({
-                                        field: { value, onChange, onBlur },
-                                    }) => (
-                                        <ReportDateField
-                                            label={field.label}
-                                            value={value}
-                                            onChange={onChange}
-                                            onBlur={onBlur}
-                                            dateTime={field.kind === 'datetime'}
-                                            disabled={isEditingDisabled}
-                                            error={error?.message}
-                                        />
-                                    )}
-                                />
-                                {renderRemark(name)}
-                            </HighlightWrap>
+                            fillPositions={fillPositions}
+                            highlightedField={highlightedField}>
+                            <Controller
+                                control={control}
+                                name={name}
+                                render={({
+                                    field: { value, onChange, onBlur },
+                                }) => (
+                                    <ReportDateField
+                                        label={field.label}
+                                        value={value}
+                                        onChange={onChange}
+                                        onBlur={onBlur}
+                                        dateTime={field.kind === 'datetime'}
+                                        disabled={isEditingDisabled}
+                                        error={error?.message}
+                                    />
+                                )}
+                            />
+                            {renderRemark(name)}
                         </ReportFieldLayout>
                     );
                 if (field.kind === 'choice' || field.kind === 'boolean')

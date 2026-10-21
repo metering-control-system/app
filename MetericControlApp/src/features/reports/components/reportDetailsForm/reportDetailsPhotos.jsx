@@ -1,3 +1,4 @@
+import { ReportFieldLayout } from '@/features/reports/components/reportFormLayout';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useState } from 'react';
@@ -5,10 +6,7 @@ import Image from '@/shared/components/media/authenticatedImage';
 import ImagePreview from '@/shared/components/media/imagePreview';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 import { groupReportPhotos } from '@/features/reports/lib/groupReportPhotos';
-import {
-    ReportFieldTarget,
-    Section,
-} from '@/features/reports/components/reportDetailsForm/reportDetailsLayout';
+import { Section } from '@/features/reports/components/reportDetailsForm/reportDetailsLayout';
 
 const ReportDetailsPhotos = ({
     images,
@@ -28,7 +26,7 @@ const ReportDetailsPhotos = ({
                     </Text>
                 ) : (
                     photoGroups.map((group) => (
-                        <ReportFieldTarget
+                        <ReportFieldLayout
                             key={group.kind}
                             name={group.field}
                             highlightedField={highlightedField}
@@ -73,14 +71,14 @@ const ReportDetailsPhotos = ({
                                     ))}
                                 </View>
                             </View>
-                        </ReportFieldTarget>
+                        </ReportFieldLayout>
                     ))
                 )}
                 {highlightedField?.startsWith('photos.') &&
                     !photoGroups.some(
                         (group) => group.field === highlightedField
                     ) && (
-                        <ReportFieldTarget
+                        <ReportFieldLayout
                             name={highlightedField}
                             highlightedField={highlightedField}
                             fillPositions={fillPositions}>
@@ -94,7 +92,7 @@ const ReportDetailsPhotos = ({
                                 }
                                 : фотографии не добавлены.
                             </Text>
-                        </ReportFieldTarget>
+                        </ReportFieldLayout>
                     )}
             </Section>
             <ImagePreview

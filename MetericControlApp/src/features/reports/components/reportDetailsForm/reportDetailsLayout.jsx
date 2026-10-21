@@ -1,7 +1,6 @@
 import { StyleSheet, Text, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useCallback } from 'react';
-import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
+import { ReportFieldLayout } from '@/features/reports/components/reportFormLayout';
 
 export const DetailRow = ({ label, value, stacked = false }) => (
     <View style={[styles.detailRow, stacked && styles.stackedDetailRow]}>
@@ -15,29 +14,6 @@ export const DetailRow = ({ label, value, stacked = false }) => (
         </Text>
     </View>
 );
-
-export const ReportFieldTarget = ({
-    name,
-    highlightedField,
-    fillPositions,
-    children,
-}) => {
-    const registerNode = useCallback(
-        (node) => fillPositions?.({ name, node }),
-        [fillPositions, name]
-    );
-    const handleLayout = useCallback(
-        () => fillPositions?.({ name }),
-        [fillPositions, name]
-    );
-    return (
-        <View ref={registerNode} collapsable={false} onLayout={handleLayout}>
-            <HighlightWrap isActive={highlightedField === name}>
-                {children}
-            </HighlightWrap>
-        </View>
-    );
-};
 
 export const Section = ({ icon, title, children }) => (
     <View style={styles.section}>
@@ -57,13 +33,13 @@ export const AdditionalDetails = ({
     fillPositions,
 }) =>
     rows.map(({ key, field, label, value }) => (
-        <ReportFieldTarget
+        <ReportFieldLayout
             key={key}
             name={field}
             highlightedField={highlightedField}
             fillPositions={fillPositions}>
             <DetailRow label={label} value={value} stacked={stacked} />
-        </ReportFieldTarget>
+        </ReportFieldLayout>
     ));
 
 const styles = StyleSheet.create({
