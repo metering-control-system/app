@@ -30,6 +30,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useForm, useWatch } from 'react-hook-form';
 import { useRouter } from 'expo-router';
+import useReportDraftAutosave from '@/features/reports/hooks/useReportDraftAutosave';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 import useStorePictures from '@/shared/store/useStorePictures';
 import { reportSubmitFormSchema } from '@/features/reports/model/reportSubmitFormSchema';
@@ -185,10 +186,12 @@ const ReportSubmitForm = ({
     }, [draftId, initialValues, reset, hydratedDraftIdRef]);
     useEffect(() => {
         if (isReadOnly || signatureResult?.taskId !== draftId) return;
-        setValue('actPdf', signatureResult.actPdf, {
-            shouldDirty: true,
-            shouldValidate: true,
-        });
+        const {
+            checksum: _checksum,
+            id: _actId,
+            ...actPdf
+        } = signatureResult.actPdf;
+        setValue('actPdf', actPdf, { shouldDirty: true, shouldValidate: true });
         clearSignatureResult();
     }, [signatureResult, draftId, setValue, clearSignatureResult, isReadOnly]);
     useEffect(() => {
@@ -237,23 +240,11 @@ const ReportSubmitForm = ({
         setPhoto,
         hydratedPhotosIdRef,
     ]);
-    useEffect(() => {
-        if (!task?.is_team_task || isReadOnly || isReportBusy) return;
-        const subscription = watch((values) => {
-            const store = useReportDraftStore.getState();
-            const current = store.getDraft(draftId);
-            if (current?.reportState === REPORT_DRAFT_STATE.PENDING) return;
-            store.setDraft({
-                draftId,
-                values: {
-                    ...current,
-                    ...values,
-                    reportState: REPORT_DRAFT_STATE.DRAFT,
-                },
-            });
-        });
-        return () => subscription.unsubscribe();
-    }, [task?.is_team_task, isReadOnly, isReportBusy, watch, draftId]);
+    const { cancelAutosave, resumeAutosave } = useReportDraftAutosave({
+        draftId,
+        watch,
+        enabled: !isReadOnly && !isReportBusy,
+    });
     useEffect(() => {
         if (isReadOnly || watch('clientReportId')) {
             return;
@@ -362,6 +353,7 @@ const ReportSubmitForm = ({
     };
     const onSubmit = async (values) => {
         if (isEditingDisabled) return;
+        cancelAutosave();
         onActionStart();
         try {
             const res = await submitTaskReport({
@@ -436,6 +428,8 @@ const ReportSubmitForm = ({
                     'Не удалось отправить отчёт. Проверьте подключение и повторите отправку.'
                 )
             );
+        } finally {
+            resumeAutosave();
         }
     };
     const onInvalid = (validationErrors) => {

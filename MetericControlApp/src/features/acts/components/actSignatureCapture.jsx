@@ -58,6 +58,12 @@ const ActSignatureCapture = ({ onError, onSaved }) => {
                 template: session.template,
                 fields: session.fields,
                 actPdf,
+                previousAct: {
+                    ...useActStore.getState().actMetadataByTask[
+                        String(session.taskId)
+                    ],
+                    signatures,
+                },
             });
             if (!mountedRef.current) return false;
             await validateAct({

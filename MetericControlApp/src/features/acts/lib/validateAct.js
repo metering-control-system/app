@@ -12,7 +12,7 @@ export const validateAct = async ({ taskId, actPdf, fields }) => {
         .templates.find(
             (item) => String(item.id) === String(actPdf?.templateId)
         );
-    if (!actPdf?.uri || !actPdf.checksum || !record?.checksum || !template) {
+    if (!actPdf?.uri || !record?.checksum || !template) {
         throw new Error(
             'Сгенерируйте акт перед подписанием или отправкой отчёта.'
         );
@@ -21,8 +21,8 @@ export const validateAct = async ({ taskId, actPdf, fields }) => {
     const checksum = await createActChecksum({ fields, template });
     if (
         useActStore.getState().actMetadataByTask[String(taskId)] !== record ||
-        checksum !== actPdf.checksum ||
         checksum !== record.checksum ||
+        (record.uri && record.uri !== actPdf.uri) ||
         String(record.templateId) !== String(template.id) ||
         !areObjectsEqual(actPdf.signatures ?? {}, record.signatures ?? {})
     ) {

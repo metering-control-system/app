@@ -116,6 +116,14 @@ export const getReportFormInitialValues = ({
         delete draftFormValues.removedPhotoIds;
         delete draftFormValues.act;
         delete draftFormValues.address;
+        if (draftFormValues.actPdf) {
+            const {
+                checksum: _checksum,
+                id: _id,
+                ...actPdf
+            } = draftFormValues.actPdf;
+            draftFormValues.actPdf = actPdf;
+        }
     }
     return {
         ...taskDefaults,
@@ -138,13 +146,14 @@ export const getReportFormInitialValues = ({
         },
         actPdf: {
             ...reportSubmitFormDefaultValues.actPdf,
-            ...draftValues?.actPdf,
+            ...draftFormValues?.actPdf,
             signatures: savedAct?.signatures ?? {},
-            checksum: savedAct?.checksum,
             templateId: savedAct?.templateId,
             uri:
                 savedAct?.checksum &&
-                savedAct.checksum === draftValues?.actPdf?.checksum &&
+                (!savedAct.uri || savedAct.uri === draftValues?.actPdf?.uri) &&
+                (!draftValues?.actPdf?.checksum ||
+                    savedAct.checksum === draftValues.actPdf.checksum) &&
                 areObjectsEqual(
                     savedAct.signatures,
                     draftValues?.actPdf?.signatures ?? {}

@@ -14,6 +14,8 @@ export const createActOperations = (getFields) => ({
         }),
     getActRecord: (taskId) =>
         useActStore.getState().actMetadataByTask[String(taskId)],
+    getActId: (taskId, createId) =>
+        useActStore.getState().getActId(taskId, createId),
     clearTaskAct: (taskId, expectedAct) =>
         useActStore.getState().clearTaskAct(taskId, expectedAct),
     savePdfToDocuments,
