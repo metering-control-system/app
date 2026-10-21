@@ -1,5 +1,13 @@
-import { useEffect, useRef } from 'react';
 import { Alert } from 'react-native';
+import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
+import { buildReportReplacement } from '@/features/reports/lib/reportFormHydration';
+import { mapTaskToReportDefaults } from '@/features/reports/lib/mapTaskToReportDefaults';
+import { createClientReportId } from '@/features/reports/lib/createClientReportId';
+import { formatReportDateTime } from '@/features/reports/lib/reportActFieldValues';
+import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
+import useStorePictures from '@/shared/store/useStorePictures';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import { useEffect, useRef } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { getReportByTaskId } from '@/features/reports/api/submitReportApi';
 import { loadReportReplacement } from '@/features/reports/lib/loadReportReplacement';
@@ -10,7 +18,69 @@ import {
 } from '@/features/reports/lib/reportOperation';
 import { getApiErrorMessage } from '@/shared/api/getApiErrorMessage';
 
-const useLoadBrigadeReport = ({ onError, taskId, onLoaded }) => {
+const useLoadBrigadeReport = ({
+    onError: handleError,
+    task,
+    id,
+    getValues,
+    hydratedDraftIdRef,
+    hydratedPhotosIdRef,
+    reset,
+    setStepIndex,
+}) => {
+    const taskId = task?.id ?? id;
+    const draftId = String(taskId);
+    const replaceEntityPhotos = useStorePictures(
+        (state) => state.replaceEntityPhotos
+    );
+    const setDraft = useReportDraftStore((state) => state.setDraft);
+    const onLoaded = (report, mode) => {
+        const replacement = buildReportReplacement(
+            report,
+            mapTaskToReportDefaults(task, {
+                clientReportId: createClientReportId(),
+                compiledAt: formatReportDateTime(new Date()),
+            })
+        );
+        const pictures = useStorePictures.getState();
+        const {
+            values,
+            photoMetadata,
+            removedPhotoIds = [],
+        } = mode === 'empty'
+            ? fillEmptyReportFields({
+                  currentValues: {
+                      ...getValues(),
+                      photos:
+                          pictures.photos.report?.[id] ?? getValues('photos'),
+                  },
+                  replacement,
+                  localPhotoMetadata: pictures.photoMetadata.report?.[id],
+                  removedPhotoIds: pictures.removedPhotoIds.report?.[id],
+              })
+            : replacement;
+        hydratedDraftIdRef.current = draftId;
+        hydratedPhotosIdRef.current = draftId;
+        replaceEntityPhotos({
+            entity: 'report',
+            entityId: id,
+            photos: values.photos,
+            photoMetadata,
+            removedPhotoIds,
+        });
+        const loadedValues = {
+            ...values,
+            reportState: REPORT_DRAFT_STATE.DRAFT,
+            requiresManualSubmit: true,
+            serverReportSource:
+                mode === 'replace'
+                    ? { id: report.id, updatedAt: report.updated_at }
+                    : null,
+        };
+        reset(loadedValues);
+        setDraft({ draftId, values: loadedValues });
+        setStepIndex(0);
+    };
     const queryClient = useQueryClient();
     const mounted = useRef(true);
 
@@ -53,7 +123,7 @@ const useLoadBrigadeReport = ({ onError, taskId, onLoaded }) => {
         },
         onError: (error) => {
             if (mounted.current) {
-                onError(
+                handleError(
                     'Не удалось загрузить отчёт',
                     getApiErrorMessage(
                         error,

@@ -1,11 +1,12 @@
 import { reportSubmitFormDefaultValues } from '@/features/reports/constants/reportSubmitFormDefaults';
-import { createClientReportId } from '@/features/reports/lib/createClientReportId';
-import { formatReportDateTime } from '@/features/reports/lib/reportActFieldValues';
 import { INSTALLATION_LOCATION_OPTIONS } from '@/features/reports/constants/reportActFields';
 
-export const mapTaskToReportDefaults = (task) => ({
+export const mapTaskToReportDefaults = (
+    task,
+    { clientReportId = '', compiledAt = '' } = {}
+) => ({
     ...reportSubmitFormDefaultValues,
-    clientReportId: createClientReportId(),
+    clientReportId,
     customerName: task?.consumer?.full_name || '',
     personalAccount: String(task?.address?.account_number ?? ''),
     address: Object.fromEntries(
@@ -14,10 +15,7 @@ export const mapTaskToReportDefaults = (task) => ({
             String(task?.address?.[key] ?? ''),
         ])
     ),
-    actDetails: {
-        ...reportSubmitFormDefaultValues.actDetails,
-        compiledAt: formatReportDateTime(new Date()),
-    },
+    actDetails: { ...reportSubmitFormDefaultValues.actDetails, compiledAt },
     meterBefore: {
         ...reportSubmitFormDefaultValues.meterBefore,
         type: task?.meter?.type || '',

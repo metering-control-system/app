@@ -1,4 +1,5 @@
 import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
+import { formatReportDateTime } from '@/features/reports/lib/reportActFieldValues';
 import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmissionStatus';
 import {
     REPORT_DRAFT_STATE,
@@ -21,8 +22,8 @@ import { ReportPhotosStep } from '@/features/reports/components/reportSubmitForm
 import { ReportAdmissionStep } from '@/features/reports/components/reportSubmitForm/steps/reportAdmissionStep';
 import { ReportContactsStep } from '@/features/reports/components/reportSubmitForm/steps/reportContactsStep';
 import { ReportActStep } from '@/features/reports/components/reportSubmitForm/steps/reportActStep';
-import useReportFormHydration from '@/features/reports/hooks/useReportFormHydration';
-import useBrigadeReportLoading from '@/features/reports/hooks/useBrigadeReportLoading';
+import { mergeReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
+import useLoadBrigadeReport from '@/features/reports/hooks/useLoadBrigadeReport';
 import { useMutationState, useQueryClient } from '@tanstack/react-query';
 import { getReportOperationFilters } from '@/features/reports/lib/reportOperation';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -90,9 +91,6 @@ const ReportSubmitForm = ({
         () => reportPhotoMetadataRaw ?? {},
         [reportPhotoMetadataRaw]
     );
-    const replaceEntityPhotos = useStorePictures(
-        (state) => state.replaceEntityPhotos
-    );
     const appendPhoto = useStorePictures((state) => state.appendPhoto);
     const setPhoto = useStorePictures((state) => state.setPhoto);
     const updatePhoto = useStorePictures((state) => state.updatePhoto);
@@ -134,7 +132,6 @@ const ReportSubmitForm = ({
             params: { id: draftId },
         });
     };
-    const setDraft = useReportDraftStore((state) => state.setDraft);
     const clearDraft = useReportDraftStore((state) => state.clearDraft);
     const initialValues = useMemo(
         () =>
@@ -143,6 +140,10 @@ const ReportSubmitForm = ({
                 existingReport,
                 task,
                 savedAct,
+                taskDefaults: mapTaskToReportDefaults(task, {
+                    clientReportId: createClientReportId(),
+                    compiledAt: formatReportDateTime(new Date()),
+                }),
             }),
         [draftValues, existingReport, task, savedAct]
     );
@@ -175,22 +176,67 @@ const ReportSubmitForm = ({
         formState: { errors },
     } = form;
     useWatch({ control });
-    useReportFormHydration({
-        hydratedDraftIdRef,
+    useEffect(() => {
+        if (hydratedDraftIdRef.current === draftId) {
+            return;
+        }
+        reset(initialValues);
+        hydratedDraftIdRef.current = draftId;
+    }, [draftId, initialValues, reset, hydratedDraftIdRef]);
+    useEffect(() => {
+        if (isReadOnly || signatureResult?.taskId !== draftId) return;
+        setValue('actPdf', signatureResult.actPdf, {
+            shouldDirty: true,
+            shouldValidate: true,
+        });
+        clearSignatureResult();
+    }, [signatureResult, draftId, setValue, clearSignatureResult, isReadOnly]);
+    useEffect(() => {
+        if (hydratedPhotosIdRef.current === draftId) {
+            return;
+        }
+        Object.entries(initialValues.photos).forEach(([slot, uris]) => {
+            const localUris = Array.isArray(reportPhotos[slot])
+                ? reportPhotos[slot]
+                : reportPhotos[slot]
+                  ? [reportPhotos[slot]]
+                  : [];
+            const mergedUris = [
+                ...uris,
+                ...localUris.filter((uri) => !uris.includes(uri)),
+            ];
+            if (
+                mergedUris.length &&
+                mergedUris.some((uri, index) => uri !== localUris[index])
+            ) {
+                setPhoto({
+                    entity: 'report',
+                    entityId: id,
+                    slot,
+                    uri: mergedUris,
+                });
+            }
+        });
+        setEntityPhotoMetadata({
+            entity: 'report',
+            entityId: id,
+            photoMetadata: mergeReportPhotoMetadata({
+                serverMetadata: initialPhotoMetadata,
+                localMetadata: reportPhotoMetadata,
+            }),
+        });
+        hydratedPhotosIdRef.current = draftId;
+    }, [
         draftId,
-        initialValues,
-        isReadOnly,
-        signatureResult,
-        clearSignatureResult,
-        hydratedPhotosIdRef,
-        reportPhotos,
-        setPhoto,
         id,
-        setEntityPhotoMetadata,
         initialPhotoMetadata,
+        initialValues.photos,
         reportPhotoMetadata,
-        form,
-    });
+        reportPhotos,
+        setEntityPhotoMetadata,
+        setPhoto,
+        hydratedPhotosIdRef,
+    ]);
     useEffect(() => {
         if (!task?.is_team_task || isReadOnly || isReportBusy) return;
         const subscription = watch((values) => {
@@ -260,23 +306,60 @@ const ReportSubmitForm = ({
     }, [reportPhotos, setValue, isReadOnly]);
     const isLastStep = stepIndex === FORM_STEPS.length - 1;
     const isFirstStep = stepIndex === 0;
-    const { confirmLoadReport, isLoadingReport } = useBrigadeReportLoading({
+    const { loadReport, isLoading: isLoadingReport } = useLoadBrigadeReport({
         onError,
         task,
         id,
         getValues,
         hydratedDraftIdRef,
-        draftId,
         hydratedPhotosIdRef,
-        replaceEntityPhotos,
         reset,
-        setDraft,
         setStepIndex,
-        isOnline,
-        isEditingDisabled,
-        onActionStart,
-        existingReport,
     });
+    const confirmLoadReport = () => {
+        if (!isOnline || isEditingDisabled) return;
+        onActionStart();
+        const load = (mode) => {
+            Keyboard.dismiss();
+            void loadReport(mode);
+        };
+        if (existingReport?.status === REPORT_STATUS.REJECTED) {
+            Alert.alert(
+                'Загрузить отчёт с замечаниями?',
+                'Поля и фотографии вашего локального черновика будут заменены отклонённым отчётом с сервера.',
+                [
+                    { text: 'Отмена', style: 'cancel' },
+                    { text: 'Загрузить', onPress: () => load('replace') },
+                ]
+            );
+            return;
+        }
+        Alert.alert(
+            'Загрузить отчёт бригады',
+            'Заменить весь отчёт или заполнить только пустые поля? Во втором случае ваши заполненные значения и фото-разделы сохранятся. Выключенные галочки включатся, если они включены на сервере; уже включённые останутся включёнными. После загрузки отчёт нужно отправить вручную.',
+            [
+                { text: 'Отмена', style: 'cancel' },
+                { text: 'Только пустые поля', onPress: () => load('empty') },
+                {
+                    text: 'Заменить всё',
+                    style: 'destructive',
+                    onPress: () =>
+                        Alert.alert(
+                            'Заменить ваш отчёт?',
+                            'Все поля и фотографии будут заменены данными с сервера, включая пустые поля. Ожидающая отправка старого черновика будет отменена. Отменить замену нельзя.',
+                            [
+                                { text: 'Отмена', style: 'cancel' },
+                                {
+                                    text: 'Заменить',
+                                    style: 'destructive',
+                                    onPress: () => load('replace'),
+                                },
+                            ]
+                        ),
+                },
+            ]
+        );
+    };
     const onSubmit = async (values) => {
         if (isEditingDisabled) return;
         onActionStart();
@@ -299,7 +382,10 @@ const ReportSubmitForm = ({
                 clearEntityPhotos({ entity: 'report', entityId: id });
                 const nextValues = mapReportToFormValues(
                     res.reportResponse,
-                    mapTaskToReportDefaults(task)
+                    mapTaskToReportDefaults(task, {
+                        clientReportId: createClientReportId(),
+                        compiledAt: formatReportDateTime(new Date()),
+                    })
                 );
                 const nextPhotoMetadata = mapReportImagesToForm(
                     res.reportResponse.images

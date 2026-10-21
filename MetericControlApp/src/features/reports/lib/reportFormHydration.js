@@ -104,10 +104,11 @@ export const getReportFormInitialValues = ({
     existingReport,
     task,
     savedAct,
+    taskDefaults: initialTaskDefaults = mapTaskToReportDefaults(task),
 }) => {
     const taskDefaults = mapReportToFormValues(
         task?.is_team_task ? null : existingReport,
-        mapTaskToReportDefaults(task)
+        initialTaskDefaults
     );
     const draftFormValues = draftValues ? { ...draftValues } : null;
     if (draftFormValues) {
