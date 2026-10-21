@@ -1,11 +1,8 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
-import { preserveBrigadeDraft } from '@/features/reports/lib/preserveBrigadeDraft';
+import usePreserveBrigadeDraft from '@/features/reports/hooks/usePreserveBrigadeDraft';
 import { validateReportValues } from '@/features/reports/lib/validateReportValues';
 import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
-import {
-    finalizeReportSubmission,
-    isConfirmedReportSubmission,
-} from '@/features/reports/lib/finalizeReportSubmission';
 import { useCallback } from 'react';
 import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
@@ -14,6 +11,7 @@ import {
     createReport,
     deleteReportImage,
     getReportByTaskId,
+    submitReport,
     updateReport,
     updateReportPdfAct,
     uploadReportImage,
@@ -56,6 +54,51 @@ const useSubmitReport = ({
         buildReportSignaturesPayload,
     } = actOperations;
     const queryClient = useQueryClient();
+    const preserveBrigadeDraft = usePreserveBrigadeDraft();
+    const finalizeReportSubmission = async (submission) => {
+        try {
+            const report = await submitReport(submission.reportId);
+            if (
+                Boolean(submission?.clientReportId) &&
+                Number(report?.id) === Number(submission?.reportId) &&
+                Number(report?.task_id) === Number(submission?.taskId) &&
+                report?.client_report_id === submission?.clientReportId &&
+                [
+                    REPORT_STATUS.ON_REVIEW,
+                    REPORT_STATUS.ON_ADMIN,
+                    REPORT_STATUS.ACCEPTED,
+                ].includes(report?.status)
+            )
+                return report;
+            throw new Error('Не удалось получить подтверждённый отчёт');
+        } catch (error) {
+            const status = error.response?.status;
+            const ambiguous =
+                !error.response || status === 408 || status >= 500;
+            if (ambiguous) {
+                try {
+                    const report = await getReportByTaskId(submission.taskId);
+                    if (
+                        Boolean(submission?.clientReportId) &&
+                        Number(report?.id) === Number(submission?.reportId) &&
+                        Number(report?.task_id) ===
+                            Number(submission?.taskId) &&
+                        report?.client_report_id ===
+                            submission?.clientReportId &&
+                        [
+                            REPORT_STATUS.ON_REVIEW,
+                            REPORT_STATUS.ON_ADMIN,
+                            REPORT_STATUS.ACCEPTED,
+                        ].includes(report?.status)
+                    )
+                        return report;
+                } catch {
+                    throw error;
+                }
+            }
+            throw error;
+        }
+    };
     const { isOnline, isChecked } = useNetwork();
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const setUpdatedReports = useReportsStore(
@@ -92,10 +135,19 @@ const useSubmitReport = ({
                     throw error;
                 }
                 if (
-                    isConfirmedReportSubmission(report, {
-                        ...previousDraft.submissionFinalization,
-                        taskId,
-                    })
+                    Boolean(
+                        previousDraft.submissionFinalization.clientReportId
+                    ) &&
+                    Number(report?.id) ===
+                        Number(previousDraft.submissionFinalization.reportId) &&
+                    Number(report?.task_id) === Number(taskId) &&
+                    report?.client_report_id ===
+                        previousDraft.submissionFinalization.clientReportId &&
+                    [
+                        REPORT_STATUS.ON_REVIEW,
+                        REPORT_STATUS.ON_ADMIN,
+                        REPORT_STATUS.ACCEPTED,
+                    ].includes(report?.status)
                 ) {
                     return {
                         actRecord: recoveryActRecord,
@@ -153,7 +205,7 @@ const useSubmitReport = ({
                         photoMetadata
                     ),
                     actPayload: !isRefused
-                        ? buildReportPdfActPayload(values)
+                        ? buildReportPdfActPayload(values, createClientId())
                         : null,
                     offline: true,
                 });
@@ -205,7 +257,7 @@ const useSubmitReport = ({
             const reportPdfActPayload = !isRefused
                 ? buildReportPdfActPayload(
                       values,
-                      existingReport?.act?.client_act_id
+                      existingReport?.act?.client_act_id || createClientId()
                   )
                 : null;
             await validateReportUploadFiles({

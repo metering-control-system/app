@@ -1,13 +1,11 @@
 import { useCallback } from 'react';
 import { useFocusEffect, useIsFocused } from 'expo-router';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import {
-    syncReports,
+import useUpdateReports, {
     TASK_REPORTS_QUERY_KEY,
     REPORTS_STALE_TIME,
     REPORTS_FULL_SYNC_INTERVAL,
-} from '@/features/reports/lib/syncReports';
-import useUpdateReports from '@/features/reports/hooks/useUpdateReports';
+} from '@/features/reports/hooks/useUpdateReports';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const useTaskReports = () => {
@@ -16,13 +14,14 @@ const useTaskReports = () => {
     const isFocused = useIsFocused();
     const enabled = isChecked && isOnline && isFocused;
     const {
+        syncReports,
         updateReportsAsync,
         isPending: isRefreshing,
         error: refreshError,
     } = useUpdateReports();
     const fetchReports = useCallback(
-        ({ signal }) => syncReports(queryClient, { signal }),
-        [queryClient]
+        ({ signal }) => syncReports({ signal }),
+        [syncReports]
     );
     const query = useQuery({
         queryKey: TASK_REPORTS_QUERY_KEY,

@@ -1,6 +1,6 @@
 import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
-import { preserveBrigadeDraft } from '@/features/reports/lib/preserveBrigadeDraft';
+import usePreserveBrigadeDraft from '@/features/reports/hooks/usePreserveBrigadeDraft';
 import { useIsMutating, useQuery, useQueryClient } from '@tanstack/react-query';
 import { getReportByTaskId } from '@/features/reports/api/submitReportApi';
 import useReportsStore from '@/features/reports/store/useReportsStore';
@@ -13,6 +13,7 @@ import useNetwork from '@/shared/hooks/offline/useNetwork';
 
 const useTaskReport = (task, isTaskReportReadOnly) => {
     const queryClient = useQueryClient();
+    const preserveBrigadeDraft = usePreserveBrigadeDraft();
     const reports = useReportsStore((state) => state.reports);
     const draft = useReportDraftStore((state) => state.drafts?.[task?.id]);
     const { isChecked, isOnline } = useNetwork();

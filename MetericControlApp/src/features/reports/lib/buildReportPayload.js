@@ -1,4 +1,3 @@
-import { createClientReportId } from '@/features/reports/lib/createClientReportId';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
 import { buildReportActFieldsPayload } from '@/features/reports/lib/reportActFieldValues';
 import { normalizeReportPhone } from '@/features/reports/lib/reportContactValidation';
@@ -247,9 +246,8 @@ export const getRemovedReportImageIds = ({
     );
 };
 
-export const buildReportPdfActPayload = (formValues, serverClientActId) => {
+export const buildReportPdfActPayload = (formValues, clientActId) => {
     const uri = formValues.actPdf?.uri;
-    const uniqueFileId = serverClientActId || createClientReportId();
     if (!uri) {
         return null;
     }
@@ -258,6 +256,6 @@ export const buildReportPdfActPayload = (formValues, serverClientActId) => {
         uri: uri,
         name: 'act.pdf',
         type: 'application/pdf',
-        ['client_act_id']: uniqueFileId,
+        ['client_act_id']: clientActId,
     };
 };
