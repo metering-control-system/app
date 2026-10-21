@@ -5,7 +5,6 @@ import { useState } from 'react';
 import Image from '@/shared/components/media/authenticatedImage';
 import ImagePreview from '@/shared/components/media/imagePreview';
 import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
-import { groupReportPhotos } from '@/features/reports/lib/groupReportPhotos';
 import { Section } from '@/features/reports/components/reportDetailsForm/reportDetailsLayout';
 
 const ReportDetailsPhotos = ({
@@ -16,7 +15,23 @@ const ReportDetailsPhotos = ({
 }) => {
     const [previewUri, setPreviewUri] = useState('');
     const [modalVisible, setModalVisible] = useState(false);
-    const photoGroups = groupReportPhotos(images);
+    const photoGroups = (images ?? []).reduce((groups, photo) => {
+        const existingGroup = groups.find(({ kind }) => kind === photo.kind);
+        if (existingGroup) {
+            existingGroup.photos.push(photo);
+        } else {
+            const config = REPORT_PHOTO_CONFIGS.find(
+                ({ kind }) => kind === photo.kind
+            );
+            groups.push({
+                kind: photo.kind,
+                title: config?.title ?? 'Другие фотографии',
+                field: `photos.${config?.name}`,
+                photos: [photo],
+            });
+        }
+        return groups;
+    }, []);
     return (
         <>
             <Section title='Фотографии' icon='images-outline'>

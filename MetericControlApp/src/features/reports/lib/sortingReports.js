@@ -1,32 +1,8 @@
 import { compareTimes } from '@/shared/lib/collections/compareTimes';
 
-export const sortingBySubmitTime = (reports) => {
-    if (Array.isArray(reports)) {
-        return reports.sort((a, b) => {
-            return compareTimes(a?.submitted_at, b?.submitted_at, -1);
-        });
-    }
-};
-
-export const sortingByReviewTime = (reports) => {
-    if (Array.isArray(reports)) {
-        return reports.sort((a, b) => {
-            return compareTimes(a?.reviewed_at, b?.reviewed_at, -1);
-        });
-    }
-};
-
-export const sortingByApprovedTime = (reports) => {
-    if (Array.isArray(reports)) {
-        return reports.sort((a, b) => {
-            return compareTimes(a?.approved_at, b?.approved_at, -1);
-        });
-    }
-};
-
 export const sortingByAdmissionStatus = (reports, status) => {
     if (Array.isArray(reports)) {
-        return reports.sort((a, b) => {
+        return [...reports].sort((a, b) => {
             return a.admission?.status === b.admission?.status
                 ? 0
                 : a.admission?.status === status
@@ -38,7 +14,7 @@ export const sortingByAdmissionStatus = (reports, status) => {
 
 export const sortingReports = (reports) => {
     if (Array.isArray(reports)) {
-        return reports.sort((a, b) => {
+        return [...reports].sort((a, b) => {
             const bySubmitedTime = compareTimes(
                 a?.submitted_at,
                 b?.submitted_at
@@ -59,15 +35,17 @@ export const sortingReports = (reports) => {
 
 export const sortingBy = (reports, status) => {
     if (Array.isArray(reports)) {
-        if (status === 'APPROVED_AT') {
-            return sortingByApprovedTime(reports);
-        } else if (status === 'REVIEWED_AT') {
-            return sortingByReviewTime(reports);
-        } else if (status === 'SUBMITTED_AT') {
-            return sortingBySubmitTime(reports);
-        } else {
-            return sortingByAdmissionStatus(reports, status);
+        const dateField = {
+            APPROVED_AT: 'approved_at',
+            REVIEWED_AT: 'reviewed_at',
+            SUBMITTED_AT: 'submitted_at',
+        }[status];
+        if (dateField) {
+            return [...reports].sort((a, b) =>
+                compareTimes(a?.[dateField], b?.[dateField], -1)
+            );
         }
+        return sortingByAdmissionStatus(reports, status);
     }
     return reports;
 };
