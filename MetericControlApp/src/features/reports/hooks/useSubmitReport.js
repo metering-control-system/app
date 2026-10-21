@@ -1,22 +1,31 @@
-import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import usePreserveBrigadeDraft from '@/features/reports/hooks/usePreserveBrigadeDraft';
 import { validateReportValues } from '@/features/reports/lib/validateReportValues';
-import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
 import { useCallback } from 'react';
 import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import {
+    getReportByTaskId,
+    submitReport,
     addReportComment,
     createReport,
     deleteReportImage,
-    getReportByTaskId,
-    submitReport,
     updateReport,
     updateReportPdfAct,
     uploadReportImage,
     uploadReportPdfAct,
 } from '@/features/reports/api/submitReportApi';
+import useNetwork from '@/shared/hooks/offline/useNetwork';
+import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useReportsStore from '@/features/reports/store/useReportsStore';
+import {
+    REPORT_OPERATION_KEY,
+    startReportOperation,
+} from '@/features/reports/lib/reportOperation';
+import { createClientId } from '@/features/reports/lib/createClientReportId';
+import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
+import useStorePictures from '@/shared/store/useStorePictures';
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import {
     buildReportCommentPayload,
     buildReportImagesPayload,
@@ -24,21 +33,229 @@ import {
     buildReportPdfActPayload,
     getRemovedReportImageIds,
 } from '@/features/reports/lib/buildReportPayload';
-import useNetwork from '@/shared/hooks/offline/useNetwork';
-import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import useReportsStore from '@/features/reports/store/useReportsStore';
 import {
     buildReportUpsertRequest,
     selectReportForTask,
 } from '@/features/reports/lib/reportUpsert';
-import {
-    REPORT_OPERATION_KEY,
-    startReportOperation,
-} from '@/features/reports/lib/reportOperation';
-import { createClientId } from '@/features/reports/lib/createClientReportId';
-import { prepareReportPhotoMetadata } from '@/features/reports/lib/reportPhotoMetadata';
+import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
-import useStorePictures from '@/shared/store/useStorePictures';
+
+const isReportSubmissionConfirmed = (report, submission) =>
+    Boolean(submission?.clientReportId) &&
+    Number(report?.id) === Number(submission?.reportId) &&
+    Number(report?.task_id) === Number(submission?.taskId) &&
+    report?.client_report_id === submission?.clientReportId &&
+    [
+        REPORT_STATUS.ON_REVIEW,
+        REPORT_STATUS.ON_ADMIN,
+        REPORT_STATUS.ACCEPTED,
+    ].includes(report?.status);
+
+const finalizeReportSubmission = async (submission) => {
+    try {
+        const report = await submitReport(submission.reportId);
+        if (isReportSubmissionConfirmed(report, submission)) return report;
+        throw new Error('Не удалось получить подтверждённый отчёт');
+    } catch (error) {
+        const status = error.response?.status;
+        const ambiguous = !error.response || status === 408 || status >= 500;
+        if (ambiguous) {
+            try {
+                const report = await getReportByTaskId(submission.taskId);
+                if (isReportSubmissionConfirmed(report, submission))
+                    return report;
+            } catch {
+                throw error;
+            }
+        }
+        throw error;
+    }
+};
+
+const prepareReportSubmission = async ({
+    taskId,
+    values,
+    existingReport,
+    photoMetadata,
+    clientActId,
+    buildReportSignaturesPayload,
+}) => {
+    const { isRefused } = values.actPdf;
+    const reportPdfActPayload = !isRefused
+        ? buildReportPdfActPayload(
+              values,
+              existingReport?.act?.client_act_id || clientActId
+          )
+        : null;
+    await validateReportUploadFiles({
+        imagesPayload: buildReportImagesPayload(
+            values,
+            existingReport?.images,
+            photoMetadata
+        ),
+        actPayload: reportPdfActPayload,
+        isExistingAct: Boolean(existingReport?.act?.client_act_id),
+    });
+    const reportPayload = buildReportPayload(
+        { ...values, taskId },
+        {
+            includeEmptyOptionalFields: Boolean(existingReport),
+            signaturePayload: buildReportSignaturesPayload(values.actPdf),
+        }
+    );
+    const reportCommentPayload = buildReportCommentPayload(values);
+    const upsertRequest = buildReportUpsertRequest({
+        reportPayload,
+        existingReport,
+        resubmitRejectedReport: false,
+    });
+    return {
+        reportPayload,
+        reportPdfActPayload,
+        reportCommentPayload,
+        upsertRequest,
+    };
+};
+
+const saveOfflineReportSubmission = async ({
+    taskId,
+    values,
+    photoMetadata,
+    clientActId,
+    actRecord,
+    actOperations,
+}) => {
+    const draftId = String(taskId);
+    const { uri: actPdfUri, isRefused } = values.actPdf;
+    const { savePdfToDocuments, saveAct } = actOperations;
+    const { setDraft } = useReportDraftStore.getState();
+    const cachedReport = selectReportForTask(
+        useReportsStore.getState().reports,
+        taskId
+    );
+    await validateReportUploadFiles({
+        imagesPayload: buildReportImagesPayload(
+            values,
+            cachedReport?.images,
+            photoMetadata
+        ),
+        actPayload: !isRefused
+            ? buildReportPdfActPayload(values, clientActId)
+            : null,
+        offline: true,
+    });
+    const offlineValues = !isRefused
+        ? {
+              ...values,
+              actPdf: {
+                  ...values.actPdf,
+                  uri: await savePdfToDocuments({
+                      fileName: taskId.toString(),
+                      sourceUri: actPdfUri,
+                  }),
+              },
+          }
+        : values;
+    if (!isRefused) {
+        saveAct(draftId, { ...actRecord, uri: offlineValues.actPdf.uri });
+    }
+    setDraft({
+        draftId,
+        values: {
+            ...offlineValues,
+            reportState: REPORT_DRAFT_STATE.PENDING,
+            requiresManualSubmit: false,
+        },
+    });
+    return { offline: true };
+};
+
+const uploadReportSubmission = async ({
+    taskId,
+    isTeamTask,
+    values,
+    photoMetadata,
+    removedPhotoIds,
+    upsertRequest,
+    reportPdfActPayload,
+    reportCommentPayload,
+    trackSubmission,
+}) => {
+    const { uri: actPdfUri, isRefused } = values.actPdf;
+    let reportResponse =
+        upsertRequest.operation === 'update'
+            ? await updateReport(upsertRequest.reportId, upsertRequest.payload)
+            : await createReport(upsertRequest.payload);
+    const reportId = reportResponse?.id;
+
+    if (!reportId) {
+        throw new Error('Не удалось получить идентификатор отчета');
+    }
+
+    trackSubmission(reportResponse);
+
+    const reportImagesPayload = buildReportImagesPayload(
+        values,
+        reportResponse.images,
+        photoMetadata
+    );
+    const removedImageIds = getRemovedReportImageIds({
+        photos: values.photos,
+        photoMetadata,
+        removedPhotoIds,
+        existingImages: reportResponse.images,
+    });
+
+    if (reportImagesPayload) {
+        reportResponse = await retryReportImageUpload(() =>
+            uploadReportImage(reportId, reportImagesPayload)
+        );
+        trackSubmission(reportResponse);
+    }
+
+    const serverActId = reportResponse?.act?.client_act_id;
+
+    if (!isRefused && actPdfUri && reportPdfActPayload) {
+        if (serverActId) {
+            reportResponse = await updateReportPdfAct(
+                reportId,
+                reportPdfActPayload,
+                serverActId
+            );
+        } else {
+            reportResponse = await uploadReportPdfAct(
+                reportId,
+                reportPdfActPayload
+            );
+        }
+        trackSubmission(reportResponse);
+    }
+
+    for (const clientImageId of removedImageIds) {
+        await deleteReportImage(reportId, clientImageId);
+        reportResponse = {
+            ...reportResponse,
+            images: (reportResponse.images ?? []).filter(
+                (image) => image['client_image_id'] !== clientImageId
+            ),
+        };
+        trackSubmission(reportResponse);
+    }
+
+    if (isTeamTask && removedImageIds.length) {
+        const latestReport = await getReportByTaskId(taskId);
+        if (latestReport?.id === reportId) {
+            reportResponse = latestReport;
+            trackSubmission(reportResponse);
+        }
+    }
+
+    if (reportCommentPayload) {
+        await addReportComment(reportId, reportCommentPayload);
+    }
+
+    return { reportId, reportResponse };
+};
 
 const useSubmitReport = ({
     getTasks,
@@ -48,57 +265,13 @@ const useSubmitReport = ({
 }) => {
     const {
         validateReportAct,
-        savePdfToDocuments,
         getActRecord,
+        getActId,
         clearTaskAct,
         buildReportSignaturesPayload,
     } = actOperations;
     const queryClient = useQueryClient();
     const preserveBrigadeDraft = usePreserveBrigadeDraft();
-    const finalizeReportSubmission = async (submission) => {
-        try {
-            const report = await submitReport(submission.reportId);
-            if (
-                Boolean(submission?.clientReportId) &&
-                Number(report?.id) === Number(submission?.reportId) &&
-                Number(report?.task_id) === Number(submission?.taskId) &&
-                report?.client_report_id === submission?.clientReportId &&
-                [
-                    REPORT_STATUS.ON_REVIEW,
-                    REPORT_STATUS.ON_ADMIN,
-                    REPORT_STATUS.ACCEPTED,
-                ].includes(report?.status)
-            )
-                return report;
-            throw new Error('Не удалось получить подтверждённый отчёт');
-        } catch (error) {
-            const status = error.response?.status;
-            const ambiguous =
-                !error.response || status === 408 || status >= 500;
-            if (ambiguous) {
-                try {
-                    const report = await getReportByTaskId(submission.taskId);
-                    if (
-                        Boolean(submission?.clientReportId) &&
-                        Number(report?.id) === Number(submission?.reportId) &&
-                        Number(report?.task_id) ===
-                            Number(submission?.taskId) &&
-                        report?.client_report_id ===
-                            submission?.clientReportId &&
-                        [
-                            REPORT_STATUS.ON_REVIEW,
-                            REPORT_STATUS.ON_ADMIN,
-                            REPORT_STATUS.ACCEPTED,
-                        ].includes(report?.status)
-                    )
-                        return report;
-                } catch {
-                    throw error;
-                }
-            }
-            throw error;
-        }
-    };
     const { isOnline, isChecked } = useNetwork();
     const setDraft = useReportDraftStore((state) => state.setDraft);
     const setUpdatedReports = useReportsStore(
@@ -135,19 +308,10 @@ const useSubmitReport = ({
                     throw error;
                 }
                 if (
-                    Boolean(
-                        previousDraft.submissionFinalization.clientReportId
-                    ) &&
-                    Number(report?.id) ===
-                        Number(previousDraft.submissionFinalization.reportId) &&
-                    Number(report?.task_id) === Number(taskId) &&
-                    report?.client_report_id ===
-                        previousDraft.submissionFinalization.clientReportId &&
-                    [
-                        REPORT_STATUS.ON_REVIEW,
-                        REPORT_STATUS.ON_ADMIN,
-                        REPORT_STATUS.ACCEPTED,
-                    ].includes(report?.status)
+                    isReportSubmissionConfirmed(report, {
+                        ...previousDraft.submissionFinalization,
+                        taskId,
+                    })
                 ) {
                     return {
                         actRecord: recoveryActRecord,
@@ -174,7 +338,6 @@ const useSubmitReport = ({
             ) {
                 return { skipped: true };
             }
-            const actRecord = getActRecord(draftId);
             const picturesState = useStorePictures.getState();
             const photoMetadata = prepareReportPhotoMetadata({
                 photos: values.photos,
@@ -193,43 +356,19 @@ const useSubmitReport = ({
             if (!isRefused && !actPdfUri) {
                 throw new Error('Отсутствует цифровой акт');
             }
+            const clientActId = !isRefused
+                ? getActId(draftId, createClientId)
+                : null;
+            const actRecord = getActRecord(draftId);
             if (!isOnline && isChecked) {
-                const cachedReport = selectReportForTask(
-                    useReportsStore.getState().reports,
-                    taskId
-                );
-                await validateReportUploadFiles({
-                    imagesPayload: buildReportImagesPayload(
-                        values,
-                        cachedReport?.images,
-                        photoMetadata
-                    ),
-                    actPayload: !isRefused
-                        ? buildReportPdfActPayload(values, createClientId())
-                        : null,
-                    offline: true,
+                return saveOfflineReportSubmission({
+                    taskId,
+                    values,
+                    photoMetadata,
+                    clientActId,
+                    actRecord,
+                    actOperations,
                 });
-                const offlineValues = !isRefused
-                    ? {
-                          ...values,
-                          actPdf: {
-                              ...values.actPdf,
-                              uri: await savePdfToDocuments({
-                                  fileName: taskId.toString(),
-                                  sourceUri: actPdfUri,
-                              }),
-                          },
-                      }
-                    : values;
-                setDraft({
-                    draftId,
-                    values: {
-                        ...offlineValues,
-                        reportState: REPORT_DRAFT_STATE.PENDING,
-                        requiresManualSubmit: false,
-                    },
-                });
-                return { offline: true };
             }
             const task =
                 getTasks()?.find(
@@ -254,35 +393,18 @@ const useSubmitReport = ({
                     { code: 'REPORT_READ_ONLY' }
                 );
             }
-            const reportPdfActPayload = !isRefused
-                ? buildReportPdfActPayload(
-                      values,
-                      existingReport?.act?.client_act_id || createClientId()
-                  )
-                : null;
-            await validateReportUploadFiles({
-                imagesPayload: buildReportImagesPayload(
-                    values,
-                    existingReport?.images,
-                    photoMetadata
-                ),
-                actPayload: reportPdfActPayload,
-                isExistingAct: Boolean(existingReport?.act?.client_act_id),
-            });
-            const reportPayload = buildReportPayload(
-                { ...values, taskId },
-                {
-                    includeEmptyOptionalFields: Boolean(existingReport),
-                    signaturePayload: buildReportSignaturesPayload(
-                        values.actPdf
-                    ),
-                }
-            );
-            const reportCommentPayload = buildReportCommentPayload(values);
-            const upsertRequest = buildReportUpsertRequest({
+            const {
                 reportPayload,
+                reportPdfActPayload,
+                reportCommentPayload,
+                upsertRequest,
+            } = await prepareReportSubmission({
+                taskId,
+                values,
                 existingReport,
-                resubmitRejectedReport: false,
+                photoMetadata,
+                clientActId,
+                buildReportSignaturesPayload,
             });
             let submittedDraft = expectedDraft ?? {
                 ...values,
@@ -318,81 +440,19 @@ const useSubmitReport = ({
             };
 
             try {
-                let reportResponse =
-                    upsertRequest.operation === 'update'
-                        ? await updateReport(
-                              upsertRequest.reportId,
-                              upsertRequest.payload
-                          )
-                        : await createReport(upsertRequest.payload);
-                const reportId = reportResponse?.id;
-
-                if (!reportId) {
-                    throw new Error('Не удалось получить идентификатор отчета');
-                }
-
-                trackSubmission(reportResponse);
-
-                const reportImagesPayload = buildReportImagesPayload(
-                    values,
-                    reportResponse.images,
-                    photoMetadata
+                let { reportId, reportResponse } = await uploadReportSubmission(
+                    {
+                        taskId,
+                        isTeamTask: task.is_team_task,
+                        values,
+                        photoMetadata,
+                        removedPhotoIds,
+                        upsertRequest,
+                        reportPdfActPayload,
+                        reportCommentPayload,
+                        trackSubmission,
+                    }
                 );
-                const removedImageIds = getRemovedReportImageIds({
-                    photos: values.photos,
-                    photoMetadata,
-                    removedPhotoIds,
-                    existingImages: reportResponse.images,
-                });
-
-                if (reportImagesPayload) {
-                    reportResponse = await retryReportImageUpload(() =>
-                        uploadReportImage(reportId, reportImagesPayload)
-                    );
-                    trackSubmission(reportResponse);
-                }
-
-                const serverActId = reportResponse?.act?.client_act_id;
-
-                if (!isRefused && actPdfUri && reportPdfActPayload) {
-                    if (serverActId) {
-                        reportResponse = await updateReportPdfAct(
-                            reportId,
-                            reportPdfActPayload,
-                            serverActId
-                        );
-                    } else {
-                        reportResponse = await uploadReportPdfAct(
-                            reportId,
-                            reportPdfActPayload
-                        );
-                    }
-                    trackSubmission(reportResponse);
-                }
-
-                for (const clientImageId of removedImageIds) {
-                    await deleteReportImage(reportId, clientImageId);
-                    reportResponse = {
-                        ...reportResponse,
-                        images: (reportResponse.images ?? []).filter(
-                            (image) =>
-                                image['client_image_id'] !== clientImageId
-                        ),
-                    };
-                    trackSubmission(reportResponse);
-                }
-
-                if (task.is_team_task && removedImageIds.length) {
-                    const latestReport = await getReportByTaskId(taskId);
-                    if (latestReport?.id === reportId) {
-                        reportResponse = latestReport;
-                        trackSubmission(reportResponse);
-                    }
-                }
-
-                if (reportCommentPayload) {
-                    await addReportComment(reportId, reportCommentPayload);
-                }
 
                 const submissionFinalization = {
                     reportId,
