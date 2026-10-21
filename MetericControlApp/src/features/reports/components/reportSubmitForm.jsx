@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmissionStatus';
 import {
     REPORT_DRAFT_STATE,
@@ -380,7 +381,7 @@ const ReportSubmitForm = ({
     }, [hasTemplates, setValue, isReadOnly]);
     const renderRemark = (name) => {
         if (
-            existingReport?.status !== 'REJECTED' ||
+            existingReport?.status !== REPORT_STATUS.REJECTED ||
             (task?.is_team_task && !hasServerRemarks) ||
             clearedRemarks === existingReport
         )
@@ -558,7 +559,7 @@ const ReportSubmitForm = ({
                 <View style={styles.brigadeActions}>
                     <FormButton
                         message={
-                            existingReport?.status === 'REJECTED'
+                            existingReport?.status === REPORT_STATUS.REJECTED
                                 ? 'Загрузить отчёт с замечаниями'
                                 : 'Загрузить отправленный отчёт'
                         }
@@ -573,7 +574,8 @@ const ReportSubmitForm = ({
                             ? 'Загружаем отчёт. Дождитесь завершения.'
                             : !isOnline
                               ? 'Для загрузки отчёта бригады нужен интернет.'
-                              : existingReport?.status === 'REJECTED' &&
+                              : existingReport?.status ===
+                                      REPORT_STATUS.REJECTED &&
                                   !hasServerRemarks
                                 ? 'Открыт ваш личный черновик. Замечания относятся к отчёту с сервера. Продолжите свой вариант или загрузите отчёт с замечаниями.'
                                 : 'Вы можете загрузить отчёт бригады или продолжить заполнять свой.'}

@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { useCallback, useEffect, useRef } from 'react';
 import { REPORT_FIELD_REFERENCES } from '@/features/reports/constants/reportFieldReferences';
 import { useScrollToPosition } from '@/shared/hooks/useNavigateToElement';
@@ -17,7 +18,7 @@ const useReportDetailsNavigation = ({
     const scrollRef = useRef(null);
     const [fillPositions, scrollToElement] = useScrollToPosition(scrollRef);
     const latestReportQuery = useTaskReport(
-        target && viewOnly !== '1' && report?.status === 'REJECTED'
+        target && viewOnly !== '1' && report?.status === REPORT_STATUS.REJECTED
             ? task
             : null,
         isTaskReportReadOnly
@@ -25,7 +26,7 @@ const useReportDetailsNavigation = ({
     const isResolvingReference = Boolean(
         target &&
         viewOnly !== '1' &&
-        report?.status === 'REJECTED' &&
+        report?.status === REPORT_STATUS.REJECTED &&
         (isTaskPending ||
             latestReportQuery.isPending ||
             latestReportQuery.isFetching)
@@ -34,11 +35,11 @@ const useReportDetailsNavigation = ({
         target &&
         viewOnly !== '1' &&
         task &&
-        report?.status === 'REJECTED' &&
+        report?.status === REPORT_STATUS.REJECTED &&
         !isResolvingReference &&
         !latestReportQuery.isError &&
         Number(latestReportQuery.report?.id) === Number(report.id) &&
-        latestReportQuery.report?.status === 'REJECTED' &&
+        latestReportQuery.report?.status === REPORT_STATUS.REJECTED &&
         !latestReportQuery.isReadOnly
     );
     const scrollToReference = useCallback(() => {
@@ -51,7 +52,7 @@ const useReportDetailsNavigation = ({
     const canOpenTask = Boolean(
         task &&
         report &&
-        (report.status === 'REJECTED' || draft) &&
+        (report.status === REPORT_STATUS.REJECTED || draft) &&
         !isTaskReportReadOnly(task, report, draft)
     );
 

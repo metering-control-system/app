@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import {
     getReportByTaskId,
     submitReport,
@@ -8,7 +9,11 @@ export const isConfirmedReportSubmission = (report, submission) =>
     Number(report?.id) === Number(submission?.reportId) &&
     Number(report?.task_id) === Number(submission?.taskId) &&
     report?.client_report_id === submission?.clientReportId &&
-    ['ON_REVIEW', 'ON_ADMIN', 'ACCEPTED'].includes(report?.status);
+    [
+        REPORT_STATUS.ON_REVIEW,
+        REPORT_STATUS.ON_ADMIN,
+        REPORT_STATUS.ACCEPTED,
+    ].includes(report?.status);
 
 export const finalizeReportSubmission = async (submission) => {
     try {

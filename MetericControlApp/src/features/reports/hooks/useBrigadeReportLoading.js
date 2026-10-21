@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 import { Alert, Keyboard } from 'react-native';
@@ -79,7 +80,7 @@ const useBrigadeReportLoading = ({
             Keyboard.dismiss();
             void loadReport(mode);
         };
-        if (existingReport?.status === 'REJECTED') {
+        if (existingReport?.status === REPORT_STATUS.REJECTED) {
             Alert.alert(
                 'Загрузить отчёт с замечаниями?',
                 'Поля и фотографии вашего локального черновика будут заменены отклонённым отчётом с сервера.',

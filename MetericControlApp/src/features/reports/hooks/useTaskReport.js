@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 import { preserveBrigadeDraft } from '@/features/reports/lib/preserveBrigadeDraft';
 import { useIsMutating, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -37,9 +38,11 @@ const useTaskReport = (task, isTaskReportReadOnly) => {
                     if (
                         task.is_team_task &&
                         draft?.reportState === REPORT_DRAFT_STATE.PENDING &&
-                        ['ON_REVIEW', 'ON_ADMIN', 'ACCEPTED'].includes(
-                            report.status
-                        ) &&
+                        [
+                            REPORT_STATUS.ON_REVIEW,
+                            REPORT_STATUS.ON_ADMIN,
+                            REPORT_STATUS.ACCEPTED,
+                        ].includes(report.status) &&
                         (draft.submissionReport?.id !== report.id ||
                             draft.submissionReport?.updatedAt !==
                                 report.updated_at)

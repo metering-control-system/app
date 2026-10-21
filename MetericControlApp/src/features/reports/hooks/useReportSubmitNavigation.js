@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmissionStatus';
 import {
     REPORT_DRAFT_STATE,
@@ -21,7 +22,7 @@ const useReportSubmitNavigation = ({
     const isResolvingSource = Boolean(sourceReportId && reportQuery.isFetching);
     const canUseServerRemarks =
         !task?.is_team_task ||
-        reportQuery.data?.status !== 'REJECTED' ||
+        reportQuery.data?.status !== REPORT_STATUS.REJECTED ||
         (Number(draft?.serverReportSource?.id) ===
             Number(reportQuery.data?.id) &&
             draft?.serverReportSource?.updatedAt ===
@@ -100,7 +101,7 @@ const useReportSubmitNavigation = ({
         !isResolvingSource &&
         !reportQuery.isError &&
         (Number(sourceReportId) !== Number(reportQuery.data?.id) ||
-            reportQuery.data?.status !== 'REJECTED');
+            reportQuery.data?.status !== REPORT_STATUS.REJECTED);
 
     const redirect =
         !(queueView && REPORT_QUEUE_STATES.includes(draft?.reportState)) &&
