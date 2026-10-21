@@ -8,7 +8,7 @@ import Card from '@/shared/components/wrapper/card';
 import FormButton from '@/shared/components/button/formButton';
 import useChangeTaskStatus from '@/features/tasks/hooks/useChangeTaskStatus';
 import { colors } from '@/shared/consts/baseColors';
-import { taskStatus } from '@/features/tasks/constants/taskStatus';
+import { TASK_STATUS, taskStatus } from '@/features/tasks/constants/taskStatus';
 import TaskDetailsTextField from '@/features/tasks/components/taskDetailsForm/taskDetailsTextField';
 import {
     additionalTaskDetailsFields,
@@ -28,9 +28,11 @@ const TaskDetailsForm = ({ onError, task }) => {
         defaultValues: taskFormDefaultValues,
     });
 
-    const disabled = task?.status in taskStatus && task?.status !== 'NEW';
+    const disabled =
+        task?.status in taskStatus && task?.status !== TASK_STATUS.NEW;
     const changeable = !(
-        task?.status === 'REJECTED' || task?.status === 'COMPLETED'
+        task?.status === TASK_STATUS.REJECTED ||
+        task?.status === TASK_STATUS.COMPLETED
     );
     const { changeStatus, isPending } = useChangeTaskStatus();
 
@@ -43,7 +45,10 @@ const TaskDetailsForm = ({ onError, task }) => {
     const onSubmit = async () => {
         if (isValid && !isSubmitting) {
             try {
-                await changeStatus({ id: task?.id, status: 'IN_PROGRESS' });
+                await changeStatus({
+                    id: task?.id,
+                    status: TASK_STATUS.IN_PROGRESS,
+                });
             } catch {
                 onError(
                     'Не удалось начать работу',
@@ -87,23 +92,23 @@ const TaskDetailsForm = ({ onError, task }) => {
                 message={
                     isPending
                         ? '...Загрузка'
-                        : task?.status === 'IN_PROGRESS'
+                        : task?.status === TASK_STATUS.IN_PROGRESS
                           ? 'Выполняется'
-                          : task?.status === 'REJECTED'
+                          : task?.status === TASK_STATUS.REJECTED
                             ? 'Отклонена'
-                            : task?.status === 'COMPLETED'
+                            : task?.status === TASK_STATUS.COMPLETED
                               ? 'Завершена'
                               : 'Приступить'
                 }
                 style={
-                    task?.status === 'IN_PROGRESS' && !isPending
+                    task?.status === TASK_STATUS.IN_PROGRESS && !isPending
                         ? colors.secondary
-                        : task?.status === 'REJECTED'
+                        : task?.status === TASK_STATUS.REJECTED
                           ? {
                                 ...colors.warning,
                                 backgroundColor: colors.warning.borderColor,
                             }
-                          : task?.status === 'COMPLETED'
+                          : task?.status === TASK_STATUS.COMPLETED
                             ? colors.primary
                             : colors.ordinary
                 }

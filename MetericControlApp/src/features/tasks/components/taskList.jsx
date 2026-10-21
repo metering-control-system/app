@@ -1,3 +1,4 @@
+import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import useTasks from '@/features/tasks/hooks/useTasks';
@@ -6,7 +7,6 @@ import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
 import { sortBy } from '@/features/tasks/lib/sortTasks';
-import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 
 import Task from '@/features/tasks/components/task';
@@ -19,10 +19,6 @@ const TasksList = ({
     refreshing = false,
     onRefresh,
     emptyMessage = 'Задачи не найдены',
-    onLayout,
-    onContentSizeChange,
-    onEndReached,
-    isFetchingNextPage: providedIsFetchingNextPage = false,
     setError,
     filtering,
     sorting,
@@ -163,7 +159,7 @@ const TasksList = ({
             style={styles.container}
             onLayout={
                 isProvided
-                    ? onLayout
+                    ? undefined
                     : (event) => setListHeight(event.nativeEvent.layout.height)
             }>
             <FlatList
@@ -181,12 +177,12 @@ const TasksList = ({
                 onRefresh={isProvided ? onRefresh : handleRefresh}
                 onContentSizeChange={
                     isProvided
-                        ? onContentSizeChange
+                        ? undefined
                         : (_, height) => setContentHeight(height)
                 }
                 onEndReached={
                     isProvided
-                        ? onEndReached
+                        ? undefined
                         : () => {
                               if (
                                   hasNextPage &&
@@ -201,11 +197,7 @@ const TasksList = ({
                 maxToRenderPerBatch={10}
                 windowSize={7}
                 ListFooterComponent={
-                    (
-                        isProvided
-                            ? providedIsFetchingNextPage
-                            : isFetchingNextPage
-                    ) ? (
+                    !isProvided && isFetchingNextPage ? (
                         <Text>Идет загрузка...</Text>
                     ) : null
                 }

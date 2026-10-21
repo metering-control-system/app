@@ -50,8 +50,7 @@ const useTasks = (enabled = true) => {
 
     useEffect(() => {
         if (enabled && data) {
-            const allTasks = data.pages.flatMap((page) => page.tasks ?? []);
-            setUpdatedTasks(allTasks);
+            setUpdatedTasks(data.pages.flatMap((page) => page.tasks ?? []));
         }
     }, [enabled, data, setUpdatedTasks]);
 

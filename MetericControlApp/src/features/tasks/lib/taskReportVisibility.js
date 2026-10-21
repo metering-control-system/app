@@ -1,3 +1,4 @@
+import { TASK_STATUS } from '@/features/tasks/constants/taskStatus';
 export const isTaskReportReadOnly = (task, report, draft) => {
     if (!task || !report) return false;
     if (
@@ -24,16 +25,18 @@ export const filterSubmittedTasks = (tasks, getReportForTask, drafts) =>
         if (hasServerLock && !hasNewerReport) {
             if (!task.is_locked) return true;
 
-            // Only a matching report revision can allow an unfinished upload.
             const canResumeUpload =
-                task.status !== 'COMPLETED' &&
+                task.status !== TASK_STATUS.COMPLETED &&
                 task.report_status === 'ON_REVIEW' &&
                 report?.status === task.report_status &&
                 Number(report.id) === Number(task.report_id) &&
                 !isTaskReportReadOnly(task, report, draft);
             return Boolean(canResumeUpload);
         }
-        if (task.status === 'COMPLETED' && report?.status !== 'REJECTED') {
+        if (
+            task.status === TASK_STATUS.COMPLETED &&
+            report?.status !== TASK_STATUS.REJECTED
+        ) {
             return false;
         }
         return !isTaskReportReadOnly(task, report, draft);

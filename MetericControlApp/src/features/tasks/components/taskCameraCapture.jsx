@@ -21,10 +21,6 @@ const TaskCameraCapture = ({ id }) => {
     const cameraRef = useRef();
     const router = useRouter();
 
-    const onHandlePhoto = () => {
-        router.back();
-    };
-
     return (
         <CameraCapture
             cameraRef={cameraRef}
@@ -36,7 +32,7 @@ const TaskCameraCapture = ({ id }) => {
                     uri,
                 });
             }}
-            onHandlePhoto={onHandlePhoto}
+            onHandlePhoto={() => router.back()}
             onClose={() => router.back()}
         />
     );
