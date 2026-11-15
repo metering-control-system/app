@@ -10,9 +10,13 @@ const SignatureScreen = () => {
     const handleActSaved = ({ taskId, values, actPdf }) => {
         const draftId = String(taskId);
         const draftStore = useReportDraftStore.getState();
+        const { checksum: _checksum, id: _id, ...formActPdf } = actPdf;
         draftStore.setDraft({
             draftId,
-            values: { ...(draftStore.getDraft(draftId) ?? values), actPdf },
+            values: {
+                ...(draftStore.getDraft(draftId) ?? values),
+                actPdf: formActPdf,
+            },
         });
     };
 

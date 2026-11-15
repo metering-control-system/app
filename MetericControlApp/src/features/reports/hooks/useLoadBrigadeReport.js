@@ -72,10 +72,7 @@ const useLoadBrigadeReport = ({
             ...values,
             reportState: REPORT_DRAFT_STATE.DRAFT,
             requiresManualSubmit: true,
-            serverReportSource:
-                mode === 'replace'
-                    ? { id: report.id, updatedAt: report.updated_at }
-                    : null,
+            serverReportSource: { id: report.id, updatedAt: report.updated_at },
         };
         reset(loadedValues);
         setDraft({ draftId, values: loadedValues });

@@ -15,12 +15,29 @@ const useActStore = create(
                     actMetadataByTask: {
                         ...state.actMetadataByTask,
                         [String(taskId)]: {
+                            id:
+                                state.actMetadataByTask[String(taskId)]?.id ??
+                                actPdf.id,
                             checksum: actPdf.checksum,
+                            uri: actPdf.uri,
                             templateId: actPdf.templateId,
                             signatures: actPdf.signatures ?? {},
                         },
                     },
                 })),
+            getActId: (taskId, createId) => {
+                const key = String(taskId);
+                const current = get().actMetadataByTask[key];
+                if (current?.id) return current.id;
+                const id = createId();
+                set((state) => ({
+                    actMetadataByTask: {
+                        ...state.actMetadataByTask,
+                        [key]: { ...state.actMetadataByTask[key], id },
+                    },
+                }));
+                return id;
+            },
             startSession: (session) => set({ session, result: null }),
             completeSession: (
                 actPdf,

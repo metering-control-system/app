@@ -47,5 +47,5 @@ export const reportSubmitFormDefaultValues = {
         email: '',
         fullName: '',
     },
-    actPdf: { uri: '', id: '', isRefused: false },
+    actPdf: { uri: '', isRefused: false },
 };

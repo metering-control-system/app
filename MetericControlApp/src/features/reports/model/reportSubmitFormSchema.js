@@ -215,10 +215,8 @@ export const reportSubmitFormSchema = z
         }),
 
         actPdf: z.object({
-            checksum: z.string().optional(),
             templateId: z.string().optional(),
             uri: z.string().trim().optional(),
-            id: z.string().trim().optional(),
             isRefused: z.boolean(),
             signatures: z
                 .object({

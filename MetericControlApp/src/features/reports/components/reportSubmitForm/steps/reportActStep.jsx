@@ -54,7 +54,8 @@ export const ReportActStep = ({
                 previousAct: getActRecord(draftId),
             });
             saveAct(draftId, actPdf);
-            setValue('actPdf', actPdf, { shouldDirty: true });
+            const { checksum: _checksum, id: _id, ...formActPdf } = actPdf;
+            setValue('actPdf', formActPdf, { shouldDirty: true });
         } catch {
             onError(
                 'Не удалось подготовить акт',
