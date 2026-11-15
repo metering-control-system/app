@@ -393,6 +393,21 @@ const useSubmitReport = ({
                     { code: 'REPORT_READ_ONLY' }
                 );
             }
+            if (task.is_team_task && expectedDraft && existingReport) {
+                const source =
+                    expectedDraft.submissionReport ??
+                    expectedDraft.serverReportSource;
+                if (
+                    !source?.updatedAt ||
+                    !existingReport.updated_at ||
+                    Number(source.id) !== Number(existingReport.id) ||
+                    source.updatedAt !== existingReport.updated_at
+                ) {
+                    setUpdatedReports([existingReport]);
+                    preserveBrigadeDraft({ taskId, values, expectedDraft });
+                    return { skipped: true };
+                }
+            }
             const {
                 reportPayload,
                 reportPdfActPayload,
@@ -423,6 +438,10 @@ const useSubmitReport = ({
                 if (!task.is_team_task) return;
                 const nextDraft = {
                     ...submittedDraft,
+                    serverReportSource: {
+                        id: report.id,
+                        updatedAt: report.updated_at,
+                    },
                     submissionReport: {
                         id: report.id,
                         updatedAt: report.updated_at,
@@ -474,6 +493,7 @@ const useSubmitReport = ({
                 reportResponse = await finalizeReportSubmission(
                     submissionFinalization
                 );
+                trackSubmission(reportResponse);
 
                 return {
                     actRecord,

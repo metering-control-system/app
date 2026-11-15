@@ -382,6 +382,12 @@ const ReportSubmitForm = ({
                 const nextPhotoMetadata = mapReportImagesToForm(
                     res.reportResponse.images
                 ).photoMetadata;
+                if (task?.is_team_task) {
+                    nextValues.serverReportSource = {
+                        id: res.reportResponse.id,
+                        updatedAt: res.reportResponse.updated_at,
+                    };
+                }
                 reset(nextValues);
                 hydratedDraftIdRef.current = draftId;
                 hydratedPhotosIdRef.current = draftId;
