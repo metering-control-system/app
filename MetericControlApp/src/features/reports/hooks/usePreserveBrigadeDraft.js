@@ -10,8 +10,8 @@ const usePreserveBrigadeDraft = () =>
         const current = store.getDraft(draftId);
         if (expectedDraft && !areObjectsEqual(expectedDraft, current)) return;
         const draft = {
-            ...values,
             ...current,
+            ...values,
             reportState: REPORT_DRAFT_STATE.DRAFT,
             requiresManualSubmit: true,
         };
