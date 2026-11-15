@@ -1,3 +1,18 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
+import { createActOperations } from '@/features/acts/lib/createActOperations';
+import useSettingsStore from '@/features/settings/store/useSettingsStore';
+import { deleteAct } from '@/features/acts/lib/savePdfToDocuments';
+import { getActReportFields } from '@/features/reports/lib/getActReportFields';
+import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
+import {
+    isTaskReportReadOnly,
+    filterSubmittedTasks,
+} from '@/features/tasks/lib/taskReportVisibility';
+import useTaskReports from '@/features/reports/hooks/useTaskReports';
 import TasksList from '@/features/tasks/components/taskList';
 import ScreenLayout from '@/shared/components/screen/screenLayout';
 import { useCallback, useMemo, useState } from 'react';
@@ -13,7 +28,7 @@ import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import { OverlayButton } from '@/shared/components/button/overlayButton';
 import { FontAwesome } from '@expo/vector-icons';
 import { useRouter } from 'expo-router';
-import useActTemplates from '@/features/reports/hooks/useActTemplates';
+import useActTemplates from '@/features/acts/hooks/useActTemplates';
 import { Modal, Pressable, StyleSheet, Text } from 'react-native';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useReportsStore from '@/features/reports/store/useReportsStore';
@@ -29,9 +44,18 @@ const TaskScreen = () => {
     const closeQueue = useCallback(() => setShowQueue(false), []);
     const drafts = useReportDraftStore((state) => state.drafts);
     const queueCount = Object.values(drafts ?? {}).filter((draft) =>
-        ['pending', 'error'].includes(draft?.reportState)
+        REPORT_QUEUE_STATES.includes(draft?.reportState)
     ).length;
-    const { requestedTemplatesError, requestActTemplates } = useActTemplates();
+    const defaultActTemplate = useSettingsStore(
+        (state) => state.defaultActTemplate
+    );
+    const setDefaultActTemplate = useSettingsStore(
+        (state) => state.setDefaultActTemplate
+    );
+    const { requestedTemplatesError, requestActTemplates } = useActTemplates({
+        defaultActTemplate,
+        setDefaultActTemplate,
+    });
 
     const [dismissedTemplateError, setDismissedTemplateError] = useState(null);
     const templateErrorVisible =
@@ -53,11 +77,21 @@ const TaskScreen = () => {
         (state) => Object.keys(state.tasksStatuses ?? {}).length
     );
 
-    const syncReportsRecords = useOfflineReportsSync();
+    const actOperations = createActOperations(getActReportFields);
+    const { submitTaskReport } = useSubmitReport({
+        getTasks: () => useTasksStore.getState().tasks,
+        getTaskById,
+        isTaskReportReadOnly,
+        actOperations,
+    });
+    const syncReportsRecords = useOfflineReportsSync(
+        submitTaskReport,
+        deleteAct
+    );
     const reportsPending = Object.entries(
         useReportDraftStore((state) => state.drafts)
     ).reduce((prev, curr) => {
-        if (curr[1].reportState === 'pending') {
+        if (curr[1].reportState === REPORT_DRAFT_STATE.PENDING) {
             return { ...prev, [curr[0]]: curr[1] };
         }
         return prev;
@@ -65,8 +99,28 @@ const TaskScreen = () => {
 
     const reportsPendingCount = Object.keys(reportsPending).length;
 
+    const {
+        isPending: isReportsPending,
+        isFetching: isReportsFetching,
+        error: reportsError,
+        refreshReports,
+    } = useTaskReports();
     const tasks = useTasksStore((state) => state.tasks);
     const reports = useReportsStore((state) => state.reports);
+    const prepareTasks = useCallback(
+        (tasks) =>
+            filterSubmittedTasks(
+                tasks,
+                (taskId) => selectReportForTask(reports, taskId),
+                drafts
+            ).map((task) => {
+                const report = selectReportForTask(reports, task.id);
+                return report?.status === 'REJECTED'
+                    ? { ...task, status: 'REJECTED' }
+                    : task;
+            }),
+        [reports, drafts]
+    );
     const { isChecked, isOnline } = useNetwork();
     const [isSyncing, setIsSyncing] = useState(false);
     const operations = useMutationState({
@@ -78,7 +132,7 @@ const TaskScreen = () => {
         );
         return Object.entries(drafts ?? {})
             .filter(([, draft]) =>
-                ['pending', 'error'].includes(draft?.reportState)
+                REPORT_QUEUE_STATES.includes(draft?.reportState)
             )
             .map(([taskId, draft]) => {
                 const report = selectReportForTask(reports, taskId);
@@ -146,6 +200,11 @@ const TaskScreen = () => {
                 </Pressable>
             )}
             <TasksList
+                prepareTasks={prepareTasks}
+                isReportsPending={isReportsPending}
+                isReportsFetching={isReportsFetching}
+                reportsError={reportsError}
+                refreshReports={refreshReports}
                 setError={setError}
                 sorting={sorting}
                 filtering={filtering}

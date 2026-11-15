@@ -1,5 +1,6 @@
 import { Ionicons } from '@expo/vector-icons';
-import { useEffect, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
+import { HighlightWrap } from '@/shared/components/wrapper/highlightWrapper';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 
 const STEP_LABELS = [
@@ -34,14 +35,28 @@ export const ReportFormSection = ({
     </View>
 );
 
-export const ReportFieldLayout = ({ name, fillPositions, children }) => (
-    <View
-        ref={(node) => fillPositions({ name, node })}
-        collapsable={false}
-        onLayout={() => fillPositions({ name })}>
-        {children}
-    </View>
-);
+export const ReportFieldLayout = ({
+    name,
+    fillPositions,
+    highlightedField,
+    children,
+}) => {
+    const registerNode = useCallback(
+        (node) => fillPositions?.({ name, node }),
+        [fillPositions, name]
+    );
+    const handleLayout = useCallback(
+        () => fillPositions?.({ name }),
+        [fillPositions, name]
+    );
+    return (
+        <View ref={registerNode} collapsable={false} onLayout={handleLayout}>
+            <HighlightWrap isActive={highlightedField === name}>
+                {children}
+            </HighlightWrap>
+        </View>
+    );
+};
 
 export const ReportFormSteps = ({ steps, activeIndex, onChange, disabled }) => {
     const scrollRef = useRef(null);

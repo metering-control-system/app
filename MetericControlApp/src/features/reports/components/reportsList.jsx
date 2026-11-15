@@ -1,6 +1,5 @@
 import { FlatList, StyleSheet, Text, View } from 'react-native';
 
-import Report from '@/features/reports/components/report';
 import useReports from '@/features/reports/hooks/useReports';
 import ScreenLoader from '@/shared/components/loader/screenLoader';
 import useUpdateReports from '@/features/reports/hooks/useUpdateReports';
@@ -12,7 +11,13 @@ import { sortingBy } from '@/features/reports/lib/sortingReports';
 import { reportAdmission } from '@/features/reports/constants/reportAdmissionStatus';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
 
-const ReportsList = ({ setError, sorting, filtering, search }) => {
+const ReportsList = ({
+    setError,
+    sorting,
+    filtering,
+    search,
+    renderReport,
+}) => {
     const reports = useReportsStore((state) => state.reports);
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
@@ -101,7 +106,7 @@ const ReportsList = ({ setError, sorting, filtering, search }) => {
             <FlatList
                 data={displayedReports}
                 style={styles.list}
-                renderItem={({ item: report }) => <Report report={report} />}
+                renderItem={renderReport}
                 keyExtractor={(item) => item.id}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>Отчёты не найдены</Text>}

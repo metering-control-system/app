@@ -19,5 +19,5 @@ export const normalizeTaskResponse = (task) => ({
 
 export const processingTaskResponse = (data) => ({
     ...data,
-    tasks: (data.results ?? []).map((task) => normalizeTaskResponse(task)),
+    tasks: (data.results ?? []).map(normalizeTaskResponse),
 });

@@ -1,3 +1,4 @@
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 import { useEffect } from 'react';
 import { Redirect, useLocalSearchParams, useRouter } from 'expo-router';
 import useTaskById from '@/features/tasks/hooks/useTaskById';
@@ -16,7 +17,7 @@ const TaskRouter = () => {
         isPending: isReportPending,
         error,
         refetch,
-    } = useTaskReport(task);
+    } = useTaskReport(task, isTaskReportReadOnly);
 
     useEffect(() => {
         if (!task || isReportPending || error || (isReadOnly && !isQueued))

@@ -4,7 +4,7 @@ import test from 'node:test';
 import {
     buildReportUpsertRequest,
     selectReportForTask,
-} from './reportUpsert.js';
+} from '@/features/reports/lib/reportUpsert';
 
 test('creates a report when the task has no report', () => {
     const payload = {

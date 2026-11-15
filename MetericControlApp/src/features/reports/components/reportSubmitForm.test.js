@@ -6,7 +6,10 @@ import { fileURLToPath, pathToFileURL } from 'node:url';
 import ts from 'typescript';
 import { createElement, useState } from 'react';
 import { act, create } from 'react-test-renderer';
-import { state } from './fixtures/reportFormValidation.js';
+import {
+    state,
+    useSubmitReport,
+} from '@/features/reports/components/fixtures/reportFormValidation';
 
 const fixtures = new URL('./fixtures/reportFormValidation.js', import.meta.url)
     .href;
@@ -24,7 +27,9 @@ const loader = registerHooks({
         if (specifier === '@expo/vector-icons')
             return stub(`export const FontAwesome=()=>null,Ionicons=()=>null;`);
         if (specifier === '@tanstack/react-query')
-            return stub(`export const useMutationState=()=>[];`);
+            return stub(
+                `export const useMutationState=()=>[];export const useQueryClient=()=>({isMutating:()=>0});`
+            );
         if (specifier === 'expo-router')
             return stub(`export const useRouter=()=>({push(){}});`);
         if (specifier === 'expo-sharing')
@@ -78,12 +83,21 @@ const loader = registerHooks({
                 url: new URL('./reportFormLayout.jsx', import.meta.url).href,
                 shortCircuit: true,
             };
-        if (specifier === './reportDateField')
+        if (specifier.endsWith('/reportDateField'))
             return stub(`export default ()=>null;`);
         if (specifier.startsWith('@/')) {
             const path = fileURLToPath(
                 new URL(`../../../${specifier.slice(2)}`, import.meta.url)
             );
+            const file = [path + '.js', path + '.jsx'].find(existsSync);
+            if (file)
+                return { url: pathToFileURL(file).href, shortCircuit: true };
+        }
+        if (
+            specifier.startsWith('.') &&
+            context.parentURL?.startsWith('file:')
+        ) {
+            const path = fileURLToPath(new URL(specifier, context.parentURL));
             const file = [path + '.js', path + '.jsx'].find(existsSync);
             if (file)
                 return { url: pathToFileURL(file).href, shortCircuit: true };
@@ -106,7 +120,8 @@ const loader = registerHooks({
         return nextLoad(url, context);
     },
 });
-const { default: Form } = await import('./reportSubmitForm.jsx');
+const { default: Form } =
+    await import('@/features/reports/components/reportSubmitForm');
 loader.deregister();
 
 const setup = async (t) => {
@@ -127,6 +142,22 @@ const setup = async (t) => {
         const [stepIndex, setStepIndex] = useState(0);
         currentStep = stepIndex;
         return createElement(Form, {
+            reportSubmission: useSubmitReport(),
+            actState: {
+                signatureResult: state.useActStore.result,
+                savedAct: state.useActStore.actMetadataByTask['1'],
+                templates: state.useActTemplatesStore.templates,
+            },
+            actOperations: {
+                clearSignatureResult: state.useActStore.clearResult,
+                getActRecord: () => state.useActStore.actMetadataByTask['1'],
+                saveAct() {},
+                startSignatureSession() {},
+                generateActPdf: async () => ({}),
+                validateReportAct: async () => {},
+                ensureActFileExists() {},
+            },
+            renderActDocument: () => null,
             task,
             id: '1',
             stepIndex,

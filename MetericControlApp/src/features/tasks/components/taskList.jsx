@@ -1,39 +1,37 @@
+import { filterBy } from '@/features/tasks/lib/filterTasks';
 import { FlatList, StyleSheet, Text, View } from 'react-native';
-
-import Task from '@/features/tasks/components/task';
-import useTasks from '@/features/tasks/hooks/useTasks';
-import ScreenLoader from '@/shared/components/loader/screenLoader';
-import useUpdateTasks from '@/features/tasks/hooks/useUpdateTasks';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import useTasks from '@/features/tasks/hooks/useTasks';
+import useUpdateTasks from '@/features/tasks/hooks/useUpdateTasks';
 import useTasksStore from '@/features/tasks/store/useTasksStore';
 import { taskStatus } from '@/features/tasks/constants/taskStatus';
-import { sortBy } from '@/features/tasks/lib/sortTasks';
 import { taskPriority } from '@/features/tasks/constants/taskPriority';
-import { filterBy } from '@/features/tasks/lib/filterTasks';
+import { sortBy } from '@/features/tasks/lib/sortTasks';
 import { filterBySearch } from '@/shared/lib/collections/filterBySearch';
-import useReportsStore from '@/features/reports/store/useReportsStore';
-import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
-import useTaskReports from '@/features/reports/hooks/useTaskReports';
-import { filterSubmittedTasks } from '@/features/tasks/lib/taskReportVisibility';
-import { selectReportForTask } from '@/features/reports/lib/reportUpsert';
 
-const ConnectedTasksList = ({
+import Task from '@/features/tasks/components/task';
+import ScreenLoader from '@/shared/components/loader/screenLoader';
+
+const TasksList = ({
+    tasks: providedTasks,
+    onTaskPress,
+    syncingRecords,
+    refreshing = false,
+    onRefresh,
+    emptyMessage = 'Задачи не найдены',
     setError,
     filtering,
     sorting,
     search,
     sync,
-    syncingRecords,
+    prepareTasks,
+    isReportsPending,
+    isReportsFetching,
+    reportsError,
+    refreshReports,
 }) => {
+    const isProvided = providedTasks !== undefined;
     const tasks = useTasksStore((state) => state.tasks);
-    const reports = useReportsStore((state) => state.reports);
-    const drafts = useReportDraftStore((state) => state.drafts);
-    const {
-        isPending: isReportsPending,
-        isFetching: isReportsFetching,
-        error: reportsError,
-        refreshReports,
-    } = useTaskReports();
     const [listHeight, setListHeight] = useState(0);
     const [contentHeight, setContentHeight] = useState(0);
     const [isRefreshingList, setIsRefreshingList] = useState(false);
@@ -46,14 +44,15 @@ const ConnectedTasksList = ({
         isFetching,
         isFetchingNextPage,
         hasNextPage,
-    } = useTasks();
+    } = useTasks(!isProvided);
     const {
         updateTasks,
-        isPending: isRefrehsing,
+        isPending: isRefreshing,
         error: refreshError,
     } = useUpdateTasks();
 
     useEffect(() => {
+        if (isProvided) return;
         setError(null);
         if (error) {
             setError(
@@ -66,10 +65,11 @@ const ConnectedTasksList = ({
         } else if (reportsError) {
             setError('Не удалось обновить статусы отчётов.');
         }
-    }, [error, refreshError, reportsError, setError]);
+    }, [isProvided, error, refreshError, reportsError, setError]);
 
     useEffect(() => {
         if (
+            isProvided ||
             !hasNextPage ||
             isFetching ||
             isFetchingNextPage ||
@@ -89,6 +89,7 @@ const ConnectedTasksList = ({
             });
         }
     }, [
+        isProvided,
         contentHeight,
         listHeight,
         hasNextPage,
@@ -98,23 +99,27 @@ const ConnectedTasksList = ({
     ]);
 
     const displayedTasks = useMemo(() => {
+        if (isProvided) return providedTasks;
         const selected = [...filtering];
         const tasksStatuses = selected.filter((s) => taskStatus[s]);
         const tasksPriority = selected.filter((s) => taskPriority[s]);
         const filtered = filterBy(
             { statuses: tasksStatuses, priority: tasksPriority },
-            filterSubmittedTasks(tasks, reports, drafts).map((task) => {
-                const report = selectReportForTask(reports, task.id);
-                return report?.status === 'REJECTED'
-                    ? { ...task, status: 'REJECTED' }
-                    : task;
-            })
+            prepareTasks(tasks)
         );
         const sorted = sortBy(filtered, sorting);
         return filterBySearch({ query: sorted, input: search });
-    }, [tasks, reports, drafts, filtering, sorting, search]);
+    }, [
+        isProvided,
+        providedTasks,
+        tasks,
+        prepareTasks,
+        filtering,
+        sorting,
+        search,
+    ]);
 
-    const onRefresh = async () => {
+    const handleRefresh = async () => {
         setIsRefreshingList(true);
         try {
             const [tasksResult, reportsResult, syncResult] =
@@ -137,96 +142,69 @@ const ConnectedTasksList = ({
         }
     };
 
-    if (isPending || isReportsPending) {
-        return <ScreenLoader />;
-    }
-
-    return (
-        <TaskListView
-            tasks={displayedTasks}
-            syncingRecords={syncingRecords}
-            refreshing={isRefreshingList || isRefrehsing || isReportsFetching}
-            onRefresh={onRefresh}
-            onLayout={(event) => setListHeight(event.nativeEvent.layout.height)}
-            onContentSizeChange={(_, height) => setContentHeight(height)}
-            onEndReached={() => {
-                if (hasNextPage && !isFetching && !isFetchingNextPage) {
-                    fetchNextPage({ cancelRefetch: false });
-                }
-            }}
-            isFetchingNextPage={isFetchingNextPage}
-        />
-    );
-};
-
-const TaskListItem = ({ task, onTaskPress, hasPendingTaskReport }) => {
-    const handlePress = useCallback(
-        () => onTaskPress?.(task),
-        [onTaskPress, task]
-    );
-    return (
-        <Task
-            task={task}
-            onPress={onTaskPress ? handlePress : undefined}
-            hasPendingTaskReport={hasPendingTaskReport}
-        />
-    );
-};
-
-const keyExtractor = (task) => String(task.id);
-
-const TaskListView = ({
-    tasks,
-    onTaskPress,
-    syncingRecords,
-    refreshing = false,
-    onRefresh,
-    emptyMessage = 'Задачи не найдены',
-    onLayout,
-    onContentSizeChange,
-    onEndReached,
-    isFetchingNextPage = false,
-}) => {
     const renderItem = useCallback(
         ({ item }) => (
-            <TaskListItem
+            <Task
                 task={item}
-                onTaskPress={onTaskPress}
+                onPress={onTaskPress ? () => onTaskPress(item) : undefined}
                 hasPendingTaskReport={!!syncingRecords?.[item.id]}
             />
         ),
         [onTaskPress, syncingRecords]
     );
+    if (!isProvided && (isPending || isReportsPending)) return <ScreenLoader />;
+
     return (
-        <View style={styles.container} onLayout={onLayout}>
+        <View
+            style={styles.container}
+            onLayout={
+                isProvided
+                    ? undefined
+                    : (event) => setListHeight(event.nativeEvent.layout.height)
+            }>
             <FlatList
-                data={tasks}
+                data={displayedTasks}
                 style={styles.list}
                 renderItem={renderItem}
-                keyExtractor={keyExtractor}
+                keyExtractor={(task) => String(task.id)}
                 contentContainerStyle={styles.list}
                 ListEmptyComponent={<Text>{emptyMessage}</Text>}
-                refreshing={refreshing}
-                onRefresh={onRefresh}
-                onContentSizeChange={onContentSizeChange}
-                onEndReached={onEndReached}
+                refreshing={
+                    isProvided
+                        ? refreshing
+                        : isRefreshingList || isRefreshing || isReportsFetching
+                }
+                onRefresh={isProvided ? onRefresh : handleRefresh}
+                onContentSizeChange={
+                    isProvided
+                        ? undefined
+                        : (_, height) => setContentHeight(height)
+                }
+                onEndReached={
+                    isProvided
+                        ? undefined
+                        : () => {
+                              if (
+                                  hasNextPage &&
+                                  !isFetching &&
+                                  !isFetchingNextPage
+                              ) {
+                                  fetchNextPage({ cancelRefetch: false });
+                              }
+                          }
+                }
                 onEndReachedThreshold={0.5}
                 maxToRenderPerBatch={10}
                 windowSize={7}
                 ListFooterComponent={
-                    isFetchingNextPage ? <Text>Идет загрузка...</Text> : null
+                    !isProvided && isFetchingNextPage ? (
+                        <Text>Идет загрузка...</Text>
+                    ) : null
                 }
             />
         </View>
     );
 };
-
-const TasksList = (props) =>
-    props.tasks !== undefined ? (
-        <TaskListView {...props} />
-    ) : (
-        <ConnectedTasksList {...props} />
-    );
 
 const styles = StyleSheet.create({
     container: { flex: 1, minWidth: '100%' },

@@ -1,8 +1,8 @@
 import { File } from 'expo-file-system';
 import { Image } from 'react-native';
 import { z } from 'zod';
-import { REPORT_PHOTO_SLOT_BY_KIND } from '../constants/reportPhotoConfigs.js';
-import { createReportValidationError } from './reportValidationError.js';
+import { REPORT_PHOTO_SLOT_BY_KIND } from '@/features/reports/constants/reportPhotoConfigs';
+import { createReportValidationError } from '@/features/reports/lib/reportValidationError';
 
 export const REPORT_IMAGE_MAX_BYTES = 20 * 1024 * 1024;
 const REQUEST_MAX_BYTES = 50 * 1024 * 1024;

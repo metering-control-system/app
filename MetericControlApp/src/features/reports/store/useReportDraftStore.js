@@ -1,3 +1,7 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import { create } from 'zustand/react';
 import { createJSONStorage, persist } from 'zustand/middleware';
 import { createPersistStorage } from '@/shared/lib/offline/createPersistStorage';
@@ -22,9 +26,12 @@ const useReportDraftStore = create(
             returnToDraft: (draftId) =>
                 set((state) => {
                     const current = state.drafts[draftId];
-                    if (!['pending', 'error'].includes(current?.reportState))
+                    if (!REPORT_QUEUE_STATES.includes(current?.reportState))
                         return state;
-                    const draft = { ...current, reportState: 'draft' };
+                    const draft = {
+                        ...current,
+                        reportState: REPORT_DRAFT_STATE.DRAFT,
+                    };
                     delete draft.submissionFinalization;
                     return { drafts: { ...state.drafts, [draftId]: draft } };
                 }),

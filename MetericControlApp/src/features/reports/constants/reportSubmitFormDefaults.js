@@ -1,5 +1,5 @@
-import { createReportPhotoSlotRecord } from './reportPhotoConfigs.js';
-import { getReportActFieldDefaults } from './reportActFields.js';
+import { createReportPhotoSlotRecord } from '@/features/reports/constants/reportPhotoConfigs';
+import { getReportActFieldDefaults } from '@/features/reports/constants/reportActFields';
 
 export const reportSubmitFormDefaultValues = {
     clientReportId: '',

@@ -1,4 +1,4 @@
-import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
 
 const pad = (value) => String(value).padStart(2, '0');
 

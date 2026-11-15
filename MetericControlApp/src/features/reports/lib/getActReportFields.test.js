@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import { registerHooks } from 'node:module';
 import test from 'node:test';
-import { getActReportFields } from './getActReportFields.js';
+import { getActReportFields } from '@/features/reports/lib/getActReportFields';
 
 const moduleUrl = (source) =>
     `data:text/javascript,${encodeURIComponent(source)}`;
@@ -32,8 +32,8 @@ const replacements = new Map([
         `),
     ],
     ['expo-file-system', moduleUrl('export class File { exists = true; }')],
-    ['@/features/reports/store/useReportActStore', actStoreUrl],
-    ['@/features/reports/store/useActTemplatesStore', templatesStoreUrl],
+    ['@/features/acts/store/useActStore', actStoreUrl],
+    ['@/features/acts/store/useActTemplatesStore', templatesStoreUrl],
 ]);
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {
@@ -52,13 +52,30 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { generateActPdf } = await import('./generateActPdf.js');
-const { createActChecksum } = await import('./createActChecksum.js');
-const { validateReportAct } = await import('./validateReportAct.js');
+const { generateActPdf: generatePdf } =
+    await import('@/features/acts/lib/generateActPdf');
+const { createActChecksum: checksumAct } =
+    await import('@/features/acts/lib/createActChecksum');
+const { validateAct } = await import('@/features/acts/lib/validateAct');
 const { printedHtml } = await import(printUrl);
 const { default: actStore } = await import(actStoreUrl);
 const { default: templatesStore } = await import(templatesStoreUrl);
 loader.deregister();
+
+const generateActPdf = ({ values, ...options }) =>
+    generatePdf({
+        ...options,
+        fields: getActReportFields(values),
+        actPdf: values.actPdf,
+    });
+const createActChecksum = ({ values, template }) =>
+    checksumAct({ fields: getActReportFields(values), template });
+const validateReportAct = ({ taskId, values }) =>
+    validateAct({
+        taskId,
+        actPdf: values.actPdf,
+        fields: getActReportFields(values),
+    });
 
 const actDetails = {
     compiledAt: '12.10.2026 11:40',

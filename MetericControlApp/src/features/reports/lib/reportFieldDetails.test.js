@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { getAdditionalReportDetails } from './reportFieldDetails.js';
+import { getAdditionalReportDetails } from '@/features/reports/lib/reportFieldDetails';
 
 test('optional report details omit absent values without hiding zero or false', () => {
     const sections = getAdditionalReportDetails({

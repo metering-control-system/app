@@ -52,9 +52,10 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { default: useReportsStore } = await import('./useReportsStore.js');
+const { default: useReportsStore } =
+    await import('@/features/reports/store/useReportsStore');
 const { filterBySearch } =
-    await import('../../../shared/lib/collections/filterBySearch.js');
+    await import('@/shared/lib/collections/filterBySearch');
 loader.deregister();
 
 const search = (input) =>

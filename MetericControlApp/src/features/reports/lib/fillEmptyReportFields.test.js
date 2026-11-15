@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
-import { fillEmptyReportFields } from './fillEmptyReportFields.js';
+import { fillEmptyReportFields } from '@/features/reports/lib/fillEmptyReportFields';
 
 const replacement = {
     values: {

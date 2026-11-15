@@ -1,25 +1,26 @@
+import { ADMISSION_STATUS_OPTIONS } from '@/features/reports/constants/reportAdmissionStatus';
 import { z } from 'zod';
 import { createReportPhotoSlotRecord } from '@/features/reports/constants/reportPhotoConfigs';
-import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
 import {
     REJECTION_REASON_OPTIONS,
     SEAL_LOCATION_OPTIONS,
-} from '../constants/reportFieldOptions.js';
+} from '@/features/reports/constants/reportFieldOptions';
 import {
     isValidReportEmail,
     isValidReportPhone,
-} from '../lib/reportContactValidation.js';
-import { splitReportContactName } from '../lib/reportContactValues.js';
+} from '@/features/reports/lib/reportContactValidation';
+import { splitReportContactName } from '@/features/reports/lib/reportContactValues';
 import {
     reportTextSchema,
     reportReadingSchema,
     reportIntegerSchema,
     reportChoiceSchema,
-} from './reportFieldSchemas.js';
+} from '@/features/reports/model/reportFieldSchemas';
 import {
     parseReportDate,
     parseReportDateTime,
-} from '../lib/reportActFieldValues.js';
+} from '@/features/reports/lib/reportActFieldValues';
 
 const optionalTrimmedString = (max, message) => reportTextSchema(max, message);
 const requiredTrimmedString = (max, requiredMessage, maxMessage) =>
@@ -186,7 +187,7 @@ export const reportSubmitFormSchema = z
         admission: z.object({
             ...actFieldsSchema('admission'),
             status: reportChoiceSchema(
-                [{ value: 'ADMITTED' }, { value: 'NOT_ADMITTED' }],
+                ADMISSION_STATUS_OPTIONS,
                 'Выберите статус допуска'
             ),
             rejectionReason: reportChoiceSchema(

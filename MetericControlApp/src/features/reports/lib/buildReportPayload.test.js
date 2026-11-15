@@ -5,7 +5,7 @@ import {
     buildReportImagesPayload,
     buildReportPayload,
     getRemovedReportImageIds,
-} from './buildReportPayload.js';
+} from '@/features/reports/lib/buildReportPayload';
 
 const createFormValues = () => ({
     clientReportId: '9d9e7f4a-0e8c-4f9c-b8ec-123456789abc',

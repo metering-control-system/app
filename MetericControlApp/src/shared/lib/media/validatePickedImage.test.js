@@ -17,7 +17,8 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { validatePickedImage } = await import('./validatePickedImage.js');
+const { validatePickedImage } =
+    await import('@/shared/lib/media/validatePickedImage');
 loader.deregister();
 
 test('gallery preserves its default limit while allowing the report-specific 20 MB limit', async () => {

@@ -1,3 +1,4 @@
+import { REPORT_DRAFT_STATE } from '@/features/reports/constants/reportDraftState';
 export const syncOfflineReportsRecords = async (
     records,
     sendReport,
@@ -6,7 +7,7 @@ export const syncOfflineReportsRecords = async (
     let unsynchronizedReports = 0;
     for (const id in records) {
         if (
-            records[id]?.reportState === 'pending' &&
+            records[id]?.reportState === REPORT_DRAFT_STATE.PENDING &&
             !records[id].requiresManualSubmit
         ) {
             try {

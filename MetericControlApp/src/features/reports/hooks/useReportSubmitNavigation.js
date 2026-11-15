@@ -1,3 +1,9 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
+import { REPORT_ADMISSION_STATUS } from '@/features/reports/constants/reportAdmissionStatus';
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { REPORT_FIELD_REFERENCES as FORM_FIELDS_MAP } from '@/features/reports/constants/reportFieldReferences';
 import { useNavigateToElement } from '@/shared/hooks/useNavigateToElement';
@@ -16,7 +22,7 @@ const useReportSubmitNavigation = ({
     const isResolvingSource = Boolean(sourceReportId && reportQuery.isFetching);
     const canUseServerRemarks =
         !task?.is_team_task ||
-        reportQuery.data?.status !== 'REJECTED' ||
+        reportQuery.data?.status !== REPORT_STATUS.REJECTED ||
         (Number(draft?.serverReportSource?.id) ===
             Number(reportQuery.data?.id) &&
             draft?.serverReportSource?.updatedAt ===
@@ -42,7 +48,7 @@ const useReportSubmitNavigation = ({
     if (!isActualDifferent && targetField === 'meterBefore.actualType')
         targetField = 'meterBefore.type';
     if (
-        admissionStatus !== 'NOT_ADMITTED' &&
+        admissionStatus !== REPORT_ADMISSION_STATUS.NOT_ADMITTED &&
         ['admission.rejectionReason', 'admission.rejectionComment'].includes(
             targetField
         )
@@ -95,11 +101,11 @@ const useReportSubmitNavigation = ({
         !isResolvingSource &&
         !reportQuery.isError &&
         (Number(sourceReportId) !== Number(reportQuery.data?.id) ||
-            reportQuery.data?.status !== 'REJECTED');
+            reportQuery.data?.status !== REPORT_STATUS.REJECTED);
 
     const redirect =
-        !(queueView && ['pending', 'error'].includes(draft?.reportState)) &&
-        draft?.reportState !== 'pending' &&
+        !(queueView && REPORT_QUEUE_STATES.includes(draft?.reportState)) &&
+        draft?.reportState !== REPORT_DRAFT_STATE.PENDING &&
         !reportQuery.isPending &&
         !isResolvingSource &&
         (reportQuery.isReadOnly || sourceReportChanged)

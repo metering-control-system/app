@@ -1,5 +1,6 @@
-import { REPORT_ACT_FIELDS } from './reportActFields';
-import { REPORT_FORM_STEPS } from '../lib/reportFormValidation';
+import { REPORT_PHOTO_CONFIGS } from '@/features/reports/constants/reportPhotoConfigs';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
+import { REPORT_FORM_STEPS } from '@/features/reports/lib/reportFormValidation';
 
 export const FORM_FIELDS_MAP = {
     '@METERIC_CUSTOMER_NAME': {
@@ -234,12 +235,12 @@ export const REPORT_API_FIELDS = {
     'consumer_contact.phone_number_1': 'consumerContact.phoneNumber',
     'consumer_contact.phone_number_2': 'consumerContact.phoneNumber2',
     'consumer_contact.email': 'consumerContact.email',
-    'images.SEAL': 'photos.seal',
-    'images.FRONT_PANEL': 'photos.frontPanel',
-    'images.GENERAL_VIEW': 'photos.generalView',
-    'images.OLD_METER': 'photos.oldMeter',
-    'images.ACT_PAPER': 'photos.actPaper',
-    'images.REFUSAL_PROOF': 'photos.refusalProof',
+    ...Object.fromEntries(
+        REPORT_PHOTO_CONFIGS.map(({ kind, name }) => [
+            `images.${kind}`,
+            `photos.${name}`,
+        ])
+    ),
     act: 'actPdf',
 };
 

@@ -4,8 +4,8 @@ import test from 'node:test';
 import { createElement } from 'react';
 import { act, create } from 'react-test-renderer';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import * as fixtures from './fixtures/taskReportSubmission.js';
-import { isTaskReportReadOnly } from '../../tasks/lib/taskReportVisibility.js';
+import * as fixtures from '@/features/reports/hooks/fixtures/taskReportSubmission';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 
 const fixturesUrl = new URL(
     './fixtures/taskReportSubmission.js',
@@ -18,7 +18,7 @@ const replacements = new Map(
         ['@/features/reports/store/useReportsStore', 'useReportsStore'],
         ['@/features/reports/store/useReportDraftStore', 'useReportDraftStore'],
         ['@/shared/store/useStorePictures', 'useStorePictures'],
-        ['@/features/reports/store/useReportActStore', 'useReportActStore'],
+        ['@/features/acts/store/useActStore', 'useActStore'],
     ].map(([specifier, name]) => [
         specifier,
         `data:text/javascript,${encodeURIComponent(`export { ${name} as default } from '${fixturesUrl}';`)}`,
@@ -27,8 +27,8 @@ const replacements = new Map(
 const apiModules = new Set([
     '@/features/reports/api/submitReportApi',
     '@/features/tasks/api/getTaskByIdApi',
-    '@/features/reports/lib/savePdfToDocuments',
-    '@/features/reports/lib/validateReportAct',
+    '@/features/acts/lib/savePdfToDocuments',
+    '@/features/acts/lib/validateAct',
     '@/features/reports/lib/validateReportUploadFiles',
 ]);
 const loader = registerHooks({
@@ -50,7 +50,8 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { default: useSubmitReport } = await import('./useSubmitReport.js');
+const { default: useSubmitReport } =
+    await import('@/features/reports/hooks/useSubmitReport');
 loader.deregister();
 
 const setup = async (
@@ -81,7 +82,25 @@ const setup = async (
     });
     let submission;
     const Harness = () => {
-        submission = useSubmitReport();
+        submission = useSubmitReport({
+            getTasks: () => fixtures.useTasksStore.getState().tasks,
+            getTaskById: fixtures.getTaskById,
+            isTaskReportReadOnly,
+            actOperations: {
+                validateReportAct: fixtures.validateReportAct,
+                savePdfToDocuments: fixtures.savePdfToDocuments,
+                getActRecord: (taskId) =>
+                    fixtures.useActStore.getState().actMetadataByTask[
+                        String(taskId)
+                    ],
+                clearTaskAct: (taskId, record) =>
+                    fixtures.useActStore
+                        .getState()
+                        .clearTaskAct(taskId, record),
+                buildReportSignaturesPayload:
+                    fixtures.buildReportSignaturesPayload,
+            },
+        });
         return null;
     };
     let root;

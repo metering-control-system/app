@@ -1,3 +1,4 @@
+import { REPORT_STATUS } from '@/features/reports/constants/reportStatus';
 export const selectReportForTask = (reports, taskId) => {
     if (!Array.isArray(reports)) {
         return null;
@@ -36,8 +37,9 @@ export const buildReportUpsertRequest = ({
                     ([key]) => !['task_id', 'client_report_id'].includes(key)
                 )
             ),
-            ...(resubmitRejectedReport && existingReport.status === 'REJECTED'
-                ? { status: 'ON_REVIEW' }
+            ...(resubmitRejectedReport &&
+            existingReport.status === REPORT_STATUS.REJECTED
+                ? { status: REPORT_STATUS.ON_REVIEW }
                 : {}),
         },
     };

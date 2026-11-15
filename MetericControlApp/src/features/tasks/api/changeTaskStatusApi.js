@@ -10,7 +10,7 @@ export const changeTaskStatus = ({ id, status }) =>
             {
                 transformResponse: [
                     ...(axios.defaults.transformResponse || []),
-                    (data) => normalizeTaskResponse(data),
+                    normalizeTaskResponse,
                 ],
             }
         )

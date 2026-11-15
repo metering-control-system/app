@@ -5,7 +5,7 @@ import {
     buildReportReplacement,
     mapReportImagesToForm,
     mapReportToFormValues,
-} from './reportFormHydration.js';
+} from '@/features/reports/lib/reportFormHydration';
 
 test('hydrates existing images and report fields for editing', () => {
     const defaults = {

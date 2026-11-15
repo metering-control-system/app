@@ -6,7 +6,7 @@ import useTasksStore from '@/features/tasks/store/useTasksStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import { concatenateFields } from '@/shared/lib/collections/concatenateFields';
 
-const useTasks = () => {
+const useTasks = (enabled = true) => {
     const { isChecked, isOnline } = useNetwork();
     const setListSnapshotAt = useTasksSyncStore(
         (state) => state.setListSnapshotAt
@@ -45,18 +45,22 @@ const useTasks = () => {
         },
         initialPageParam: undefined,
         getNextPageParam: (lastPage) => lastPage.next_cursor ?? undefined,
-        enabled: isOnline,
+        enabled: enabled && isOnline,
     });
 
     useEffect(() => {
-        if (data) {
-            const allTasks = data.pages.flatMap((page) => page.tasks ?? []);
-            setUpdatedTasks(allTasks);
+        if (enabled && data) {
+            setUpdatedTasks(data.pages.flatMap((page) => page.tasks ?? []));
         }
-    }, [data, setUpdatedTasks]);
+    }, [enabled, data, setUpdatedTasks]);
 
     useEffect(() => {
-        if (!isChecked || isOnline || useTasksStore.persist.hasHydrated()) {
+        if (
+            !enabled ||
+            !isChecked ||
+            isOnline ||
+            useTasksStore.persist.hasHydrated()
+        ) {
             return;
         }
 
@@ -66,7 +70,7 @@ const useTasks = () => {
                 task.search = concatenateFields(task);
             }
         });
-    }, [isChecked, isOnline]);
+    }, [enabled, isChecked, isOnline]);
 
     return {
         fetchNextPage,

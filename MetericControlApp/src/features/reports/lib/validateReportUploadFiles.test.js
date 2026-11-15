@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { registerHooks } from 'node:module';
-import { buildReportImageFile } from './buildReportPayload.js';
+import { buildReportImageFile } from '@/features/reports/lib/buildReportPayload';
 
 const files = new Map();
 let closed = 0;
@@ -28,7 +28,7 @@ const {
     validateReportUploadFiles,
     validateReportPhoto,
     REPORT_IMAGE_MAX_BYTES,
-} = await import('./validateReportUploadFiles.js');
+} = await import('@/features/reports/lib/validateReportUploadFiles');
 loader.deregister();
 const id = '9d9e7f4a-0e8c-4f9c-b8ec-123456789abc';
 const jpg = new Uint8Array([255, 216, 255, 224]);

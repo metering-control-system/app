@@ -5,8 +5,8 @@ import {
     getReportOperationFilters,
     REPORT_OPERATION_KEY,
     startReportOperation,
-} from './reportOperation.js';
-import { syncOfflineReportsRecords } from './syncOfflineReportsRecords.js';
+} from '@/features/reports/lib/reportOperation';
+import { syncOfflineReportsRecords } from '@/features/reports/lib/syncOfflineReportsRecords';
 
 const setup = (t) => {
     const client = new QueryClient({

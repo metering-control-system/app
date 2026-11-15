@@ -1,5 +1,5 @@
-import { REPORT_ACT_FIELDS } from '../constants/reportActFields.js';
-import { hydrateReportActFields } from './reportActFieldValues.js';
+import { REPORT_ACT_FIELDS } from '@/features/reports/constants/reportActFields';
+import { hydrateReportActFields } from '@/features/reports/lib/reportActFieldValues';
 
 export const getAdditionalReportDetails = (report) => {
     const values = hydrateReportActFields(report);

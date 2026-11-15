@@ -1,3 +1,13 @@
+import {
+    REPORT_DRAFT_STATE,
+    REPORT_QUEUE_STATES,
+} from '@/features/reports/constants/reportDraftState';
+import useActDocument from '@/features/acts/hooks/useActDocument';
+import { getActReportFields } from '@/features/reports/lib/getActReportFields';
+import useSubmitReport from '@/features/reports/hooks/useSubmitReport';
+import useTasksStore from '@/features/tasks/store/useTasksStore';
+import { getTaskById } from '@/features/tasks/api/getTaskByIdApi';
+import { isTaskReportReadOnly } from '@/features/tasks/lib/taskReportVisibility';
 import useReportSubmitNavigation from '@/features/reports/hooks/useReportSubmitNavigation';
 import useErrors from '@/shared/hooks/useErrors';
 import Notification from '@/shared/components/notification/Notification';
@@ -19,13 +29,13 @@ const ReportSubmitScreen = () => {
     const { id, reference, sourceReportId, queueView } = useLocalSearchParams();
     const draft = useReportDraftStore((state) => state.drafts?.[id]);
     const isQueueView =
-        queueView === '1' && ['pending', 'error'].includes(draft?.reportState);
+        queueView === '1' && REPORT_QUEUE_STATES.includes(draft?.reportState);
     const { task: loadedTask, isPending: isTaskPending } = useTaskById(+id);
     const task =
         loadedTask ??
         (isQueueView ? { id: Number(id), address: draft?.address } : null);
     const isPending = isTaskPending && !isQueueView;
-    const reportQuery = useTaskReport(task);
+    const reportQuery = useTaskReport(task, isTaskReportReadOnly);
     const {
         scrollRef,
         fillPositions,
@@ -47,6 +57,16 @@ const ReportSubmitScreen = () => {
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
     );
+    const { actState, actOperations, renderActDocument } = useActDocument(
+        task?.id ?? id,
+        getActReportFields
+    );
+    const reportSubmission = useSubmitReport({
+        getTasks: () => useTasksStore.getState().tasks,
+        getTaskById,
+        isTaskReportReadOnly,
+        actOperations,
+    });
     const router = useRouter();
 
     if (redirect) return <Redirect href={redirect} />;
@@ -74,12 +94,17 @@ const ReportSubmitScreen = () => {
                         showsVerticalScrollIndicator={false}>
                         {isQueueView && !loadedTask && (
                             <Text style={styles.missingTask}>
-                                {draft?.reportState === 'pending'
+                                {draft?.reportState ===
+                                REPORT_DRAFT_STATE.PENDING
                                     ? 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Отчёт остаётся в очереди и будет отправлен при появлении интернета.'
                                     : 'Исходная задача отсутствует на устройстве. Редактирование недоступно. Для загрузки задачи подключитесь к интернету. Отчёт с ошибкой необходимо отправить вручную.'}
                             </Text>
                         )}
                         <ReportSubmitForm
+                            reportSubmission={reportSubmission}
+                            actState={actState}
+                            actOperations={actOperations}
+                            renderActDocument={renderActDocument}
                             hasSourceTask={Boolean(loadedTask)}
                             readOnly={isQueueView}
                             onError={handleError}

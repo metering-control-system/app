@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict';
-import { areReportDraftsEqual } from '../lib/areReportDraftsEqual.js';
+import { areObjectsEqual } from '@/shared/lib/collections/areObjectsEqual';
 import { registerHooks } from 'node:module';
 import { setTimeout as delay } from 'node:timers/promises';
 import test from 'node:test';
@@ -12,14 +12,15 @@ import {
 } from '@tanstack/react-query';
 import {
     cleanup,
+    deleteAct,
     submission,
     useNetwork,
     useReportDraftStore,
-} from './fixtures/offlineReportsSync.js';
+} from '@/features/reports/hooks/fixtures/offlineReportsSync';
 import {
     REPORT_OPERATION_KEY,
     startReportOperation,
-} from '../lib/reportOperation.js';
+} from '@/features/reports/lib/reportOperation';
 
 const fixturesUrl = new URL('./fixtures/offlineReportsSync.js', import.meta.url)
     .href;
@@ -35,13 +36,22 @@ const replacements = new Map(
     ])
 );
 replacements.set(
-    '@/features/reports/lib/savePdfToDocuments',
+    '@/features/acts/lib/savePdfToDocuments',
     `data:text/javascript,${encodeURIComponent(`export { deleteAct } from '${fixturesUrl}';`)}`
 );
 const loader = registerHooks({
     resolve(specifier, context, nextResolve) {
         if (replacements.has(specifier)) {
             return { url: replacements.get(specifier), shortCircuit: true };
+        }
+        if (specifier === '@/shared/lib/collections/areObjectsEqual') {
+            return {
+                url: new URL(
+                    '../../../shared/lib/collections/areObjectsEqual.js',
+                    import.meta.url
+                ).href,
+                shortCircuit: true,
+            };
         }
         if (specifier.startsWith('@/features/reports/lib/')) {
             return {
@@ -55,7 +65,8 @@ const loader = registerHooks({
         return nextResolve(specifier, context);
     },
 });
-const { useOfflineReportsSync } = await import('./useOfflineReportsSync.js');
+const { useOfflineReportsSync } =
+    await import('@/features/reports/hooks/useOfflineReportsSync');
 loader.deregister();
 
 const setup = (t, drafts, beforeFinish = async () => {}) => {
@@ -72,7 +83,7 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
         mutationKey: [...REPORT_OPERATION_KEY, 'submit'],
         mutationFn: async ({ taskId, expectedDraft }) => {
             if (
-                !areReportDraftsEqual(
+                !areObjectsEqual(
                     expectedDraft,
                     useReportDraftStore.getState().getDraft(taskId)
                 )
@@ -89,7 +100,7 @@ const setup = (t, drafts, beforeFinish = async () => {}) => {
         );
     let root;
     const Harness = () => {
-        useOfflineReportsSync();
+        useOfflineReportsSync(submission.current, deleteAct);
         return null;
     };
     const mount = () =>

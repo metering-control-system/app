@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict';
 import test from 'node:test';
 import { zodResolver } from '@hookform/resolvers/zod';
-import { loginSchema } from './loginSchema.js';
+import { loginSchema } from '@/features/auth/validation/loginSchema';
 
 const validate = zodResolver(loginSchema);
 const resolve = (values) =>

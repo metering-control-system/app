@@ -1,3 +1,4 @@
+import { TASK_STATUS } from '@/features/tasks/constants/taskStatus';
 import { StyleSheet } from 'react-native';
 import { colors } from '@/shared/consts/baseColors';
 
@@ -9,8 +10,8 @@ export const taskPriorityColors = StyleSheet.create({
 });
 
 export const taskStatusColors = StyleSheet.create({
-    NEW: colors.ordinary,
-    IN_PROGRESS: colors.secondary,
-    COMPLETED: colors.primary,
-    REJECTED: colors.warning,
+    [TASK_STATUS.NEW]: colors.ordinary,
+    [TASK_STATUS.IN_PROGRESS]: colors.secondary,
+    [TASK_STATUS.COMPLETED]: colors.primary,
+    [TASK_STATUS.REJECTED]: colors.warning,
 });
