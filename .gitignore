@@ -51,3 +51,6 @@ npm-debug.*
 .agents/
 */AGENTS.md
 */opencode.jsonc
+
+# tests
+tests/
