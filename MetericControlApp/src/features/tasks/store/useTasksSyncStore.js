@@ -5,6 +5,7 @@ const useTasksSyncStore = create((set) => ({
     listSnapshotAt: null,
     setLastSyncAt: (serverDate) => set({ lastSyncAt: serverDate }),
     setListSnapshotAt: (serverDate) => set({ listSnapshotAt: serverDate }),
+    resetSync: () => set({ lastSyncAt: null, listSnapshotAt: null }),
 }));
 
 export default useTasksSyncStore;

@@ -1,5 +1,5 @@
-import mmkvStorage from '@/shared/store/persistMMKVStorage';
+import createAccountMMKVStorage from '@/features/auth/store/createAccountMMKVStorage';
 
-export const profileOfflineStorage = mmkvStorage(
+export const profileOfflineStorage = createAccountMMKVStorage(
     'metric-control-profile-storage'
 );

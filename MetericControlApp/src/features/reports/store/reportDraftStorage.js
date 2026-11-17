@@ -1,5 +1,5 @@
-import mmkvStorage from '@/shared/store/persistMMKVStorage';
+import createAccountMMKVStorage from '@/features/auth/store/createAccountMMKVStorage';
 
-export const reportDraftStorage = mmkvStorage(
+export const reportDraftStorage = createAccountMMKVStorage(
     'metric-control-report-draft-storage'
 );

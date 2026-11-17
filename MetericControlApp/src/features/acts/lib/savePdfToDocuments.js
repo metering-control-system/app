@@ -1,9 +1,15 @@
+import useAuth from '@/features/auth/store/useAuth';
 import { File, Directory, Paths } from 'expo-file-system';
 
 const getActsFolder = () => {
+    const { login } = useAuth.getState();
+    if (login === null) {
+        throw new Error('No account selected');
+    }
     const actsFolder = new Directory(
         Paths.document,
-        'meteric-control-app-acts'
+        'meteric-control-app-acts',
+        `account-${encodeURIComponent(login)}`
     );
     if (!actsFolder.exists) {
         actsFolder.create({ intermediates: true });
