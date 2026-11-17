@@ -6,7 +6,11 @@ import { useCallback, useEffect } from 'react';
 
 const mutationKey = ['actTemplates'];
 
-const useActTemplates = ({ defaultActTemplate, setDefaultActTemplate }) => {
+const useActTemplates = ({
+    defaultActTemplate,
+    setDefaultActTemplate,
+    enabled = true,
+}) => {
     const templates = useActTemplatesStore((state) => state.templates);
 
     useEffect(() => {
@@ -45,10 +49,10 @@ const useActTemplates = ({ defaultActTemplate, setDefaultActTemplate }) => {
     });
 
     const requestActTemplates = useCallback(() => {
-        if (isChecked && isOnline) {
+        if (enabled && isChecked && isOnline) {
             mutate();
         }
-    }, [isChecked, isOnline, mutate]);
+    }, [enabled, isChecked, isOnline, mutate]);
 
     return {
         requestActTemplates,

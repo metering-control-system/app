@@ -13,18 +13,25 @@ const AuthorizedLayout = () => {
     const defaultActTemplate = useSettingsStore(
         (state) => state.defaultActTemplate
     );
+    const enabled = isAuthChecked && isAuthenticated;
     const setDefaultActTemplate = useSettingsStore(
         (state) => state.setDefaultActTemplate
     );
     const { requestActTemplates } = useActTemplates({
+        enabled,
         defaultActTemplate,
         setDefaultActTemplate,
     });
     const { isChecked, isOnline } = useNetwork();
 
-    useEffect(requestActTemplates, [isChecked, isOnline]);
+    useEffect(requestActTemplates, [
+        requestActTemplates,
+        isChecked,
+        isOnline,
+        enabled,
+    ]);
 
-    useMe();
+    useMe({ enabled });
 
     if (!isAuthChecked) {
         return <ScreenLoader />;

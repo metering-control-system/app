@@ -3,7 +3,7 @@ import { useEffect } from 'react';
 import { getMe } from '@/features/settings/api/getMeApi';
 import useProfileStore from '@/features/settings/store/useProfileStore';
 
-const useMe = () => {
+const useMe = ({ enabled = true } = {}) => {
     const setProfile = useProfileStore((state) => state.setProfile);
     const cachedFullName = useProfileStore((state) => state.fullName);
     const cachedAvatar = useProfileStore((state) => state.avatar);
@@ -12,6 +12,7 @@ const useMe = () => {
         queryKey: ['me'],
         queryFn: getMe,
         staleTime: 5 * 60 * 1000,
+        enabled,
     });
 
     useEffect(() => {
