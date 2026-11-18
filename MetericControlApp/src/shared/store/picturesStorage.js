@@ -1,3 +1,5 @@
-import mmkvStorage from '@/shared/store/persistMMKVStorage';
+import createAccountMMKVStorage from '@/features/auth/store/createAccountMMKVStorage';
 
-export const picturesStorage = mmkvStorage('mmkv-pictures-storage');
+export const picturesStorage = createAccountMMKVStorage(
+    'mmkv-pictures-storage'
+);

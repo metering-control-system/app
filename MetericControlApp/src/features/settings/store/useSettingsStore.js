@@ -15,6 +15,11 @@ const useSettingsStore = create(
             setPhotoQuality: (photoQuality) => set({ photoQuality }),
             setDefaultActTemplate: (template) =>
                 set({ defaultActTemplate: template }),
+            resetSettings: () =>
+                set({
+                    photoQuality: DEFAULT_PHOTO_QUALITY,
+                    defaultActTemplate: null,
+                }),
         }),
         {
             name: 'settings-store',

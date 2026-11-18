@@ -1,20 +1,24 @@
-import tokenStorage from '@/features/auth/lib/tokenStorage';
 import useAuth from '@/features/auth/store/useAuth';
 import refreshToken from '@/features/auth/lib/refreshToken';
+import clearSessionState from '@/features/auth/lib/clearSessionState';
 import { useState } from 'react';
+
 import {
     getAccessTokenLocally,
     getRefreshTokenLocally,
 } from '@/features/auth/lib/getTokensLocally';
+import { useQueryClient } from '@tanstack/react-query';
 
 const useSession = () => {
-    const clearSession = useAuth((state) => state.clearSession);
-    const setAuthChecked = useAuth((state) => state.setAuthChecked);
     const [isPending, setIsPending] = useState(false);
+    const queryClient = useQueryClient();
 
     const refreshSession = async ({ offline }) => {
         try {
             setIsPending(true);
+            if (!useAuth.getState().login) {
+                throw new Error('No account identity');
+            }
             if (offline) {
                 await getRefreshTokenLocally();
                 const access = await getAccessTokenLocally();
@@ -23,10 +27,9 @@ const useSession = () => {
                 await refreshToken();
             }
         } catch {
-            await tokenStorage.clearTokens();
-            clearSession();
+            await clearSessionState(queryClient);
         } finally {
-            setAuthChecked();
+            useAuth.getState().setAuthChecked();
             setIsPending(false);
         }
     };

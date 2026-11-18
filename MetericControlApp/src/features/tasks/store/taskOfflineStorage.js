@@ -1,7 +1,9 @@
-import mmkvStorage from '@/shared/store/persistMMKVStorage';
+import createAccountMMKVStorage from '@/features/auth/store/createAccountMMKVStorage';
 
-export const taskOfflineMutationStorage = mmkvStorage(
+export const taskOfflineMutationStorage = createAccountMMKVStorage(
     'metric-control-mutation-storage'
 );
 
-export const taskOfflineStorage = mmkvStorage('metric-control-task-storage');
+export const taskOfflineStorage = createAccountMMKVStorage(
+    'metric-control-task-storage'
+);

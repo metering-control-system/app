@@ -2,26 +2,30 @@ import { useMutation } from '@tanstack/react-query';
 import { login } from '@/features/auth/api/login';
 import tokenStorage from '@/features/auth/lib/tokenStorage';
 import useAuth from '@/features/auth/store/useAuth';
+import { queryClient } from '@/shared/api/queryClient';
 
 export const useLogin = () => {
-    const setToken = useAuth((state) => state.setToken);
-
     const { mutateAsync, isPending } = useMutation({
         mutationFn: login,
-        onSuccess: async (data) => {
-            const access = data.access;
-            const refresh = data.refresh;
+        onSuccess: async ({ access, refresh }, credentials) => {
+            if (!access || !refresh) {
+                throw new Error('Unable to receive tokens');
+            }
             try {
                 await tokenStorage.setTokens({ refresh, access });
-                setToken(access);
-            } catch {
-                /* empty */
+            } catch (error) {
+                await tokenStorage.clearTokens();
+                throw error;
             }
+            queryClient.clear();
+            useAuth
+                .getState()
+                .setSession({ login: credentials.login, accessToken: access });
         },
     });
 
     const userLogin = async ({ password, login }) => {
-        if (!login || !password) {
+        if (!login || !password || isPending) {
             return;
         }
         await mutateAsync({ password, login });

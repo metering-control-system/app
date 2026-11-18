@@ -22,6 +22,7 @@ import useSettingsStore from '@/features/settings/store/useSettingsStore';
 import useTaskReport from '@/features/reports/hooks/useTaskReport';
 import TaskReportLookupError from '@/features/reports/components/taskReportLookupError';
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
+import useAuth from '@/features/auth/store/useAuth';
 
 const ReportSubmitScreen = () => {
     const { error: errorMessage, handleError, dismissError } = useErrors();
@@ -61,11 +62,13 @@ const ReportSubmitScreen = () => {
         task?.id ?? id,
         getActReportFields
     );
+    const signal = useAuth((state) => state.requestController.signal);
     const reportSubmission = useSubmitReport({
         getTasks: () => useTasksStore.getState().tasks,
         getTaskById,
         isTaskReportReadOnly,
         actOperations,
+        signal,
     });
     const router = useRouter();
 

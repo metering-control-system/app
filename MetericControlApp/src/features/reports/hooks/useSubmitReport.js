@@ -39,6 +39,11 @@ import {
 } from '@/features/reports/lib/reportUpsert';
 import { validateReportUploadFiles } from '@/features/reports/lib/validateReportUploadFiles';
 import { retryReportImageUpload } from '@/features/reports/lib/retryReportImageUpload';
+import { CanceledError } from 'axios';
+
+const ensureSessionActive = (signal) => {
+    if (signal?.aborted) throw new CanceledError('Session ended');
+};
 
 const isReportSubmissionConfirmed = (report, submission) =>
     Boolean(submission?.clientReportId) &&
@@ -51,12 +56,13 @@ const isReportSubmissionConfirmed = (report, submission) =>
         REPORT_STATUS.ACCEPTED,
     ].includes(report?.status);
 
-const finalizeReportSubmission = async (submission) => {
+const finalizeReportSubmission = async (submission, signal) => {
     try {
         const report = await submitReport(submission.reportId);
         if (isReportSubmissionConfirmed(report, submission)) return report;
         throw new Error('Не удалось получить подтверждённый отчёт');
     } catch (error) {
+        ensureSessionActive(signal);
         const status = error.response?.status;
         const ambiguous = !error.response || status === 408 || status >= 500;
         if (ambiguous) {
@@ -124,6 +130,7 @@ const saveOfflineReportSubmission = async ({
     clientActId,
     actRecord,
     actOperations,
+    signal,
 }) => {
     const draftId = String(taskId);
     const { uri: actPdfUri, isRefused } = values.actPdf;
@@ -144,6 +151,7 @@ const saveOfflineReportSubmission = async ({
             : null,
         offline: true,
     });
+    ensureSessionActive(signal);
     const offlineValues = !isRefused
         ? {
               ...values,
@@ -156,6 +164,7 @@ const saveOfflineReportSubmission = async ({
               },
           }
         : values;
+    ensureSessionActive(signal);
     if (!isRefused) {
         saveAct(draftId, { ...actRecord, uri: offlineValues.actPdf.uri });
     }
@@ -180,6 +189,7 @@ const uploadReportSubmission = async ({
     reportPdfActPayload,
     reportCommentPayload,
     trackSubmission,
+    signal,
 }) => {
     const { uri: actPdfUri, isRefused } = values.actPdf;
     let reportResponse =
@@ -207,9 +217,10 @@ const uploadReportSubmission = async ({
     });
 
     if (reportImagesPayload) {
-        reportResponse = await retryReportImageUpload(() =>
-            uploadReportImage(reportId, reportImagesPayload)
-        );
+        reportResponse = await retryReportImageUpload(() => {
+            ensureSessionActive(signal);
+            return uploadReportImage(reportId, reportImagesPayload);
+        });
         trackSubmission(reportResponse);
     }
 
@@ -244,6 +255,7 @@ const uploadReportSubmission = async ({
 
     if (isTeamTask && removedImageIds.length) {
         const latestReport = await getReportByTaskId(taskId);
+        ensureSessionActive(signal);
         if (latestReport?.id === reportId) {
             reportResponse = latestReport;
             trackSubmission(reportResponse);
@@ -262,6 +274,7 @@ const useSubmitReport = ({
     getTaskById,
     isTaskReportReadOnly,
     actOperations,
+    signal,
 }) => {
     const {
         validateReportAct,
@@ -284,7 +297,8 @@ const useSubmitReport = ({
         retry: false,
         onMutate: ({ taskId }) =>
             useReportDraftStore.getState().getDraft(String(taskId)),
-        mutationFn: async ({ taskId, values, expectedDraft }) => {
+        mutationFn: async ({ taskId, values, expectedDraft, signal }) => {
+            ensureSessionActive(signal);
             const draftId = String(taskId);
             const previousDraft = useReportDraftStore
                 .getState()
@@ -307,6 +321,7 @@ const useSubmitReport = ({
                     error.submittedDraft = previousDraft;
                     throw error;
                 }
+                ensureSessionActive(signal);
                 if (
                     isReportSubmissionConfirmed(report, {
                         ...previousDraft.submissionFinalization,
@@ -329,6 +344,7 @@ const useSubmitReport = ({
                 error.code = 'REPORT_ACT_INVALID';
                 throw error;
             }
+            ensureSessionActive(signal);
             if (
                 expectedDraft &&
                 !areObjectsEqual(
@@ -368,13 +384,16 @@ const useSubmitReport = ({
                     clientActId,
                     actRecord,
                     actOperations,
+                    signal,
                 });
             }
             const task =
                 getTasks()?.find(
                     (task) => Number(task.id) === Number(taskId)
                 ) ?? (await getTaskById(taskId));
+            ensureSessionActive(signal);
             const existingReport = await getReportByTaskId(taskId);
+            ensureSessionActive(signal);
             if (
                 isTaskReportReadOnly(
                     task,
@@ -421,6 +440,7 @@ const useSubmitReport = ({
                 clientActId,
                 buildReportSignaturesPayload,
             });
+            ensureSessionActive(signal);
             let submittedDraft = expectedDraft ?? {
                 ...values,
                 ...(previousDraft?.submissionReport && {
@@ -435,6 +455,7 @@ const useSubmitReport = ({
             }
 
             const trackSubmission = (report) => {
+                ensureSessionActive(signal);
                 if (!task.is_team_task) return;
                 const nextDraft = {
                     ...submittedDraft,
@@ -470,8 +491,10 @@ const useSubmitReport = ({
                         reportPdfActPayload,
                         reportCommentPayload,
                         trackSubmission,
+                        signal,
                     }
                 );
+                ensureSessionActive(signal);
 
                 const submissionFinalization = {
                     reportId,
@@ -491,7 +514,8 @@ const useSubmitReport = ({
                 }
                 submittedDraft = nextDraft;
                 reportResponse = await finalizeReportSubmission(
-                    submissionFinalization
+                    submissionFinalization,
+                    signal
                 );
                 trackSubmission(reportResponse);
 
@@ -509,7 +533,8 @@ const useSubmitReport = ({
             }
         },
         onSuccess: async (_data, variables) => {
-            if (_data.skipped || _data.offline) return;
+            if (variables.signal?.aborted || _data.skipped || _data.offline)
+                return;
             clearTaskAct(variables.taskId, _data.actRecord);
             const store = useReportDraftStore.getState();
             const draftId = String(variables.taskId);
@@ -538,6 +563,7 @@ const useSubmitReport = ({
             ]);
         },
         onError: async (error, variables, previousDraft) => {
+            if (variables.signal?.aborted) return;
             const task = getTasks()?.find(
                 (item) => Number(item.id) === Number(variables.taskId)
             );
@@ -552,7 +578,8 @@ const useSubmitReport = ({
                 });
                 try {
                     const report = await getReportByTaskId(variables.taskId);
-                    if (report) setUpdatedReports([report]);
+                    if (!variables.signal?.aborted && report)
+                        setUpdatedReports([report]);
                 } catch {
                     return;
                 }
@@ -593,11 +620,17 @@ const useSubmitReport = ({
     });
 
     const submitTaskReport = useCallback(
-        ({ taskId, values, expectedDraft }) =>
-            startReportOperation(queryClient, taskId, () =>
-                mutateAsync({ taskId, values, expectedDraft })
-            ),
-        [queryClient, mutateAsync]
+        async ({ taskId, values, expectedDraft }) => {
+            ensureSessionActive(signal);
+            try {
+                return await startReportOperation(queryClient, taskId, () =>
+                    mutateAsync({ taskId, values, expectedDraft, signal })
+                );
+            } finally {
+                ensureSessionActive(signal);
+            }
+        },
+        [queryClient, mutateAsync, signal]
     );
 
     return {

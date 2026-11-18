@@ -1,5 +1,5 @@
-import mmkvStorage from '@/shared/store/persistMMKVStorage';
+import createAccountMMKVStorage from '@/features/auth/store/createAccountMMKVStorage';
 
-export const actSignaturesStorage = mmkvStorage(
+export const actSignaturesStorage = createAccountMMKVStorage(
     'metric-control-report-signatures-storage'
 );
