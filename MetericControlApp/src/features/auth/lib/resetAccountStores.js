@@ -13,9 +13,6 @@ import useCommentsSyncStore from '@/features/comments/store/useCommentsSyncStore
 import useStorePictures from '@/shared/store/useStorePictures';
 
 const resetAccountStores = () => {
-    useTasksStore.persist.clearStorage();
-    useReportsStore.persisit.clearStorage();
-    useProfileStore.persist.clearStorage();
     useActStore.getState().clearAllActs();
     useActTemplatesStore.getState().clearTemplates();
     useTasksStore.getState().clearTasks();
