@@ -37,6 +37,7 @@ import { REPORT_OPERATION_KEY } from '@/features/reports/lib/reportOperation';
 import { useMutationState } from '@tanstack/react-query';
 import FormButton from '@/shared/components/button/formButton';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
+import useAuth from '@/features/auth/store/useAuth';
 
 const TaskScreen = () => {
     const [error, setError] = useState(null);
@@ -78,11 +79,13 @@ const TaskScreen = () => {
     );
 
     const actOperations = createActOperations(getActReportFields);
+    const signal = useAuth((state) => state.requestController.signal);
     const { submitTaskReport } = useSubmitReport({
         getTasks: () => useTasksStore.getState().tasks,
         getTaskById,
         isTaskReportReadOnly,
         actOperations,
+        signal,
     });
     const syncReportsRecords = useOfflineReportsSync(
         submitTaskReport,

@@ -1,3 +1,5 @@
+import { isCancel } from 'axios';
+
 const wait = (delayMs) =>
     new Promise((resolve) => {
         setTimeout(resolve, delayMs);
@@ -7,11 +9,12 @@ export const isRetryableImageUploadError = (error) => {
     const status = error?.response?.status;
 
     return (
-        !status ||
-        status === 408 ||
-        status === 425 ||
-        status === 429 ||
-        status >= 500
+        !isCancel(error) &&
+        (!status ||
+            status === 408 ||
+            status === 425 ||
+            status === 429 ||
+            status >= 500)
     );
 };
 

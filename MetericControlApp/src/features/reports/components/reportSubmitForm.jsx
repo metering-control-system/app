@@ -43,6 +43,7 @@ import {
 import useReportDraftStore from '@/features/reports/store/useReportDraftStore';
 import useNetwork from '@/shared/hooks/offline/useNetwork';
 import { createClientReportId } from '@/features/reports/lib/createClientReportId';
+import { isCancel } from 'axios';
 
 const ReportSubmitForm = ({
     onError,
@@ -412,6 +413,7 @@ const ReportSubmitForm = ({
                 );
             }
         } catch (error) {
+            if (isCancel(error)) return;
             if (error.response?.status === 409) {
                 onError(
                     'Конфликт отправки отчёта',
