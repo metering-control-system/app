@@ -16,12 +16,12 @@ const AuthBootstrap = ({ children }) => {
     const [hydratedLogin, setHydratedLogin] = useState(undefined);
 
     useLayoutEffect(() => {
-        initializeAccountMMKVStorage();
         let isCurrentAccount = true;
         if (!login) {
             resetAccountStores();
             setHydratedLogin(null);
         } else {
+            initializeAccountMMKVStorage();
             void rehydrateAccountStores().then(() => {
                 if (isCurrentAccount) {
                     setHydratedLogin(login);

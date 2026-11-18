@@ -2,14 +2,16 @@ import useAuth from '@/features/auth/store/useAuth';
 import refreshToken from '@/features/auth/lib/refreshToken';
 import clearSessionState from '@/features/auth/lib/clearSessionState';
 import { useState } from 'react';
-import { queryClient } from '@/shared/api/queryClient';
+
 import {
     getAccessTokenLocally,
     getRefreshTokenLocally,
 } from '@/features/auth/lib/getTokensLocally';
+import { useQueryClient } from '@tanstack/react-query';
 
 const useSession = () => {
     const [isPending, setIsPending] = useState(false);
+    const queryClient = useQueryClient();
 
     const refreshSession = async ({ offline }) => {
         try {
