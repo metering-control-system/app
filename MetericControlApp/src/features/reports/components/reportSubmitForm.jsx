@@ -412,6 +412,13 @@ const ReportSubmitForm = ({
                 );
             }
         } catch (error) {
+            if (error.response?.status === 409) {
+                onError(
+                    'Конфликт отправки отчёта',
+                    'Отчёт на сервере уже создан или изменён. Откройте актуальную версию отчёта. Ваш черновик сохранён.'
+                );
+                return;
+            }
             if (error.code === 'REPORT_VALIDATION_ERROR') {
                 for (const issue of error.issues)
                     setError(issue.path.join('.'), {
